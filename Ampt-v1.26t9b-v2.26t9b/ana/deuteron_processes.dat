@@ -1,0 +1,58 @@
+           1  *           2  ->d+           4  (regular dbar prodn) @evt#           9  @nt=         105
+           1  *           6  ->d+           5  (regular d prodn)    @evt#          11  @nt=         144
+          -2  *          -6  ->d+           5  (regular dbar prodn) @evt#          22  @nt=         123
+           8  *           2  ->d+           3  (regular d prodn)    @evt#          34  @nt=          73
+  d+           3  (regular d M elastic) @evt#          34  @nt=          79  lb1,2=           3          42
+  d+           3  (regular d M elastic) @evt#          34  @nt=         115  lb1,2=           3          42
+  d+           3  (regular d M elastic) @evt#          34  @nt=         120  lb1,2=           3          42
+           6  *           2  ->d+           3  (regular d prodn)    @evt#          38  @nt=          34
+  d+           3  (regular d M elastic) @evt#          38  @nt=          38  lb1,2=           3          42
+  d+           4  (regular d M elastic) @evt#          38  @nt=          41  lb1,2=          42           4
+  d+           2  (regular d B elastic) @evt#          38  @nt=          43  lb1,2=           2          42
+  d+           4  (regular d M elastic) @evt#          38  @nt=          47  lb1,2=           4          42
+  d+           3  (regular d M elastic) @evt#          38  @nt=          47  lb1,2=           3          42
+  d+           0  ->BB (regular d destrn) @evt#          38  @nt=          48  lb1,2=           2           9
+           1  *           1  ->d+           5  (regular d prodn)    @evt#          39  @nt=          97
+  d+           5  (regular d M elastic) @evt#          39  @nt=         100  lb1,2=           5          42
+           2  *           8  ->d+           5  (regular d prodn)    @evt#          42  @nt=          57
+           6  *           2  ->d+           3  (regular d prodn)    @evt#          46  @nt=          67
+           6  *           2  ->d+           5  (regular d prodn)    @evt#          48  @nt=         108
+  d+           5  (regular d M elastic) @evt#          48  @nt=         113  lb1,2=           5          42
+          -7  *          -2  ->d+           5  (regular dbar prodn) @evt#          52  @nt=          89
+           1  *           6  ->d+           3  (regular d prodn)    @evt#          55  @nt=          42
+  d+           4  ->BB (regular d destrn) @evt#          55  @nt=          53  lb1,2=           2           2
+           6  *           1  ->d+           5  (regular d prodn)    @evt#          60  @nt=          83
+           1  *           9  ->d+           3  (regular d prodn)    @evt#          61  @nt=          74
+  d+           3  (regular d M elastic) @evt#          61  @nt=          76  lb1,2=           3          42
+  d+           4  (regular d M elastic) @evt#          61  @nt=          88  lb1,2=          42           4
+  d+           4  (regular d M elastic) @evt#          61  @nt=          91  lb1,2=          42           4
+  d+           4  (regular d M elastic) @evt#          61  @nt=          98  lb1,2=          42           4
+  d+           5  ->BB (regular d destrn) @evt#          61  @nt=         103  lb1,2=           1           1
+           9  *           1  ->d+           5  (regular d prodn)    @evt#          63  @nt=          75
+  d+           5  ->BB (regular d destrn) @evt#          63  @nt=          76  lb1,2=           1           1
+           2  *           6  ->d+           3  (regular d prodn)    @evt#          65  @nt=          46
+  d+           3  (regular d M elastic) @evt#          65  @nt=          47  lb1,2=           3          42
+           1  *           6  ->d+           5  (regular d prodn)    @evt#          65  @nt=          81
+  d+           5  ->BB (regular d destrn) @evt#          65  @nt=          87  lb1,2=           2           9
+  d+           1  (regular d B elastic) @evt#          65  @nt=         137  lb1,2=           1          42
+           1  *          12  ->d+           5  (regular d prodn)    @evt#          76  @nt=          89
+  d+           1  (regular d B elastic) @evt#          76  @nt=          96  lb1,2=           1          42
+  d+           5  ->BB (regular d destrn) @evt#          76  @nt=         117  lb1,2=           1           1
+           1  *           1  ->d+           5  (regular d prodn)    @evt#          76  @nt=         128
+  d+           5  (regular d M elastic) @evt#          76  @nt=         141  lb1,2=           5          42
+          12  *           2  ->d+           0  (regular d prodn)    @evt#          77  @nt=         120
+  d+           0  ->BB (regular d destrn) @evt#          77  @nt=         132  lb1,2=           2           8
+           6  *           2  ->d+           5  (regular d prodn)    @evt#          78  @nt=          51
+  d+           5  (regular d M elastic) @evt#          78  @nt=          52  lb1,2=           5          42
+           6  *           1  ->d+           3  (regular d prodn)    @evt#          78  @nt=          96
+  d+           3  (regular d M elastic) @evt#          78  @nt=          99  lb1,2=           3          42
+  d+           3  (regular d M elastic) @evt#          78  @nt=         114  lb1,2=           3          42
+  d+           3  (regular d M elastic) @evt#          78  @nt=         115  lb1,2=           3          42
+  d+           3  ->BB (regular d destrn) @evt#          78  @nt=         120  lb1,2=           2           9
+           1  *           6  ->d+           4  (regular d prodn)    @evt#          82  @nt=          97
+  d+           3  (regular d M elastic) @evt#          82  @nt=          98  lb1,2=          42           3
+  d+           4  (regular d M elastic) @evt#          82  @nt=         100  lb1,2=           4          42
+  d+           4  (regular d M elastic) @evt#          82  @nt=         101  lb1,2=           4          42
+  d+           3  (regular d M elastic) @evt#          82  @nt=         103  lb1,2=           3          42
+  d+           3  (regular d M elastic) @evt#          82  @nt=         125  lb1,2=           3          42
+           8  *           1  ->d+           5  (regular d prodn)    @evt#          92  @nt=         148
