@@ -18,7 +18,7 @@
   <stderr URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/err_&energy;GeV$JOBID.err"></stderr>
   <stdout URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/log_&energy;GeV$JOBID.out" />
 
-    <output fromScratch="data/*.root" toURL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/output/" />
+    <output fromScratch="*.root" toURL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/output/" />
  
   <Generator>
     <Location>/gpfs01/star/pwg/dneff/scratch/ampt_test/log/</Location>
