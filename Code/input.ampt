@@ -1,12 +1,12 @@
-193.            ! EFRM (sqrt(S_NN) in GeV if FRAME is CMS)
+200            ! EFRM (sqrt(S_NN) in GeV if FRAME is CMS)
 CMS             ! FRAME
 A               ! PROJ
 A               ! TARG
-238             ! IAP (projectile A number)
-92              ! IZP (projectile Z number)
-238             ! IAT (target A number)
-92              ! IZT (target Z number)
-3               ! NEVNT (total number of events)
+197             ! IAP (projectile A number)
+79              ! IZP (projectile Z number)
+197             ! IAT (target A number)
+79              ! IZT (target Z number)
+10               ! NEVNT (total number of events)
 0.              ! BMIN (mininum impact parameter in fm) 
 3.              ! BMAX (maximum impact parameter in fm, also see below)
 4		! ISOFT (D=4): select Default AMPT or String Melting(see below)
