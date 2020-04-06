@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE note [
+<!ENTITY energy "7">
+]>
+<job simulateSubmission ="false">
+  
+  <command>
+      run.sh
+  </command>
+
+  
+  <SandBox>
+    <Package>
+      <File>file:/star/u/dneff/git/Ampt_Runner/Code/</File>
+    </Package>
+  </SandBox>
+
+  <stderr URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/err_&energy;GeV$JOBID.err"></stderr>
+  <stdout URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/log_&energy;GeV$JOBID.out" />
+
+    <output fromScratch="*.root" toURL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/output/" />
+ 
+  <Generator>
+    <Location>/gpfs01/star/pwg/dneff/scratch/ampt_test/log/</Location>
+    <ScriptLocation>/gpfs01/star/pwg/dneff/scratch/ampt_test/script/</ScriptLocation>
+    <ListLocation>/gpfs01/star/pwg/dneff/scratch/ampt_test/list/</ListLocation>
+  </Generator>
+  
+</job>
