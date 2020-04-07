@@ -1,7 +1,9 @@
 #!/bin/sh
 
+job_num = {${1//_/ }}
 system=`uname -s`
 nrandom=`date '+%d%H%M%S'`
+nrandom = nrandom + ${job_num[1]}
 mkdir $nrandom
 cd $nrandom
 case $system in

@@ -1,16 +1,17 @@
 
-#include<TTree.h>
-#include<TRandom.h>
-#include<iostream>
-#include<math.h>
-#include<stdio.h>
-#include<fstream>
-#include<map>
-#include"TH2F.h"
-#include"TCanvas.h"
-#include"TLorentzVector.h"
-#include"TROOT.h"
+#include <TTree.h>
+#include <TRandom.h>
+#include <iostream>
+#include <math.h>
+#include <stdio.h>
+#include <fstream>
+#include <map>
+#include "TH2F.h"
+#include "TCanvas.h"
+#include "TLorentzVector.h"
+#include "TROOT.h"
 #include "TFile.h"
+#include "TVector3.h"
 
 using namespace std;
 
@@ -18,6 +19,9 @@ int makeAmptroot()
 {
 	//Constants
 	const int proton_pid = 2212;
+	float p_min = 0.15;
+	float pt_min = 0.3;
+	float pt_max = 2.5;
 
 	//input file variables:
 	Int_t    evn,tn,nov,npp,npt,nesp,ninesp,nest,ninest,pid,counter=0; // for ampt.dat
@@ -81,10 +85,13 @@ int makeAmptroot()
 		{
 			infile>>pid>>px>>py>>pz>>mass>>x>>y>>z>>t;
 			if(fabs(pid) == proton_pid) {
-				p_px.push_back(px);
-				p_py.push_back(py);
-				p_pz.push_back(pz);
-				p_pid.push_back(pid);
+				TVector3 p_mom(px, py, pz);
+				if(p_mom.Mag() >= p_min && p_mom.Perp() >= pt_min && p_mom.Perp() <= pt_max) {
+					p_px.push_back(px);
+					p_py.push_back(py);
+					p_pz.push_back(pz);
+					p_pid.push_back(pid);
+				}
 			}
 		}
 
