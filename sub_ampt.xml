@@ -2,10 +2,10 @@
 <!DOCTYPE note [
 <!ENTITY energy "7">
 ]>
-<job simulateSubmission ="false">
+<job simulateSubmission="false" nProcesses=10>
   
   <command>
-      run.sh
+      run.sh $JOBID
   </command>
 
   
