@@ -22,6 +22,7 @@ int makeAmptroot()
 	float p_min = 0.15;
 	float pt_min = 0.3;
 	float pt_max = 2.5;
+	float eta_max = 1.0;
 
 	//input file variables:
 	Int_t    evn,tn,nov,npp,npt,nesp,ninesp,nest,ninest,pid,counter=0; // for ampt.dat
@@ -86,7 +87,7 @@ int makeAmptroot()
 			infile>>pid>>px>>py>>pz>>mass>>x>>y>>z>>t;
 			if(fabs(pid) == proton_pid) {
 				TVector3 p_mom(px, py, pz);
-				if(p_mom.Mag() >= p_min && p_mom.Perp() >= pt_min && p_mom.Perp() <= pt_max) {
+				if(p_mom.Mag() >= p_min && p_mom.Perp() >= pt_min && p_mom.Perp() <= pt_max && p_mom.PseudoRapidity() <= eta_max) {
 					p_px.push_back(px);
 					p_py.push_back(py);
 					p_pz.push_back(pz);
