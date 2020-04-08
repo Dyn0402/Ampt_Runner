@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!DOCTYPE note [
-<!ENTITY energy "7">
+<!ENTITY energy "62">
 ]>
 <job simulateSubmission="false" nProcesses="10">
   
@@ -15,15 +15,15 @@
     </Package>
   </SandBox>
 
-  <stderr URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/err_&energy;GeV$JOBID.err"></stderr>
-  <stdout URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/log_&energy;GeV$JOBID.out" />
+  <stderr URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/&energy;GeV/err_&energy;GeV$JOBID.err"></stderr>
+  <stdout URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/&energy;GeV/log_&energy;GeV$JOBID.out" />
 
-    <output fromScratch="*.root" toURL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/output/" />
+    <output fromScratch="*.root" toURL="file:/gpfs01/star/pwg/dneff/scratch/ampt/output/&energy;GeV/" />
  
   <Generator>
-    <Location>/gpfs01/star/pwg/dneff/scratch/ampt_test/log/</Location>
-    <ScriptLocation>/gpfs01/star/pwg/dneff/scratch/ampt_test/script/</ScriptLocation>
-    <ListLocation>/gpfs01/star/pwg/dneff/scratch/ampt_test/list/</ListLocation>
+    <Location>/gpfs01/star/pwg/dneff/scratch/ampt/log/62GeV/</Location>
+    <ScriptLocation>/gpfs01/star/pwg/dneff/scratch/ampt/script/62GeV/</ScriptLocation>
+    <ListLocation>/gpfs01/star/pwg/dneff/scratch/ampt/list/62GeV/</ListLocation>
   </Generator>
   
 </job>

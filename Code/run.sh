@@ -10,7 +10,7 @@ for x in $1; do
 	i=$((i+1))
 done
 system=`uname -s`
-nrandom=`date '+%d%H%M%S'`$job_num
+nrandom=`date '+%d%H%M%S'`$job_num"1"
 mkdir $nrandom
 cd $nrandom
 case $system in
