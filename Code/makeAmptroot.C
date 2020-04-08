@@ -87,7 +87,7 @@ int makeAmptroot()
 			infile>>pid>>px>>py>>pz>>mass>>x>>y>>z>>t;
 			if(fabs(pid) == proton_pid) {
 				TVector3 p_mom(px, py, pz);
-				if(p_mom.Mag() >= p_min && p_mom.Perp() >= pt_min && p_mom.Perp() <= pt_max && p_mom.PseudoRapidity() <= eta_max) {
+				if(p_mom.Mag() >= p_min && p_mom.Perp() >= pt_min && p_mom.Perp() <= pt_max && fabs(p_mom.PseudoRapidity()) <= eta_max) {
 					p_px.push_back(px);
 					p_py.push_back(py);
 					p_pz.push_back(pz);
