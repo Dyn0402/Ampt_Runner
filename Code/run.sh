@@ -1,9 +1,16 @@
 #!/bin/sh
 
-job_num = {${1//_/ }}
+IFS='_'
+i=0
+job_num=0
+for x in $1; do
+	if [ $i -eq 1 ]; then
+		job_num=$x
+	fi
+	i=$((i+1))
+done
 system=`uname -s`
-nrandom=`date '+%d%H%M%S'`
-nrandom = nrandom + ${job_num[1]}
+nrandom=`date '+%d%H%M%S'`$job_num
 mkdir $nrandom
 cd $nrandom
 case $system in
