@@ -38,6 +38,6 @@ cp ../makeAmptroot.C .
 echo "#  AMPT started at " `date` > start.time
 ./ampt < nseed_runtime 
 root -b -q makeAmptroot.C++
-mv ana/test.root ../test_$1.root
+mv ana/test.root ../test_$nrandom.root
 cd ..
 rm -r $nrandom
