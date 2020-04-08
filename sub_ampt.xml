@@ -15,8 +15,8 @@
     </Package>
   </SandBox>
 
-  <stderr URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/&energy;GeV/err_&energy;GeV$JOBID.err"></stderr>
-  <stdout URL="file:/gpfs01/star/pwg/dneff/scratch/ampt_test/log/&energy;GeV/log_&energy;GeV$JOBID.out" />
+  <stderr URL="file:/gpfs01/star/pwg/dneff/scratch/ampt/log/&energy;GeV/err_&energy;GeV$JOBID.err"></stderr>
+  <stdout URL="file:/gpfs01/star/pwg/dneff/scratch/ampt/log/&energy;GeV/log_&energy;GeV$JOBID.out" />
 
     <output fromScratch="*.root" toURL="file:/gpfs01/star/pwg/dneff/scratch/ampt/output/&energy;GeV/" />
  
