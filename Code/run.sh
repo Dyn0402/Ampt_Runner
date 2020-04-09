@@ -35,6 +35,7 @@ cp ../input.ampt ana/
 cp ../input.ampt .
 cp ../ampt .
 cp ../makeAmptroot.C .
+echo $nrandom
 echo "#  AMPT started at " `date` > start.time
 ./ampt < nseed_runtime 
 root -b -q makeAmptroot.C++

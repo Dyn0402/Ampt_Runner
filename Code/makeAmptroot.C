@@ -15,7 +15,7 @@
 
 using namespace std;
 
-int makeAmptroot()
+int makeAmptroot(string run_id)
 {
 	//Constants
 	const int proton_pid = 2212;
@@ -38,7 +38,7 @@ int makeAmptroot()
 
 
 	//------------define a root file and tree :------------------------------
-	TFile *fampt = new TFile("ana/test.root","RECREATE");
+	TFile *fampt = new TFile(("data_" + run_id + ".root").data(),"RECREATE");
 	if(!fampt){
 		cout << "Output file cannot be opened" << endl;
 		exit(0);
