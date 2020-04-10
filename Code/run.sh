@@ -37,8 +37,11 @@ cp ../ampt .
 cp ../makeAmptroot.C .
 echo $nrandom
 echo "#  AMPT started at " `date` > start.time
+echo "AMPT started at " `date`
 ./ampt < nseed_runtime 
+echo "AMPT ended Root started at " `date`
 root -b -q makeAmptroot.C++
+echo "Root ended at " `date`
 mv ana/test.root ../test_$nrandom.root
 cd ..
 rm -r $nrandom
