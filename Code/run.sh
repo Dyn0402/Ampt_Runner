@@ -40,8 +40,8 @@ echo "#  AMPT started at " `date` > start.time
 echo "AMPT started at " `date`
 ./ampt < nseed_runtime 
 echo "AMPT ended Root started at " `date`
-root -b -q makeAmptroot.C++
+root -b -q 'makeAmptroot.C($nrandom)++'
 echo "Root ended at " `date`
-mv ana/test.root ../test_$nrandom.root
+mv ana/data_$nrandom.root ../test_$nrandom.root
 cd ..
 rm -r $nrandom
