@@ -247,6 +247,8 @@
                                 								
                                 <option id="gnu.cpp.compiler.option.optimization.flags.1679000410" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" useByScannerDiscovery="false" value="" valueType="string"/>
                                 								
+                                <option id="gnu.cpp.compiler.option.dialect.std.1948200547" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
+                                								
                                 <inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.699287575" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
                                 							
                             </tool>
@@ -269,9 +271,9 @@
                             							
                             <tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.49930608" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
                                 								
-                                <option id="gnu.cpp.link.option.flags.2087402552" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread -rdynamic -m64 -std=c++11" valueType="string"/>
+                                <option id="gnu.cpp.link.option.flags.2087402552" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-pthread -rdynamic -m64 -std=c++11" valueType="string"/>
                                 								
-                                <option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.637987116" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+                                <option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.637987116" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/Fluctuation_Lib/Release}&quot;"/>
                                     									
@@ -281,7 +283,7 @@
                                     								
                                 </option>
                                 								
-                                <option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1383357504" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+                                <option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1383357504" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
                                     									
                                     <listOptionValue builtIn="false" value="Core"/>
                                     									
@@ -320,6 +322,8 @@
                                     <listOptionValue builtIn="false" value="Thread"/>
                                     									
                                     <listOptionValue builtIn="false" value="MultiProc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="EG"/>
                                     									
                                     <listOptionValue builtIn="false" value="m"/>
                                     									
