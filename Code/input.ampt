@@ -1,4 +1,4 @@
-19.6            ! EFRM (sqrt(S_NN) in GeV if FRAME is CMS)
+27            ! EFRM (sqrt(S_NN) in GeV if FRAME is CMS)
 CMS             ! FRAME
 A               ! PROJ
 A               ! TARG
