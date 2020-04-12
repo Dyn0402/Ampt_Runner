@@ -92,7 +92,7 @@ int makeAmptroot(string run_id)
 		vector<float> p_px, p_py, p_pz;
 		vector<int> p_pid;
 		float Qx_ref2 = 0, Qy_ref2 = 0, Qx_ref3 = 0, Qy_ref3 = 0;
-		refmult2 = 0; refmult3 = 0;
+		refmult2 = 0; refmult3 = 0; pmult = 0;
 
 		for(int j=0;j<nov;j++)                          //particle loop
 		{
@@ -104,10 +104,12 @@ int makeAmptroot(string run_id)
 			TVector3 p_mom(px, py, pz);
 			if(p_mom.Mag() < p_min) continue;
 
+			double pt = p_mom.Perp();
+			if(pt < 0.01) continue;  // Avoid bad pseudorapidity warning, should be out of eta cut anyway.
+
 			double eta = p_mom.PseudoRapidity();
 			if(fabs(eta > eta_max)) continue;
 
-			double pt = p_mom.Perp();
 			double phi = p_mom.Phi();
 
 			// Refmult and event plane logic
@@ -129,7 +131,7 @@ int makeAmptroot(string run_id)
 
 			// Proton selection logic
 			if(fabs(pid) == proton_pid) {
-				if(p_mom.Perp() >= pt_min && p_mom.Perp() <= pt_max) {
+				if(pt >= pt_min && pt <= pt_max) {
 					p_px.push_back(px);
 					p_py.push_back(py);
 					p_pz.push_back(pz);
