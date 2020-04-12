@@ -37,7 +37,7 @@ int makeAmptroot(string run_id)
 
 	//Booked variables in tree:
 	const Int_t  mul  = 90000;
-	Int_t  event=0, refmult2, refmult3;
+	Int_t  event=0, refmult2, refmult3, pmult;
 	Float_t  imp, event_plane_ref2, event_plane_ref3; // event variables
 	Int_t   pid_array[mul];        //particle variables
 	Float_t px_array[mul], py_array[mul], pz_array[mul];
@@ -55,7 +55,8 @@ int makeAmptroot(string run_id)
 
 
 	//Define event branches:-------------------------------------------
-	tr->Branch("event", &event,"event/I");
+	tr->Branch("event", &event, "event/I");
+	tr->Branch("pmult", &pmult, "pmult/I");
 	tr->Branch("refmult2",  &refmult2, "refmult2/I");           // multiplicity = tracks
 	tr->Branch("refmult3",  &refmult3, "refmult3/I");
 	tr->Branch("event_plane_ref2",  &event_plane_ref2, "event_plane_ref2/F");
@@ -91,21 +92,24 @@ int makeAmptroot(string run_id)
 		vector<float> p_px, p_py, p_pz;
 		vector<int> p_pid;
 		float Qx_ref2 = 0, Qy_ref2 = 0, Qx_ref3 = 0, Qy_ref3 = 0;
-		refmult2 = 0; refmult3 = 0;
+		refmult2 = 0; refmult3 = 0; pmult = 0;
 
 		for(int j=0;j<nov;j++)                          //particle loop
 		{
 			infile>>pid>>px>>py>>pz>>mass>>x>>y>>z>>t;
 
 			p_info = db->GetParticle((int)pid);
-			TVector3 p_mom(px, py, pz);
-			double eta = p_mom.PseudoRapidity();
-
-			if(fabs(eta > eta_max)) continue;
 			if(fabs((int)p_info->Charge()) != 3) continue;
+
+			TVector3 p_mom(px, py, pz);
 			if(p_mom.Mag() < p_min) continue;
 
 			double pt = p_mom.Perp();
+			if(pt < 0.01) continue;  // Avoid bad pseudorapidity warning, should be out of eta cut anyway.
+
+			double eta = p_mom.PseudoRapidity();
+			if(fabs(eta > eta_max)) continue;
+
 			double phi = p_mom.Phi();
 
 			// Refmult and event plane logic
@@ -127,7 +131,7 @@ int makeAmptroot(string run_id)
 
 			// Proton selection logic
 			if(fabs(pid) == proton_pid) {
-				if(p_mom.Perp() >= pt_min && p_mom.Perp() <= pt_max) {
+				if(pt >= pt_min && pt <= pt_max) {
 					p_px.push_back(px);
 					p_py.push_back(py);
 					p_pz.push_back(pz);
@@ -138,9 +142,9 @@ int makeAmptroot(string run_id)
 
 		TVector2 Q_ref2(Qx_ref2, Qy_ref2); TVector2 Q_ref3(Qx_ref3, Qy_ref3);
 		event_plane_ref2 = 0.5 * Q_ref2.Phi(); event_plane_ref3 = 0.5 * Q_ref3.Phi();
+		pmult = (int)p_pid.size();
 
-
-		for(int j=0; j<(int)p_pid.size(); j++) {      //proton loop
+		for(int j=0; j<pmult; j++) {      //proton loop
 			px_array[j] = p_px[j];
 			py_array[j] = p_py[j];
 			pz_array[j] = p_pz[j];
