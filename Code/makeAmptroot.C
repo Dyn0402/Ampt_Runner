@@ -99,6 +99,7 @@ int makeAmptroot(string run_id)
 			infile>>pid>>px>>py>>pz>>mass>>x>>y>>z>>t;
 
 			p_info = db->GetParticle((int)pid);
+			if(!p_info) { cout << "pid: " << pid << " not in TDatabasePDG" << endl; continue; }
 			if(fabs((int)p_info->Charge()) != 3) continue;
 
 			TVector3 p_mom(px, py, pz);
@@ -108,7 +109,7 @@ int makeAmptroot(string run_id)
 			if(pt < 0.01) continue;  // Avoid bad pseudorapidity warning, should be out of eta cut anyway.
 
 			double eta = p_mom.PseudoRapidity();
-			if(fabs(eta > eta_max)) continue;
+			if(fabs(eta) > eta_max) continue;
 
 			double phi = p_mom.Phi();
 
