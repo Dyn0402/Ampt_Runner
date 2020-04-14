@@ -21,7 +21,7 @@ vector<string> split_string_by_char(string, char);
 
 int Event_Counter() {
 	int target_events = 2000;
-	string path = "/media/dylan/SSD_Storage/Research/Trees_Ampt/19GeV/";
+	string path = "/media/dylan/SSD_Storage/Research/Trees_Ampt/62GeV/";
 
 	vector<string> in_files = get_files_in_dir(path, "root", "path");
 	TH1I *num_events = new TH1I("Num_Events", "Number of AMPT Events", target_events / 100 + 1, -0.5, target_events + 0.5);
