@@ -164,9 +164,13 @@ int makeAmptroot(string run_id)
 	}//2 event loop end
 
 	cout << endl << endl << endl;
-	for(pair<int, int> particle:particle_count) {
-		cout << particle.first << " " << particle.second << endl;
+	map<int, int>::iterator it;
+	for(it = particle_count.begin(); it != particle_count.end(); it++) {
+		cout << it->first << " " << it->second << endl;
 	}
+//	for(pair<int, int> particle:particle_count) {
+//		cout << particle.first << " " << particle.second << endl;
+//	}
 	cout << endl << endl << endl;
 
 
