@@ -17,12 +17,12 @@
 using namespace std;
 
 float get_chi_diff(float b, int energy);
-int plot_ref_dist_comp(int energy);
+int plot_ref_dist_comp(int energy, float b);
 void minimize_chi_b(vector<int> energy);
 
 int ref_dist_comp() {
-//	plot_ref_dist_comp(energy);
-	minimize_chi_b({7, 11, 19, 27, 39, 62});
+	plot_ref_dist_comp(62, 13.6094);
+//	minimize_chi_b({7, 11, 19, 27, 39, 62});
 	return 0;
 }
 
@@ -97,10 +97,9 @@ void minimize_chi_b(vector<int> energy_vec) {
 }
 
 
-int plot_ref_dist_comp(int energy) {
+int plot_ref_dist_comp(int energy, float b_cut) {
 	string data_path = "/media/dylan/SSD_Storage/Research/Data_Old_Ref3/eta050/" + to_string(energy) + "GeV/QA_" + to_string(energy) + "GeV.root";
 	string ampt_path = "/media/dylan/SSD_Storage/Research/Trees_Ampt/" + to_string(energy) + ".root";
-	float b_cut = 20.0;
 
 	TFile *data_file = new TFile(data_path.data(), "READ");
 	TH1I *int_data_dist = (TH1I*)data_file->Get(("pre_reftwo_eta050_" + to_string(energy)).data());
@@ -148,14 +147,17 @@ int plot_ref_dist_comp(int energy) {
 	norm_ampt_dist->Draw("HISTSAMES");
 	leg2->Draw();
 
+	float sum = 0;
 	TH1D *ratio_dist = new TH1D("ratio_dist", "Ampt / BES1 Ratio (Normed Values)", data_dist->GetNbinsX(), data_dist->GetXaxis()->GetXmin(), data_dist->GetXaxis()->GetXmax());
 	for(int i =1; i<=int_data_dist->GetNbinsX(); i++) {
+		if(i > 413) { sum += norm_ampt_dist->GetBinContent(i); }
 		if(norm_data_dist->GetBinContent(i) > 0) {
 			ratio_dist->SetBinContent(i, norm_ampt_dist->GetBinContent(i) / norm_data_dist->GetBinContent(i));
 		} else {
 			ratio_dist->SetBinContent(i, 1.0);
 		}
 	}
+	cout << sum << endl;
 	TCanvas *can3 = new TCanvas("Ratio Canvas");
 	ratio_dist->Draw();
 
