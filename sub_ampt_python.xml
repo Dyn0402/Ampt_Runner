@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!DOCTYPE note [
-<!ENTITY energy "27">
+<!ENTITY energy "39">
 ]>
 <job simulateSubmission="false" nProcesses="2000">
   
@@ -22,9 +22,9 @@
     <output fromScratch="*.root" toURL="file:/gpfs01/star/pwg/dneff/scratch/ampt/output/&energy;GeV/" />
  
   <Generator>
-    <Location>/gpfs01/star/pwg/dneff/scratch/ampt/log/27GeV/</Location>
-    <ScriptLocation>/gpfs01/star/pwg/dneff/scratch/ampt/script/27GeV/</ScriptLocation>
-    <ListLocation>/gpfs01/star/pwg/dneff/scratch/ampt/list/27GeV/</ListLocation>
+    <Location>/gpfs01/star/pwg/dneff/scratch/ampt/log/39GeV/</Location>
+    <ScriptLocation>/gpfs01/star/pwg/dneff/scratch/ampt/script/39GeV/</ScriptLocation>
+    <ListLocation>/gpfs01/star/pwg/dneff/scratch/ampt/list/39GeV/</ListLocation>
   </Generator>
   
 </job>
