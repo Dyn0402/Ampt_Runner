@@ -1,6 +1,11 @@
 
 #include <iostream>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <map>
 
 
 #include "TFile.h"
@@ -17,11 +22,11 @@ int get_tree_events(string path) {
 
 	vector<string> in_files = get_files_in_dir(path, "root", "path");
 	for(string file:in_files) {
-		TFile *file = new TFile(path.data(), "READ");
-		TTree *tree = (TTree*)file->Get("tree");
+		TFile *f = new TFile(path.data(), "READ");
+		TTree *tree = (TTree*)f->Get("tree");
 		cout << "Number of events in tree: " << file << " " << tree->GetEntries() << endl;
-		file->Close();
-		delete file;
+		f->Close();
+		delete f;
 	}
 
 	return 0;
