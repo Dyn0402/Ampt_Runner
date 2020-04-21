@@ -22,7 +22,7 @@ int get_tree_events(string path) {
 
 	vector<string> in_files = get_files_in_dir(path, "root", "path");
 	for(string file:in_files) {
-		TFile *f = new TFile(path.data(), "READ");
+		TFile *f = new TFile(file.data(), "READ");
 		TTree *tree = (TTree*)f->Get("tree");
 		cout << "Number of events in tree: " << file << " " << tree->GetEntries() << endl;
 		f->Close();
