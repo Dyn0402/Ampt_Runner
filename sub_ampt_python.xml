@@ -5,7 +5,7 @@
 <job simulateSubmission="false" nProcesses="2000">
   
   <command>
-      /star/u/dneff/Software/python3/Python-3.7.3/python run_ampt.py $JOBID
+      /star/u/dneff/Software/python3/Python-3.7.3/python run_ampt.py $JOBID all
   </command>
 
   
