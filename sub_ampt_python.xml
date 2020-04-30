@@ -2,7 +2,7 @@
 <!DOCTYPE note [
 <!ENTITY energy "62">
 ]>
-<job simulateSubmission="false" nProcesses="10">
+<job simulateSubmission="false" nProcesses="400">
   
   <command>
       /star/u/dneff/Software/python3/Python-3.7.3/python run_ampt.py $JOBID _all
