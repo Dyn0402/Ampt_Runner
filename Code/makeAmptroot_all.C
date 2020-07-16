@@ -25,20 +25,25 @@ int makeAmptroot_all(string run_id)
 
 	// Constants
 	const int proton_pid = 2212;
-	float p_min = 0.15;
-	float pt_min = 0.3;
-	float pt_max = 2.5;
+	float p_min = 0.1;  // STAR minimum momentum acceptance
+	float pt_min = 0.01;  // Issues arise in eta if pt is zero
+	float qvec_pt_min = 0.2;
+	float qvec_pt_max = 2.0;
+	float ref_eta_max = 0.5;
+	float ref2_eta_min = 0.5;
+	float ref2_eta_max = 1.0;
+	float ref3_eta_max = 1.0;
 	float eta_max = 1.0;
 
 	//input file variables:
 	Int_t    evn,tn,nov,npp,npt,nesp,ninesp,nest,ninest,pid; // for ampt.dat
-	Float_t    px,py,pz,mass,x,y,z,t,b;                                //for ampt.dat
+	Float_t    px,py,pz,mass,x,y,z,t;                                //for ampt.dat
 
 
 	//Booked variables in tree:
 	const Int_t  mul  = 90000;
-	Int_t  event=0, refmult2, refmult3, pmult;
-	Float_t  imp, event_plane_ref2, event_plane_ref3; // event variables
+	Int_t  event=0, refmult, refmult2, refmult3, pmult;
+	Float_t  imp, qx, qy; // event variables
 	Int_t   pid_array[mul];        //particle variables
 	Float_t px_array[mul], py_array[mul], pz_array[mul];
 
@@ -53,46 +58,50 @@ int makeAmptroot_all(string run_id)
 	TTree *tr = new TTree("tree","AMPT Proton Data");
 
 
-
 	//Define event branches:-------------------------------------------
-	tr->Branch("event", &event, "event/I");
-	tr->Branch("pmult", &pmult, "pmult/I");
-	tr->Branch("refmult2",  &refmult2, "refmult2/I");           // multiplicity = tracks
-	tr->Branch("refmult3",  &refmult3, "refmult3/I");
-	tr->Branch("event_plane_ref2",  &event_plane_ref2, "event_plane_ref2/F");
-	tr->Branch("event_plane_ref3",  &event_plane_ref3, "event_plane_ref3/F");
-	tr->Branch("imp",&imp, "imp/F");
+	tr->Branch("event",    &event,     "event/I");
+	tr->Branch("pmult",    &pmult,     "pmult/I");
+	tr->Branch("refmult",  &refmult,   "refmult/I");
+	tr->Branch("refmult2", &refmult2,  "refmult2/I");           // multiplicity = tracks
+	tr->Branch("refmult3", &refmult3,  "refmult3/I");
+	tr->Branch("qx",       &qx,        "qx/F");
+	tr->Branch("qy",       &qy,        "qy/F");
+	tr->Branch("imp",      &imp,       "imp/F");
+
+	tr->Branch("npp",      &npp,       "npp/I");
+	tr->Branch("npt",      &npt,       "npt/I");
+	tr->Branch("nesp",     &nesp,      "nesp/I");
+	tr->Branch("ninesp",   &ninesp,    "ninesp/I");
+	tr->Branch("nest",     &nest,      "nest/I");
+	tr->Branch("ninest",   &ninest,    "ninest/I");
 
 
 	//particle branches:
-	tr->Branch("pid", &pid_array, "pid[pmult]/I");
-	tr->Branch("px",  &px_array,  "px[pmult]/F");
-	tr->Branch("py",  &py_array,  "py[pmult]/F");
-	tr->Branch("pz",  &pz_array,  "pz[pmult]/F");
+	tr->Branch("pid",      &pid_array, "pid[pmult]/I");
+	tr->Branch("px",       &px_array,  "px[pmult]/F");
+	tr->Branch("py",       &py_array,  "py[pmult]/F");
+	tr->Branch("pz",       &pz_array,  "pz[pmult]/F");
 
 	//**************************************************************************************
 
 	cout<<"making .root file from .dat file..."<<endl;
 
-	ifstream infile;//[300000];
+	ifstream infile;
 	char *fname   = new char[100];
 	sprintf(fname,"ana/ampt.dat");
 	infile.open(fname);
 
 	while(infile)
 	{//2 event loop // Please see ampt.dat file and npart-xy.dat to comment proper line:
-		infile>>evn>>tn>>nov>>b>>npp>>npt>>nesp>>ninesp>>nest>>ninest;
+		infile>>evn>>tn>>nov>>imp>>npp>>npt>>nesp>>ninesp>>nest>>ninest;
 
 		if(infile.eof())  break;
 
 		event += 1;
-		imp = b;
 
 		//****************************ampt.dat particle loop**************
-//		vector<float> p_px, p_py, p_pz;
-//		vector<int> p_pid;
-		float Qx_ref2 = 0, Qy_ref2 = 0, Qx_ref3 = 0, Qy_ref3 = 0;
-		refmult2 = 0; refmult3 = 0; pmult = 0;
+		qx = 0.; qy = 0.;
+		refmult = 0; refmult2 = 0; refmult3 = 0; pmult = 0;
 
 		for(int j=0;j<nov;j++)                          //particle loop
 		{
@@ -106,39 +115,35 @@ int makeAmptroot_all(string run_id)
 
 			p_info = db->GetParticle((int)pid);
 			if(!p_info) { cout << "pid: " << pid << " not in TDatabasePDG" << endl; continue; }
-			if(fabs((int)p_info->Charge()) != 3) continue;
+			else if(p_info->Mass() != (double) mass) { cout << "pid: " << pid << " with mass " << mass << "  expected mass: " << p_info->Mass() << endl; }
+			if(fabs((int)p_info->Charge()) == 0) continue;
 
 			TVector3 p_mom(px, py, pz);
-			if(p_mom.Mag() < p_min) continue;
+			if(p_mom.Mag() < p_min) continue; // Questionable
 
 			double pt = p_mom.Perp();
-			if(pt < 0.01) continue;  // Avoid bad pseudorapidity warning, should be out of eta cut anyway.
+			if(pt < pt_min) continue;  // Avoid bad pseudorapidity warning, should be out of eta cut anyway.
 
 			double eta = p_mom.PseudoRapidity();
-			if(fabs(eta) > eta_max) continue;
 
 			double phi = p_mom.Phi();
 
 			// Refmult and event plane logic
 
+			// ref
+			if(fabs(eta) < ref_eta_max) refmult++;
+
 			// ref2
-			if(fabs(eta) > 0.5 && fabs(eta) < eta_max) refmult2++;
-			if(fabs(eta) < eta_max && pt > 0.2 && pt < 2.0) {
-				if(fabs(eta) > 0.5 || fabs(pid) != proton_pid){
-					Qx_ref2 += cos(2*phi); Qy_ref2 += sin(2*phi);
-				}
-			}
+			if(fabs(eta) > ref2_eta_min && fabs(eta) < ref2_eta_max && fabs((int)p_info->Charge) == 3) refmult2++;
+
 			// ref3
-			if(fabs(eta) < eta_max && pid != proton_pid) {
-				refmult3++;
-				if(pt > 0.2 && pt < 2.0) {
-					Qx_ref3 += cos(2*phi); Qy_ref3 += sin(2*phi);
-				}
+			if(fabs(eta) < ref3_eta_max && fabs(pid) != proton_pid && fabs((int)p_info->Charge) == 3) refmult3++;
+
+			// event plane q-vector
+			if(pt > qvec_pt_min && pt < qvec_pt_max && fabs(eta) < ref3_eta_max) {
+				qx += cos(2*phi); qy += sin(2*phi);
 			}
 		}
-
-		TVector2 Q_ref2(Qx_ref2, Qy_ref2); TVector2 Q_ref3(Qx_ref3, Qy_ref3);
-		event_plane_ref2 = 0.5 * Q_ref2.Phi(); event_plane_ref3 = 0.5 * Q_ref3.Phi();
 
 		//***************************ampt.dat particle loops end**************
 
