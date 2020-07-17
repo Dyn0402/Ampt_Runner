@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE note [
+<!ENTITY energy "27">
+<!ENTITY out_path "/gpfs01/star/pwg/dneff/scratch/ampt/">
+]>
+<job simulateSubmission="false" nProcesses="400">
+  
+  <command>
+      /star/u/dneff/Software/python3/Python-3.7.3/python run_ampt.py $JOBID
+  </command>
+
+  
+  <SandBox>
+    <Package>
+      <File>file:/star/u/dneff/git/Ampt_Runner/Code_&energy;/</File>
+      <File>file:/star/u/dneff/git/QGP_Scripts/run_ampt.py</File>
+    </Package>
+  </SandBox>
+
+  <stderr URL="file:&out_path;log/&energy;GeV/err_&energy;GeV$JOBID.err"></stderr>
+  <stdout URL="file:&out_path;log/&energy;GeV/log_&energy;GeV$JOBID.out" />
+
+    <output fromScratch="*.root" toURL="file:&out_path;output/&energy;GeV/" />
+ 
+  <Generator>
+    <Location>/gpfs01/star/pwg/dneff/scratch/ampt/log/27GeV/</Location>
+    <ScriptLocation>/gpfs01/star/pwg/dneff/scratch/ampt/script/27GeV/</ScriptLocation>
+    <ListLocation>/gpfs01/star/pwg/dneff/scratch/ampt/list/27GeV/</ListLocation>
+  </Generator>
+  
+</job>
