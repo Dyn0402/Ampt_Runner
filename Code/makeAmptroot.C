@@ -134,10 +134,10 @@ int makeAmptroot_all(string run_id)
 			if(fabs(eta) < ref_eta_max) refmult++;
 
 			// ref2
-			if(fabs(eta) > ref2_eta_min && fabs(eta) < ref2_eta_max && fabs((int)p_info->Charge) == 3) refmult2++;
+			if(fabs(eta) > ref2_eta_min && fabs(eta) < ref2_eta_max && fabs((int)p_info->Charge()) == 3) refmult2++;
 
 			// ref3
-			if(fabs(eta) < ref3_eta_max && fabs(pid) != proton_pid && fabs((int)p_info->Charge) == 3) refmult3++;
+			if(fabs(eta) < ref3_eta_max && fabs(pid) != proton_pid && fabs((int)p_info->Charge()) == 3) refmult3++;
 
 			// event plane q-vector
 			if(pt > qvec_pt_min && pt < qvec_pt_max && fabs(eta) < ref3_eta_max) {
