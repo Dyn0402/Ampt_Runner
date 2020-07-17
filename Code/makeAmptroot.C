@@ -17,7 +17,7 @@
 
 using namespace std;
 
-int makeAmptroot_all(string run_id)
+int makeAmptroot(string run_id)
 {
 	// PDG Database
 	TDatabasePDG *db = new TDatabasePDG();
