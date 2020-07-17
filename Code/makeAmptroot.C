@@ -34,6 +34,7 @@ int makeAmptroot(string run_id)
 	float ref2_eta_max = 1.0;
 	float ref3_eta_max = 1.0;
 	float eta_max = 1.0;
+	float mass_qa_percent = 1.0;  // % difference in mass to output warning
 
 	// Input file variables
 	Int_t evn, tn, nov, npp, npt, nesp, ninesp, nest, ninest, pid;  // for ampt.dat event
@@ -115,7 +116,9 @@ int makeAmptroot(string run_id)
 
 			p_info = db->GetParticle((int)pid);
 			if(!p_info) { cout << "pid: " << pid << " not in TDatabasePDG" << endl; continue; }
-			else if(p_info->Mass() != (double) mass) { cout << "pid: " << pid << " with mass " << mass << "  expected mass: " << p_info->Mass() << endl; }
+			else if(p_info->Mass() * 1+mass_qa_percent/100 < mass || p_info->Mass() * 1-mass_qa_percent/100 > mass) {
+				cout << "pid: " << pid << " with mass " << mass << "  expected mass: " << p_info->Mass() << endl;
+			}
 			if(fabs((int)p_info->Charge()) == 0) continue;
 
 			TVector3 p_mom(px, py, pz);
