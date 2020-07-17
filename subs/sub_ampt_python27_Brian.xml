@@ -3,7 +3,7 @@
 <!ENTITY energy "27">
 <!ENTITY out_path "/gpfs01/star/pwg/dneff/data/AMPT/ampt_test/">
 ]>
-<job simulateSubmission="false" nProcesses="40">
+<job simulateSubmission="false" nProcesses="20">
   
   <command>
       /star/u/dneff/Software/python3/Python-3.7.3/python run_ampt.py $JOBID
@@ -12,7 +12,7 @@
   
   <SandBox>
     <Package>
-      <File>file:/star/u/dneff/git/Ampt_Runner/Code_&energy;/</File>
+      <File>file:/star/u/dneff/git/Ampt_Runner/Code/</File>
       <File>file:/star/u/dneff/git/QGP_Scripts/run_ampt.py</File>
     </Package>
   </SandBox>
