@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!DOCTYPE note [
 <!ENTITY energy "27">
-<!ENTITY out_path "/gpfs01/star/pwg/dneff/scratch/ampt/">
+<!ENTITY out_path "/gpfs01/star/pwg/dneff/data/AMPT/ampt_test/">
 ]>
-<job simulateSubmission="false" nProcesses="400">
+<job simulateSubmission="false" nProcesses="40">
   
   <command>
       /star/u/dneff/Software/python3/Python-3.7.3/python run_ampt.py $JOBID
@@ -23,9 +23,9 @@
     <output fromScratch="*.root" toURL="file:&out_path;output/&energy;GeV/" />
  
   <Generator>
-    <Location>/gpfs01/star/pwg/dneff/scratch/ampt/log/27GeV/</Location>
-    <ScriptLocation>/gpfs01/star/pwg/dneff/scratch/ampt/script/27GeV/</ScriptLocation>
-    <ListLocation>/gpfs01/star/pwg/dneff/scratch/ampt/list/27GeV/</ListLocation>
+    <Location>/gpfs01/star/pwg/dneff/data/AMPT/ampt_test/log/27GeV/</Location>
+    <ScriptLocation>//gpfs01/star/pwg/dneff/data/AMPT/ampt_test/script/27GeV/</ScriptLocation>
+    <ListLocation>/gpfs01/star/pwg/dneff/data/AMPT/ampt_test/list/27GeV/</ListLocation>
   </Generator>
   
 </job>
