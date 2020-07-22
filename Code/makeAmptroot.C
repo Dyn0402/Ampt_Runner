@@ -79,9 +79,9 @@ int makeAmptroot(string run_id)
 
 	//particle branches:
 	tr->Branch("pid",      &pid_vec, buffer_size, split_level);
-	tr->Branch("px",       &px_vec,  buffer_size, split_level);
-	tr->Branch("py",       &py_vec,  buffer_size, split_level);
-	tr->Branch("pz",       &pz_vec,  buffer_size, split_level);
+	tr->Branch("px_vec",       &px_vec,  buffer_size, split_level);
+	tr->Branch("py_vec",       &py_vec,  buffer_size, split_level);
+	tr->Branch("pz_vec",       &pz_vec,  buffer_size, split_level);
 
 	//**************************************************************************************
 
