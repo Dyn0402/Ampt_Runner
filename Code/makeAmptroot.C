@@ -36,7 +36,7 @@ int makeAmptroot(string run_id)
 	float ref3_eta_max = 1.0;
 	float eta_max = 1.0;
 	float mass_qa_percent = 1.0;  // % difference in mass to output warning
-	int buffer_size = 256000;
+	int buffer_size = 5000000;
 	int split_level = 1;
 
 	// Input file variables
