@@ -45,7 +45,6 @@ int makeAmptroot(string run_id)
 
 
 	// Output tree variables
-	const Int_t mul = 90000;
 	int event=0, refmult, refmult2, refmult3;  // event variables
 	float imp, qx, qy;  // event variables
 	vector<int> pid_vec;  // track variables
