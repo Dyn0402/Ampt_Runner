@@ -48,9 +48,9 @@ int makeAmptroot(string run_id)
 	int event=0, refmult, refmult2, refmult3;  // event variables
 	float imp, qx, qy;  // event variables
 	vector<int> pid_vec;  // track variables
-	vector<int> px_vec;
-	vector<int> py_vec;
-	vector<int> pz_vec;  // track variables
+	vector<float> px_vec;  // Apparently need to be declared on separate lines
+	vector<float> py_vec;
+	vector<float> pz_vec;  // track variables
 
 
 	//------------define a root file and tree :------------------------------
@@ -81,9 +81,9 @@ int makeAmptroot(string run_id)
 
 	//particle branches:
 	tr->Branch("pid",      &pid_vec, buffer_size, split_level);
-	tr->Branch("px_vec", &px_vec,  buffer_size, split_level);
-	tr->Branch("py_vec", &py_vec,  buffer_size, split_level);
-	tr->Branch("pz_vec", &pz_vec,  buffer_size, split_level);
+	tr->Branch("px",       &px_vec,  buffer_size, split_level);
+	tr->Branch("py",       &py_vec,  buffer_size, split_level);
+	tr->Branch("pz",       &pz_vec,  buffer_size, split_level);
 
 	//**************************************************************************************
 
