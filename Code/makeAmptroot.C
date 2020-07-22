@@ -1,3 +1,4 @@
+#include <vector>
 
 #include <TTree.h>
 #include <TRandom.h>
@@ -35,18 +36,20 @@ int makeAmptroot(string run_id)
 	float ref3_eta_max = 1.0;
 	float eta_max = 1.0;
 	float mass_qa_percent = 1.0;  // % difference in mass to output warning
+	int buffer_size = 256000;
+	int split_level = 1;
 
 	// Input file variables
-	Int_t evn, tn, nov, npp, npt, nesp, ninesp, nest, ninest, pid;  // for ampt.dat event
-	Float_t px, py, pz, mass, x, y, z, t;  // for ampt.dat track
+	int evn, tn, nov, npp, npt, nesp, ninesp, nest, ninest, pid;  // for ampt.dat event
+	float px, py, pz, mass, x, y, z, t;  // for ampt.dat track
 
 
 	// Output tree variables
 	const Int_t mul = 90000;
-	Int_t event=0, refmult, refmult2, refmult3, pmult;  // event variables
-	Float_t imp, qx, qy;  // event variables
-	Int_t pid_array[mul];  // particle variables
-	Float_t px_array[mul], py_array[mul], pz_array[mul];  // particle variables
+	int event=0, refmult, refmult2, refmult3;  // event variables
+	float imp, qx, qy;  // event variables
+	vector<int> pid_vec;  // track variables
+	vector<float> px_vec, py_vec, pz_vec;  // track variables
 
 
 	//------------define a root file and tree :------------------------------
@@ -61,7 +64,6 @@ int makeAmptroot(string run_id)
 
 	//Define event branches:-------------------------------------------
 	tr->Branch("event",    &event,     "event/I");
-	tr->Branch("pmult",    &pmult,     "pmult/I");
 	tr->Branch("refmult",  &refmult,   "refmult/I");
 	tr->Branch("refmult2", &refmult2,  "refmult2/I");
 	tr->Branch("refmult3", &refmult3,  "refmult3/I");
@@ -76,12 +78,11 @@ int makeAmptroot(string run_id)
 	tr->Branch("nest",     &nest,      "nest/I");
 	tr->Branch("ninest",   &ninest,    "ninest/I");
 
-
 	//particle branches:
-	tr->Branch("pid",      &pid_array, "pid[pmult]/I");
-	tr->Branch("px",       &px_array,  "px[pmult]/F");
-	tr->Branch("py",       &py_array,  "py[pmult]/F");
-	tr->Branch("pz",       &pz_array,  "pz[pmult]/F");
+	tr->Branch("pid",      &pid_vec, buffer_size, split_level);
+	tr->Branch("px",       &px_vec,  buffer_size, split_level);
+	tr->Branch("py",       &py_vec,  buffer_size, split_level);
+	tr->Branch("pz",       &pz_vec,  buffer_size, split_level);
 
 	//**************************************************************************************
 
@@ -102,17 +103,17 @@ int makeAmptroot(string run_id)
 
 		//****************************ampt.dat particle loop**************
 		qx = 0.; qy = 0.;
-		refmult = 0; refmult2 = 0; refmult3 = 0; pmult = 0;
+		refmult = 0; refmult2 = 0; refmult3 = 0;
+		pid_vec.clear(); px_vec.clear(); py_vec.clear(); pz_vec.clear();
 
 		for(int j=0;j<nov;j++)                          //particle loop
 		{
 			infile>>pid>>px>>py>>pz>>mass>>x>>y>>z>>t;
 
-			px_array[j] = px;
-			py_array[j] = py;
-			pz_array[j] = pz;
-			pid_array[j] = pid;
-			pmult++;
+			px_vec.push_back(px);
+			py_vec.push_back(py);
+			pz_vec.push_back(pz);
+			pid_vec.push_back(pid);
 
 			p_info = db->GetParticle((int)pid);
 			if(!p_info) { cout << "pid: " << pid << " not in TDatabasePDG" << endl; continue; }
