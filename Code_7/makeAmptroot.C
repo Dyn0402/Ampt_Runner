@@ -1,3 +1,4 @@
+#include <vector>
 
 #include <TTree.h>
 #include <TRandom.h>
@@ -25,22 +26,31 @@ int makeAmptroot(string run_id)
 
 	// Constants
 	const int proton_pid = 2212;
-	float p_min = 0.15;
-	float pt_min = 0.3;
-	float pt_max = 2.5;
+	float p_min = 0.1;  // STAR minimum momentum acceptance
+	float pt_min = 0.01;  // Issues arise in eta if pt is zero
+	float qvec_pt_min = 0.2;
+	float qvec_pt_max = 2.0;
+	float ref_eta_max = 0.5;
+	float ref2_eta_min = 0.5;
+	float ref2_eta_max = 1.0;
+	float ref3_eta_max = 1.0;
 	float eta_max = 1.0;
+	float mass_qa_percent = 1.0;  // % difference in mass to output warning
+	int buffer_size = 5000000;
+	int split_level = 1;
 
-	//input file variables:
-	Int_t    evn,tn,nov,npp,npt,nesp,ninesp,nest,ninest,pid; // for ampt.dat
-	Float_t    px,py,pz,mass,x,y,z,t,b;                                //for ampt.dat
+	// Input file variables
+	int evn, tn, nov, npp, npt, nesp, ninesp, nest, ninest, pid;  // for ampt.dat event
+	float px, py, pz, mass, x, y, z, t;  // for ampt.dat track
 
 
-	//Booked variables in tree:
-	const Int_t  mul  = 90000;
-	Int_t  event=0, refmult2, refmult3, pmult;
-	Float_t  imp, event_plane_ref2, event_plane_ref3; // event variables
-	Int_t   pid_array[mul];        //particle variables
-	Float_t px_array[mul], py_array[mul], pz_array[mul];
+	// Output tree variables
+	int event=0, refmult, refmult2, refmult3;  // event variables
+	float imp, qx, qy;  // event variables
+	vector<int> pid_vec;  // track variables
+	vector<float> px_vec;  // Apparently need to be declared on separate lines
+	vector<float> py_vec;
+	vector<float> pz_vec;  // track variables
 
 
 	//------------define a root file and tree :------------------------------
@@ -50,106 +60,94 @@ int makeAmptroot(string run_id)
 		exit(0);
 	}
 
-	TTree *tr = new TTree("tree","AMPT Proton Data");
-
+	TTree *tr = new TTree("tree","AMPT Data");
 
 
 	//Define event branches:-------------------------------------------
-	tr->Branch("event", &event, "event/I");
-	tr->Branch("pmult", &pmult, "pmult/I");
-	tr->Branch("refmult2",  &refmult2, "refmult2/I");           // multiplicity = tracks
-	tr->Branch("refmult3",  &refmult3, "refmult3/I");
-	tr->Branch("event_plane_ref2",  &event_plane_ref2, "event_plane_ref2/F");
-	tr->Branch("event_plane_ref3",  &event_plane_ref3, "event_plane_ref3/F");
-	tr->Branch("imp",&imp, "imp/F");
+	tr->Branch("event",    &event,     "event/I");
+	tr->Branch("refmult",  &refmult,   "refmult/I");
+	tr->Branch("refmult2", &refmult2,  "refmult2/I");
+	tr->Branch("refmult3", &refmult3,  "refmult3/I");
+	tr->Branch("qx",       &qx,        "qx/F");
+	tr->Branch("qy",       &qy,        "qy/F");
+	tr->Branch("imp",      &imp,       "imp/F");
 
+	tr->Branch("npp",      &npp,       "npp/I");
+	tr->Branch("npt",      &npt,       "npt/I");
+	tr->Branch("nesp",     &nesp,      "nesp/I");
+	tr->Branch("ninesp",   &ninesp,    "ninesp/I");
+	tr->Branch("nest",     &nest,      "nest/I");
+	tr->Branch("ninest",   &ninest,    "ninest/I");
 
 	//particle branches:
-	tr->Branch("pid", &pid_array, "pid[pmult]/I");
-	tr->Branch("px",  &px_array,  "px[pmult]/F");
-	tr->Branch("py",  &py_array,  "py[pmult]/F");
-	tr->Branch("pz",  &pz_array,  "pz[pmult]/F");
+	tr->Branch("pid",      &pid_vec, buffer_size, split_level);
+	tr->Branch("px",       &px_vec,  buffer_size, split_level);
+	tr->Branch("py",       &py_vec,  buffer_size, split_level);
+	tr->Branch("pz",       &pz_vec,  buffer_size, split_level);
 
 	//**************************************************************************************
 
 	cout<<"making .root file from .dat file..."<<endl;
 
-	ifstream infile;//[300000];
+	ifstream infile;
 	char *fname   = new char[100];
 	sprintf(fname,"ana/ampt.dat");
 	infile.open(fname);
 
 	while(infile)
-	{//2 event loop // Please see ampt.dat file and npart-xy.dat to comment proper line:
-		infile>>evn>>tn>>nov>>b>>npp>>npt>>nesp>>ninesp>>nest>>ninest;
+	{// event loop
+		infile>>evn>>tn>>nov>>imp>>npp>>npt>>nesp>>ninesp>>nest>>ninest;
 
 		if(infile.eof())  break;
 
 		event += 1;
-		imp = b;
 
 		//****************************ampt.dat particle loop**************
-		vector<float> p_px, p_py, p_pz;
-		vector<int> p_pid;
-		float Qx_ref2 = 0, Qy_ref2 = 0, Qx_ref3 = 0, Qy_ref3 = 0;
-		refmult2 = 0; refmult3 = 0; pmult = 0;
+		qx = 0.; qy = 0.;
+		refmult = 0; refmult2 = 0; refmult3 = 0;
+		pid_vec.clear(); px_vec.clear(); py_vec.clear(); pz_vec.clear();
 
 		for(int j=0;j<nov;j++)                          //particle loop
 		{
 			infile>>pid>>px>>py>>pz>>mass>>x>>y>>z>>t;
 
+			px_vec.push_back(px);
+			py_vec.push_back(py);
+			pz_vec.push_back(pz);
+			pid_vec.push_back(pid);
+
 			p_info = db->GetParticle((int)pid);
 			if(!p_info) { cout << "pid: " << pid << " not in TDatabasePDG" << endl; continue; }
-			if(fabs((int)p_info->Charge()) != 3) continue;
+			else if(p_info->Mass() * 1+mass_qa_percent/100 < mass || p_info->Mass() * 1-mass_qa_percent/100 > mass) {
+				cout << "pid: " << pid << " with mass " << mass << "  expected mass: " << p_info->Mass() << endl;
+			}
+			if(fabs((int)p_info->Charge()) == 0) continue;
 
 			TVector3 p_mom(px, py, pz);
-			if(p_mom.Mag() < p_min) continue;
+			if(p_mom.Mag() < p_min) continue; // Questionable
 
 			double pt = p_mom.Perp();
-			if(pt < 0.01) continue;  // Avoid bad pseudorapidity warning, should be out of eta cut anyway.
+			if(pt < pt_min) continue;  // Avoid bad pseudorapidity warning, should be out of eta cut anyway.
 
 			double eta = p_mom.PseudoRapidity();
-			if(fabs(eta) > eta_max) continue;
 
 			double phi = p_mom.Phi();
 
 			// Refmult and event plane logic
 
+			// ref
+			if(fabs(eta) < ref_eta_max) refmult++;
+
 			// ref2
-			if(fabs(eta) > 0.5 && fabs(eta) < eta_max) refmult2++;
-			if(fabs(eta) < eta_max && pt > 0.2 && pt < 2.0) {
-				if(fabs(eta) > 0.5 || fabs(pid) != proton_pid){
-					Qx_ref2 += cos(2*phi); Qy_ref2 += sin(2*phi);
-				}
-			}
+			if(fabs(eta) > ref2_eta_min && fabs(eta) < ref2_eta_max && fabs((int)p_info->Charge()) == 3) refmult2++;
+
 			// ref3
-			if(fabs(eta) < eta_max && pid != proton_pid) {
-				refmult3++;
-				if(pt > 0.2 && pt < 2.0) {
-					Qx_ref3 += cos(2*phi); Qy_ref3 += sin(2*phi);
-				}
+			if(fabs(eta) < ref3_eta_max && fabs(pid) != proton_pid && fabs((int)p_info->Charge()) == 3) refmult3++;
+
+			// event plane q-vector
+			if(pt > qvec_pt_min && pt < qvec_pt_max && fabs(eta) < ref3_eta_max) {
+				qx += cos(2*phi); qy += sin(2*phi);
 			}
-
-			// Proton selection logic
-			if(fabs(pid) == proton_pid) {
-				if(pt >= pt_min && pt <= pt_max) {
-					p_px.push_back(px);
-					p_py.push_back(py);
-					p_pz.push_back(pz);
-					p_pid.push_back(pid);
-				}
-			}
-		}
-
-		TVector2 Q_ref2(Qx_ref2, Qy_ref2); TVector2 Q_ref3(Qx_ref3, Qy_ref3);
-		event_plane_ref2 = 0.5 * Q_ref2.Phi(); event_plane_ref3 = 0.5 * Q_ref3.Phi();
-		pmult = (int)p_pid.size();
-
-		for(int j=0; j<pmult; j++) {      //proton loop
-			px_array[j] = p_px[j];
-			py_array[j] = p_py[j];
-			pz_array[j] = p_pz[j];
-			pid_array[j] = p_pid[j];
 		}
 
 		//***************************ampt.dat particle loops end**************
