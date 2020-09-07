@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!DOCTYPE note [
 <!ENTITY energy "19">
-<!ENTITY out_path "/gpfs01/star/pwg/dneff/data/AMPT/ampt_new/">
+<!ENTITY out_path "/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/">
 ]>
 <job simulateSubmission="false" nProcesses="400">
   
@@ -23,9 +23,9 @@
     <output fromScratch="*.root" toURL="file:&out_path;output/&energy;GeV/" />
  
   <Generator>
-    <Location>/gpfs01/star/pwg/dneff/data/AMPT/ampt_new/log/19GeV/</Location>
-    <ScriptLocation>/gpfs01/star/pwg/dneff/data/AMPT/ampt_new/script/19GeV/</ScriptLocation>
-    <ListLocation>/gpfs01/star/pwg/dneff/data/AMPT/ampt_new/list/19GeV/</ListLocation>
+    <Location>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/log/19GeV/</Location>
+    <ScriptLocation>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/script/19GeV/</ScriptLocation>
+    <ListLocation>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/list/19GeV/</ListLocation>
   </Generator>
   
 </job>
