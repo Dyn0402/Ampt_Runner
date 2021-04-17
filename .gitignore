@@ -1,2 +1,5 @@
 *.dat
 /Release/
+
+# Ignore Visual Studio property folder
+.vs/
