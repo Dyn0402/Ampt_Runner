@@ -17,7 +17,7 @@
     </Package>
   </SandBox>
 
-<input URL="command:/usr/bin/find &in_path;" nFiles="all" />
+<input URL="command:/usr/bin/find &in_path;&energy;GeV/" nFiles="all" />
   <stderr URL="file:&out_path;log/&energy;GeV/err_&energy;GeV$JOBID.err"></stderr>
   <stdout URL="file:&out_path;log/&energy;GeV/log_&energy;GeV$JOBID.out" />
 
