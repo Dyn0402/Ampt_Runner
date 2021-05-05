@@ -1,7 +1,9 @@
 
+#include <iostream>
 #include <string>
-#include <stringstream>
+#include <sstream>
 
+#include <TFile.h>
 #include <TTree.h>
 #include <TVector3.h>
 
@@ -59,7 +61,7 @@ void set_ampt_tree_branches(TTree* tree, ampt_tree_branches& branches) {
 
 
 void tree_slimmer(string input_file_list) {
-	stringstread ss(input_file_list);
+	stringstream ss(input_file_list);
 	string file;
 
 	if (input_file_list != NULL) {
@@ -73,7 +75,7 @@ void tree_slimmer(string input_file_list) {
 
 void slim_tree(string file) {
 	TFile *f_in = new TFile(file.data(), "READ");
-	TTree *tree_in = (*TTree)f_in->Get("tree");
+	TTree *tree_in = (TTree*)f_in->Get("tree");
 	
 	ampt_tree_branches branches;
 	set_ampt_tree_branches(tree_in, branches);
@@ -82,7 +84,7 @@ void slim_tree(string file) {
 	TFile* f_out = new TFile(f_out_name.data(), "RECREATE");
 	TTree* tree_out = new TTree("tree", "AMPT Data");
 
-	cout << "Slimming " file << " to " << file_out_name << endl;
+	cout << "Slimming " << file << " to " << f_out_name << endl;
 
 	const int proton_pid = 2212;
 	float pt_min = 0.3;  // GeV
@@ -98,26 +100,26 @@ void slim_tree(string file) {
 	vector<float> pz_vec;  // track variables
 
 	//Define event branches:-------------------------------------------
-	tr->Branch("event", &branches.event, "event/I");
-	tr->Branch("refmult", &branches.refmult, "refmult/I");
-	tr->Branch("refmult2", &branches.refmult2, "refmult2/I");
-	tr->Branch("refmult3", &branches.refmult3, "refmult3/I");
-	tr->Branch("qx", &branches.qx, "qx/F");
-	tr->Branch("qy", &branches.qy, "qy/F");
-	tr->Branch("imp", &branches.imp, "imp/F");
+	tree_out->Branch("event", &branches.event, "event/I");
+	tree_out->Branch("refmult", &branches.refmult, "refmult/I");
+	tree_out->Branch("refmult2", &branches.refmult2, "refmult2/I");
+	tree_out->Branch("refmult3", &branches.refmult3, "refmult3/I");
+	tree_out->Branch("qx", &branches.qx, "qx/F");
+	tree_out->Branch("qy", &branches.qy, "qy/F");
+	tree_out->Branch("imp", &branches.imp, "imp/F");
 
-	tr->Branch("npp", &branches.npp, "npp/I");
-	tr->Branch("npt", &branches.npt, "npt/I");
-	tr->Branch("nesp", &branches.nesp, "nesp/I");
-	tr->Branch("ninesp", &branches.ninesp, "ninesp/I");
-	tr->Branch("nest", &branches.nest, "nest/I");
-	tr->Branch("ninest", &branches.ninest, "ninest/I");
+	tree_out->Branch("npp", &branches.npp, "npp/I");
+	tree_out->Branch("npt", &branches.npt, "npt/I");
+	tree_out->Branch("nesp", &branches.nesp, "nesp/I");
+	tree_out->Branch("ninesp", &branches.ninesp, "ninesp/I");
+	tree_out->Branch("nest", &branches.nest, "nest/I");
+	tree_out->Branch("ninest", &branches.ninest, "ninest/I");
 
 	//particle branches:
-	tr->Branch("pid", &pid_vec, buffer_size, split_level);
-	tr->Branch("px", &px_vec, buffer_size, split_level);
-	tr->Branch("py", &py_vec, buffer_size, split_level);
-	tr->Branch("pz", &pz_vec, buffer_size, split_level);
+	tree_out->Branch("pid", &pid_vec, buffer_size, split_level);
+	tree_out->Branch("px", &px_vec, buffer_size, split_level);
+	tree_out->Branch("py", &py_vec, buffer_size, split_level);
+	tree_out->Branch("pz", &pz_vec, buffer_size, split_level);
 
 	int event_index = 0;
 	while (tree_in->GetEvent(event_index)) {
@@ -137,7 +139,7 @@ void slim_tree(string file) {
 	tree_out->Write();
 	f_out->Close();
 
-	cout << file << " slimmed successfully to " << file_out_name << endl;
+	cout << file << " slimmed successfully to " << f_out_name << endl;
 
 	tree_in->ResetBranchAddresses();
 	f_in->Close();
