@@ -82,7 +82,7 @@ void slim_tree(string file) {
 	ampt_tree_branches branches;
 	set_ampt_tree_branches(tree_in, branches);
 
-	string f_out_name = file.substr(0, file.rfind('.')) + "_protons.root";
+	string f_out_name = file.substr(file.rfind('/') + 1, file.rfind('.') - file.rfind('/') - 1) + "_protons.root";
 	TFile* f_out = new TFile(f_out_name.data(), "RECREATE");
 	TTree* tree_out = new TTree("tree", "AMPT Data");
 
