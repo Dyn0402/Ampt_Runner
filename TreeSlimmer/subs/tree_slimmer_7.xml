@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!DOCTYPE note [
-<!ENTITY energy "15">
+<!ENTITY energy "7">
 <!ENTITY in_path "/gpfs01/star/pwg/dneff/data/AMPT/most_central/string_melting/">
 <!ENTITY out_path "/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/">
 ]>
-<job simulateSubmission ="false" maxFilesPerProcess="10" fileListSyntax="paths">
+<job simulateSubmission ="false" maxFilesPerProcess="100" fileListSyntax="paths">
   
   <command>
       /afs/rhic.bnl.gov/star/ROOT/6.16.00/build/bin/root -l -b -q tree_slimmer.cpp\(\"$FILELIST\"\)
@@ -25,8 +25,8 @@
  
   <Generator>
     <Location>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/log/</Location>
-    <ScriptLocation>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/script/15GeV/</ScriptLocation>
-    <ListLocation>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/list/15GeV/</ListLocation>
+    <ScriptLocation>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/script/7GeV/</ScriptLocation>
+    <ListLocation>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/list/7GeV/</ListLocation>
   </Generator>
   
 </job>
