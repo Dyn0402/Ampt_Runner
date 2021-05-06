@@ -69,7 +69,7 @@ void tree_slimmer(string input_file_list) {
 
 		while (getline(in_file, file)) {
 			cout << "Slim " << file << endl;
-			//slim_tree(file);
+			slim_tree(file);
 		}
 	}
 }
