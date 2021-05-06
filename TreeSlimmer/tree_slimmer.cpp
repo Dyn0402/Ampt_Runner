@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <sstream>
 
@@ -61,13 +62,16 @@ void set_ampt_tree_branches(TTree* tree, ampt_tree_branches& branches) {
 
 
 void tree_slimmer(string input_file_list) {
-	stringstream ss(input_file_list);
-	string file;
+	ifstream in_file(input_file_list);
+	if (in_file.is_open()) {
+		//stringstream ss(input_file_list);
+		string file;
 
-	if (input_file_list != NULL) {
-		while (getline(ss, file, '\n')) {
-			cout << "Slim " << file << endl;
-			slim_tree(file);
+		if (input_file_list != NULL) {
+			while (getline(in_file, file)) {
+				cout << "Slim " << file << endl;
+				slim_tree(file);
+			}
 		}
 	}
 }
