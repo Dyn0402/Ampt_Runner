@@ -125,8 +125,10 @@ void slim_tree(string file) {
 
 	int event_index = 0;
 	while (tree_in->GetEvent(event_index++)) {
+		pid_vec.clear(); px_vec.clear(); py_vec.clear(); pz_vec.clear();
 		for (int particle_index = 0; particle_index < (int)branches.pid->size(); particle_index++) {
 			TVector3 p_mom(branches.px->at(particle_index), branches.py->at(particle_index), branches.pz->at(particle_index));
+			if (branches.pid->at(particle_index) != proton_pid) continue;
 			if (p_mom.Perp() < pt_min || p_mom.Perp() > pt_max) continue;
 			if (fabs(p_mom.PseudoRapidity()) > eta_max) continue;
 			px_vec.push_back(branches.px->at(particle_index));
