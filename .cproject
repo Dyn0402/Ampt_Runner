@@ -26,6 +26,8 @@
 								<option id="gnu.cpp.compiler.option.other.other.58506038" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0  -pthread -m64 -std=c++11" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.573599272" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Fluctuation_Lib}&quot;"/>
+									<listOptionValue builtIn="false" value="/home/dylan/Software/root/include"/>
+									<listOptionValue builtIn="false" value="/home/dylan/Software/root/root-6.22.08/obj/include"/>
 									<listOptionValue builtIn="false" value="/home/dylan/Software/root/root-6.14.06/obj/include"/>
 									<listOptionValue builtIn="false" value="/star/u/dneff/Software/root/root-6.14.06/obj/include"/>
 								</option>
@@ -49,6 +51,8 @@
 								<option id="gnu.cpp.link.option.flags.969575895" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-pthread -rdynamic -m64 -std=c++11" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.611871107" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Fluctuation_Lib/Release}&quot;"/>
+									<listOptionValue builtIn="false" value="/home/dylan/Software/root/lib"/>
+									<listOptionValue builtIn="false" value="/home/dylan/Software/root/root-6.22.08/obj/lib"/>
 									<listOptionValue builtIn="false" value="/home/dylan/Software/root/root-6.14.06/obj/lib"/>
 									<listOptionValue builtIn="false" value="/star/u/dneff/Software/root/root-6.14.06/obj/lib"/>
 								</option>
