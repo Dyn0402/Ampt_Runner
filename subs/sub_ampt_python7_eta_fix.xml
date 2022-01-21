@@ -21,7 +21,8 @@
   <stdout URL="file:&out_path;log/&energy;GeV/log_&energy;GeV$JOBID.out" />
 
     <output fromScratch="*.root" toURL="file:&out_path;output/&energy;GeV/" />
-    <output fromScratch="ana/ampt.dat" toURL="file:&out_path;output/&energy;GeV/ampt_$JOBID.dat" />
+    <output fromScratch="ampt.dat" toURL="file:&out_path;output/&energy;GeV/ampt_$JOBID.dat" />
+    <output fromScratch="ana/" toURL="file:&out_path;output/&energy;GeV/" />
  
   <Generator>
     <Location>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/log/7GeV/</Location>
