@@ -125,7 +125,7 @@ c
       if(isoft.eq.1) then
          amptvn = '1.25t4cu (Default)'
       elseif(isoft.eq.4) then
-         amptvn = '2.25t4cu (StringMelting)'
+         amptvn = '2.25t5cu (StringMelting)'
       else
          amptvn = 'Test-Only'
       endif
@@ -135,7 +135,7 @@ c
      &11X,'##################################################'/1X,
      &10X,'#      AMPT (A Multi-Phase Transport) model      #'/1X,
      &10X,'#          Version ',a25,                  '     #'/1X,
-     &10X,'#                06/26/2018                      #'/1X,
+     &10X,'#                01/18/2022                      #'/1X,
      &10X,'##################################################'/1X,
      &10X,' ')
 c     when ihjsed=11: use environment variable at run time for HIJING nseed:

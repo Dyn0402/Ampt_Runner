@@ -1,6 +1,16 @@
 AMPT Users' Guide
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+1/18/2022 test version v1.25t4cu/v2.25t5cu (sent to Gang Wang):
+     * Moved (anti)baryon coalescence in front of meson coalescence;
+       this helps to minimize the dN/deta asymmetry of antibaryons in 
+       low-energy AMPT-SM events for symmetric collisions. 
+       Note: this temporary fix will be eventually replaced with 
+       the new quark coalescence of nucl-th/1703.02673; 
+       the source of this asymmetry problem is found to be a small asymmetry
+       in dN/dy of initial hadrons from HIJING (the AMPT initial condition).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 6/26/2018 test version v1.25t4cu/v2.25t4cu (sent to Gang Wang & P. Tribedy):
      * Added deformed Uranium U238 (Z=92,A=238) as projectile and/or target; 
        density distribution taken from Masui et al. PLB 679, 440 (2009).
