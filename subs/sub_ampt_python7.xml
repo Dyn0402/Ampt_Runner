@@ -3,7 +3,7 @@
 <!ENTITY energy "7">
 <!ENTITY out_path "/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/">
 ]>
-<job simulateSubmission="false" nProcesses="350">
+<job simulateSubmission="false" nProcesses="500">
   
   <command>
       /star/u/dneff/Software/python3/Python-3.7.3/python run_ampt.py $JOBID
