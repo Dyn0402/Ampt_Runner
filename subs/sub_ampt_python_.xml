@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE note [
+<!ENTITY out_path "/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/">
+]>
+<job simulateSubmission="false" nProcesses="11000">
+  
+  <command>
+      /star/u/dneff/Software/python3/Python-3.7.3/python run_ampt.py $JOBID
+  </command>
+
+  
+  <SandBox>
+    <Package>
+      <File>file:/star/u/dneff/git/Ampt_Runner/Code_276pbpb/</File>
+      <File>file:/star/u/dneff/git/QGP_Scripts/run_ampt.py</File>
+    </Package>
+  </SandBox>
+
+  <stderr URL="file:&out_path;log/2-7TeV_PbPb/err_2-7TeV_PbPb$JOBID.err"></stderr>
+  <stdout URL="file:&out_path;log/2-7TeV_PbPb/log_2-7TeV_PbPb$JOBID.out" />
+
+    <output fromScratch="*.root" toURL="file:&out_path;output/2-7TeV_PbPb/" />
+ 
+  <Generator>
+    <Location>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/log/2-7TeV_PbPb/</Location>
+    <ScriptLocation>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/script/2-7TeV_PbPb/</ScriptLocation>
+    <ListLocation>/gpfs01/star/pwg/dneff/data/AMPT/dylan_run/list/2-7TeV_PbPb/</ListLocation>
+  </Generator>
+  
+</job>
