@@ -98,6 +98,11 @@ int makeAmptroot(string run_id)
 	{// event loop
 		infile>>evn>>tn>>nov>>imp>>npp>>npt>>nesp>>ninesp>>nest>>ninest;
 
+		cout << "New event: " << evn << endl;
+
+		if (infile.eof()) { cout << "end of file true. event number " << evn << endl; }
+		else { cout << "end of file false. event number " << evn << endl; }
+
 		if(infile.eof())  break;
 
 		event += 1;
@@ -110,6 +115,8 @@ int makeAmptroot(string run_id)
 		for(int j=0;j<nov;j++)                          //particle loop
 		{
 			infile>>pid>>px>>py>>pz>>mass>>x>>y>>z>>t;
+
+			cout << "New particle: " << pid << " " << px << " " << py << " " << pz << endl;
 
 			px_vec.push_back(px);
 			py_vec.push_back(py);
