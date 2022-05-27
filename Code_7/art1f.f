@@ -99,8 +99,6 @@ c....................art1f.f
 *         LB(I) IS USED TO LABEL PARTICLE'S CHARGE STATE
 *    
 *         LB(I)   =
-clin-8/06/10 ctest on for charge conservation: add isospin states:
-c                -33 anti-K*0
 clin-11/07/00:
 *                -30 K*-
 clin-8/29/00
@@ -137,8 +135,6 @@ cbali2/7/99 end
 *                   16 sigma0  sigma associated K+ production, sigma0 and 
 *                   17 sigma+  sigma+ are counted as sigma-
 *                   21 kaon-
-clin-8/06/10 ctest on for charge conservation: add isospin states:
-c                   22 anti-KAON0
 *                   23 KAON+
 *                   24 kaon0
 *                   25 rho-
@@ -148,8 +144,6 @@ c                   22 anti-KAON0
 *                   29 phi
 clin-11/07/00:
 *                  30 K*+
-clin-8/06/10 ctest on for charge conservation: add isospin states:
-c                  33 K*0
 * sp01/03/01
 *                 -14 LAMBDA(bar)
 *                  -15 sigma-(bar)
@@ -192,11 +186,6 @@ clin      PARAMETER     (maxpar=200000,MAXR=50,AMU= 0.9383,
       parameter     (MX=4,MY=4,MZ=8,MPX=4,MPY=4,mpz=10,mpzp=10)
 clin      PARAMETER (MAXP = 14000)
 *----------------------------------------------------------------------*
-clin-ch-6/2016:
-cma-test
-c      common /iblockcounts/ ibc(MAXSTR)
-      common /iblockcounts/ ibc(-1000:20000)
-
       INTEGER   OUTPAR, zta,zpr
       COMMON  /AA/      R(3,MAXSTR)
 cc      SAVE /AA/
@@ -285,7 +274,7 @@ c
 cbz11/16/98end
       common /lastt/itimeh,bimp 
 cc      SAVE /lastt/
-      common/snn/efrm,npart1,npart2
+      common/snn/efrm,npart1,npart2,epsiPz,epsiPt,PZPROJ,PZTARG
 cc      SAVE /snn/
       COMMON/hbt/lblast(MAXSTR),xlast(4,MAXSTR),plast(4,MAXSTR),nlast
 cc      SAVE /hbt/
@@ -556,7 +545,7 @@ cbz11/16/98
                R(J, I) = 0.
                P(J, I) = 0.
  1015       CONTINUE
-            E(I)=0.
+            E(I) = 0.
             LB(I) = 0
 cbz3/25/00
             ID(I)=0
@@ -592,7 +581,6 @@ cbz12/22/98end
 cbz11/16/98end
         
       DO 10000 NT = 1,NTMAX
-
 *TEMPORARY PARTICLE COUNTERS
 *4.2 PION COUNTERS : LP1,LP2 AND LP3 ARE THE NO. OF P+,P0 AND P-
       LP1=0
@@ -746,8 +734,7 @@ c     &                           RNNK+RDDK+RNDK+RPN+Rppk
 C for kaons, if there is a potential
 C CALCULATE THE ENERGY OF THE KAON ACCORDING TO THE IMPULSE APPROXIMATION
 C REFERENCE: B.A. LI AND C.M. KO, PHYS. REV. C 54 (1996) 3283. 
-cma-ch-05/16        if(kpoten.ne.0.and.lb(i).eq.23)then
-        if(kpoten.ne.0.and.(lb(i).eq.23 .or.lb(i).eq.24))then
+         if(kpoten.ne.0.and.lb(i).eq.23)then
              den=0.
               IX = NINT( R(1,I) )
               IY = NINT( R(2,I) )
@@ -958,9 +945,7 @@ c     & ABS(IZ) .LT. MAXZ) THEN
        endif
 c*
 c If there is a kaon potential, propogating kaons 
-cma-ch-05/16        if(kpoten.ne.0.and.lb(i).eq.23)then
-        if(kpoten.ne.0.and.(lb(i).eq.23 .or.lb(i).eq.24))then
-
+        if(kpoten.ne.0.and.lb(i).eq.23)then
         den=0.
 clin-4/2008:
 c       IF (ABS(IX) .LT. MAXX .AND. ABS(IY) .LT. MAXX .AND.
@@ -1211,17 +1196,16 @@ c
              elseif(nt .eq. ntmax)then
                go to 1111
              endif
-cma-05/16 we solve to the loss particle problem here
-cma-05/16     &           FT1(NP1, IRUN) .GT. (CT - DT) .AND. 
-clin-ch-6/2016 move the first below from 2 lines above to here:
+c
             DO WHILE (NP1.LE.MULTI1(IRUN).AND.
-     &           FT1(NP1, IRUN) .GT. ((NT-1) * DT) .AND.
+     &           FT1(NP1, IRUN) .GT. ((NT-1) * DT) .AND. 
      &           FT1(NP1, IRUN) .LE. ctlong)
+clin-ma-5/2016 changed the following to above 2nd line to avoid bug 
+c     that leads to loss of hadrons inside ART due to finite accuracy 
+c     [which results in (ct-dt) + dt != ct exactly]:
+c     &           FT1(NP1, IRUN) .GT. (CT - DT) .AND. 
                NP = NP + 1
                UDT = (CT - FT1(NP1, IRUN)) / EE1(NP1, IRUN)
-ctest off write out particles that are read in at each timestep:
-c               write(11,*) nt,np1,ITYP1(NP1, IRUN),PZ1(NP1, IRUN)
-               
 clin-10/28/03 since all unformed hadrons at time ct are read in at nt=ntmax-1, 
 c     their positions should not be propagated to time ct:
                if(nt.eq.(ntmax-1)) then
@@ -1573,12 +1557,6 @@ clin-2/23/03        22 Kaon0Long (converted at the last timestep)
       parameter            (rrkk=0.6,prkk=0.3,srhoks=5.,ESBIN=0.04)
       DIMENSION MASSRN(0:MAXR),RT(3,MAXSTR),PT(3,MAXSTR),ET(MAXSTR)
       DIMENSION LT(MAXSTR), PROT(MAXSTR)
-
-clin-ch-6/2016:
-cma-test
-c      common /iblockcounts/ ibc(MAXSTR)
-      common /iblockcounts/ ibc(-1000:20000)
-
       COMMON   /AA/  R(3,MAXSTR)
 cc      SAVE /AA/
       COMMON   /BB/  P(3,MAXSTR)
@@ -1650,17 +1628,13 @@ cc      SAVE /RNDF77/
       COMMON/FTMAX/ftsv(MAXSTR),ftsvt(MAXSTR, MAXR)
       dimension ftpisv(MAXSTR,MAXR),fttemp(MAXSTR)
       common /dpi/em2,lb2
-      common/phidcy/iphidcy,pttrig,ntrig,maxmiss
+      common/phidcy/iphidcy,pttrig,ntrig,maxmiss,ipi0dcy
 clin-5/2008:
       DIMENSION dptemp(MAXSTR)
       common /para8/ idpert,npertd,idxsec
       COMMON /dpert/dpertt(MAXSTR,MAXR),dpertp(MAXSTR),dplast(MAXSTR),
      1     dpdcy(MAXSTR),dpdpi(MAXSTR,MAXR),dpt(MAXSTR, MAXR),
      2     dpp1(MAXSTR,MAXR),dppion(MAXSTR,MAXR)
-clin-6/2013:
-      COMMON/charge/netq,ianti
-clin-4/2018-new:
-      COMMON/bbmm/xcorr,f4piom,f4rr
 c
       real zet(-45:45)
       SAVE   
@@ -1778,12 +1752,15 @@ c         write(91,*) 'A:',nt,enetot,massr(irun),bimp
          DO 800 J1 = J10,MASSR(IRUN)
             I1  = J1 + MSUM
 * E(I)=0 are for pions having been absorbed or photons which do not enter here:
-            IF(E(I1).EQ.0.)GO TO 800
-
+clin-4/2012 option of pi0 decays:
+c            IF(E(I1).EQ.0.)GO TO 800
+            IF(E(I1).EQ.0.)GO TO 798
 c     To include anti-(Delta,N*1440 and N*1535):
 c          IF ((LB(I1) .LT. -13 .OR. LB(I1) .GT. 28)
 c     1         .and.iabs(LB(I1)) .ne. 30 ) GOTO 800
-            IF (LB(I1) .LT. -45 .OR. LB(I1) .GT. 45) GOTO 800
+clin-4/2012 option of pi0 decays:
+c            IF (LB(I1) .LT. -45 .OR. LB(I1) .GT. 45) GOTO 800
+            IF (LB(I1) .LT. -45 .OR. LB(I1) .GT. 45) GOTO 798
             X1  = R(1,I1)
             Y1  = R(2,I1)
             Z1  = R(3,I1)
@@ -1796,17 +1773,16 @@ c     1         .and.iabs(LB(I1)) .ne. 30 ) GOTO 800
             ID1 = ID(I1)
             LB1 = LB(I1)
 
-clin-8/03/10 ctest on for charge conservation: turn off this conversion:
 c     generate k0short and k0long from K+ and K- at the last timestep:
-c            if(nt.eq.ntmax.and.(lb1.eq.21.or.lb1.eq.23)) then
-c               pk0=RANART(NSEED)
-c               if(pk0.lt.0.25) then
-c                  LB(I1)=22
-c               elseif(pk0.lt.0.50) then
-c                  LB(I1)=24
-c               endif
-c               LB1=LB(I1)
-c            endif
+            if(nt.eq.ntmax.and.(lb1.eq.21.or.lb1.eq.23)) then
+               pk0=RANART(NSEED)
+               if(pk0.lt.0.25) then
+                  LB(I1)=22
+               elseif(pk0.lt.0.50) then
+                  LB(I1)=24
+               endif
+               LB1=LB(I1)
+            endif
             
 clin-8/07/02 these particles don't decay strongly, so skip decay routines:     
 c            IF( (lb1.ge.-2.and.lb1.le.5) .OR. lb1.eq.31 .OR.
@@ -1815,13 +1791,13 @@ c     &           (iabs(lb1).ge.40.and.iabs(lb1).le.45) .or.
 c     &           lb1.eq.31)GO TO 1 
 c     only decay K0short when iksdcy=1:
             if(lb1.eq.0.or.lb1.eq.25.or.lb1.eq.26.or.lb1.eq.27
-cma-ch-05/16     &           .or.lb1.eq.28.or.lb1.eq.29.or.iabs(lb1).eq.30
      &           .or.lb1.eq.28.or.lb1.eq.29.or.iabs(lb1).eq.30
-     &           .or.iabs(lb1).eq.33
-
      &           .or.(iabs(lb1).ge.6.and.iabs(lb1).le.13)
      &           .or.(iksdcy.eq.1.and.lb1.eq.24)
-     &           .or.iabs(lb1).eq.16) then
+     &           .or.iabs(lb1).eq.16
+     &           .or.(ipi0dcy.eq.1.and.nt.eq.ntmax.and.lb1.eq.4)) then
+clin-4/2012-above for option of pi0 decay:
+c     &           .or.iabs(lb1).eq.16) then
                continue
             else
                goto 1
@@ -1833,8 +1809,7 @@ cma-ch-05/16     &           .or.lb1.eq.28.or.lb1.eq.29.or.iabs(lb1).eq.30
              wid=0.00841
          ELSEIF(lb1.eq.29) then
              wid=0.00443
-cma-ch-05/16          ELSEIF(iabs(LB1).eq.30) then
-          ELSEIF(iabs(LB1).eq.30.or.iabs(LB1).eq.33) then
+          ELSEIF(iabs(LB1).eq.30) then
              WID=0.051
          ELSEIF(lb1.eq.0) then
              wid=1.18e-6
@@ -1855,6 +1830,9 @@ cc             WID=0.40
              WID=W1440(EM1)
           ELSEIF((iabs(LB1).EQ.12).OR.(iabs(LB1).EQ.13)) then
              WID=W1535(EM1)
+clin-4/2012 for option of pi0 decay:
+          ELSEIF(ipi0dcy.eq.1.and.nt.eq.ntmax.and.lb1.eq.4) then
+             wid=7.85e-9
           ENDIF
 
 * if it is the last time step, FORCE all resonance to strong-decay
@@ -1863,6 +1841,10 @@ cc             WID=0.40
              pdecay=1.1
 clin-5b/2008 forbid phi decay at the end of hadronic cascade:
              if(iphidcy.eq.0.and.iabs(LB1).eq.29) pdecay=0.
+ctest off clin-9/2012 forbid long-time decays (eta,omega,K*,Sigma0)
+c     at the end of hadronic cascade to analyze freezeout time:
+c             if(LB1.eq.0.or.LB1.eq.28.or.iabs(LB1).eq.30
+c     1            .or.iabs(LB1).eq.16) pdecay=0.
           else
              T0=0.19733/WID
              GFACTR=E1/EM1
@@ -1874,10 +1856,6 @@ clin-5b/2008 forbid phi decay at the end of hadronic cascade:
              ENDIF
           endif
           XDECAY=RANART(NSEED)
-
-clin-8/03/10 ctest on for charge conservation: turn off all decays for now:
-cma-test open all decays
-cma-test          pdecay=-1.1
 
 cc dilepton production from rho0, omega, phi decay 
 cc        if(lb1.eq.26 .or. lb1.eq.28 .or. lb1.eq.29)
@@ -1895,13 +1873,13 @@ clin-10/28/03 keep formation time of hadrons unformed at nt=ntmax-1:
              zfnl=z1
 * use PYTHIA to perform decays of eta,rho,omega,phi,K*,(K0s) and Delta:
              if(lb1.eq.0.or.lb1.eq.25.or.lb1.eq.26.or.lb1.eq.27
-cma-ch-05/16     &           .or.lb1.eq.28.or.lb1.eq.29.or.iabs(lb1).eq.30
      &           .or.lb1.eq.28.or.lb1.eq.29.or.iabs(lb1).eq.30
-     &           .or.iabs(lb1).eq.33
-
      &           .or.(iabs(lb1).ge.6.and.iabs(lb1).le.9)
      &           .or.(iksdcy.eq.1.and.lb1.eq.24)
-     &           .or.iabs(lb1).eq.16) then
+     &           .or.iabs(lb1).eq.16
+     &           .or.(ipi0dcy.eq.1.and.nt.eq.ntmax.and.lb1.eq.4)) then
+clin-4/2012 Above for option of pi0 decay:
+c     &           .or.iabs(lb1).eq.16) then
 c     previous rho decay performed in rhodecay():
 c                nnn=nnn+1
 c                call rhodecay(idecay,i1,nnn,iseed)
@@ -1909,7 +1887,10 @@ c
 ctest off record decays of phi,K*,Lambda(1520) resonances:
 c                if(lb1.eq.29.or.iabs(lb1).eq.30) 
 c     1               write(18,112) 'decay',lb1,px1,py1,pz1,am1,nt
-                call resdec(i1,nt,nnn,wid,idecay)
+c
+clin-4/2012 option of pi0 decays:
+c                call resdec(i1,nt,nnn,wid,idecay)
+                call resdec(i1,nt,nnn,wid,idecay,0)
                 p(1,i1)=px1n
                 p(2,i1)=py1n
                 p(3,i1)=pz1n
@@ -1939,8 +1920,7 @@ c                call a1decay(idecay,i1,nnn,iseed,rhomp)
                 LDECAY=LDECAY+1
                 PNSTAR=1.
                 IF(E(I1).GT.1.22)PNSTAR=0.6
-cma-05/16                IF(RANART(NSEED).LE.PNSTAR)THEN
-                IF(RANART(NSEED).LT.PNSTAR)THEN
+                IF(RANART(NSEED).LE.PNSTAR)THEN
 * (1) DECAY TO SINGLE PION+NUCLEON
                    CALL DECAY(idecay,I1,NNN,ISEED,wid,nt)
                 ELSE
@@ -1975,7 +1955,12 @@ c     1            .iabs(lb1).eq.12.or.iabs(lb1).eq.13)) then
                 elseif(lb(i1).eq.0) then
                    wid=1.18e-6
                 elseif(lb(i1).eq.24.and.iksdcy.eq.1) then
-                   wid=7.36e-17
+clin-4/2012 corrected K0s decay width:
+c                   wid=7.36e-17
+                   wid=7.36e-15
+clin-4/2012 option of pi0 decays:
+                elseif(ipi0dcy.eq.1.and.lb(i1).eq.4) then
+                   wid=7.85e-9
                 else
                    goto 9000
                 endif
@@ -1985,7 +1970,9 @@ c     1            .iabs(lb1).eq.12.or.iabs(lb1).eq.13)) then
                 PZ1=P(3,I1)
                 EM1=E(I1)
                 E1=SQRT(EM1**2+PX1**2+PY1**2+PZ1**2)
-                call resdec(i1,nt,nnn,wid,idecay)
+clin-4/2012 option of pi0 decays:
+c                call resdec(i1,nt,nnn,wid,idecay)
+                call resdec(i1,nt,nnn,wid,idecay,0)
                 p(1,i1)=px1n
                 p(2,i1)=py1n
                 p(3,i1)=pz1n
@@ -1997,12 +1984,38 @@ clin-5/2008:
                 dpertp(i1)=dp1n
              endif
 
+c     Decay daughter of the above decay in lb(i1) may be a pi0:
+             if(nt.eq.ntmax.and.ipi0dcy.eq.1.and.lb(i1).eq.4) then
+                wid=7.85e-9
+                LB1=LB(I1)
+                PX1=P(1,I1)
+                PY1=P(2,I1)
+                PZ1=P(3,I1)
+                EM1=E(I1)
+                E1=SQRT(EM1**2+PX1**2+PY1**2+PZ1**2)
+                call resdec(i1,nt,nnn,wid,idecay,0)
+                p(1,i1)=px1n
+                p(2,i1)=py1n
+                p(3,i1)=pz1n
+                R(1,i1)=xfnl
+                R(2,i1)=yfnl
+                R(3,i1)=zfnl
+                tfdcy(i1)=tfnl
+                dpertp(i1)=dp1n
+             endif
+
 * negelecting the Pauli blocking at high energies
- 9000        go to 800
+clin-4/2012 option of pi0 decays:
+c 9000        go to 800
+ 9000        go to 798
+
           ENDIF
 * LOOP OVER ALL PSEUDOPARTICLES 2 IN THE SAME RUN
 * SAVE ALL THE COORDINATES FOR POSSIBLE CHANGE IN THE FOLLOWING COLLISION
- 1        if(nt.eq.ntmax)go to 800
+clin-4/2012 option of pi0 decays:
+c 1        if(nt.eq.ntmax)go to 800
+ 1        if(nt.eq.ntmax)go to 798
+
           X1 = R(1,I1)
           Y1 = R(2,I1)
           Z1 = R(3,I1)
@@ -2013,8 +2026,8 @@ c
             IF(E(I2).EQ.0.) GO TO 600
 clin-5/2008 in case the first particle is already destroyed:
             IF(E(I1).EQ.0.) GO TO 800
+clin-4/2012 option of pi0 decays:
             IF (LB(I2) .LT. -45 .OR. LB(I2) .GT. 45) GOTO 600
-            nnnini=nnn
 clin-7/26/03 improve speed
             X2=R(1,I2)
             Y2=R(2,I2)
@@ -2073,39 +2086,10 @@ clin-2/26/03 ctest off check energy conservation after each binary search:
             pxini=P(1,I1)+P(1,I2)
             pyini=P(2,I1)+P(2,I2)
             pzini=P(3,I1)+P(3,I2)
+            nnnini=nnn
 c
 clin-4/30/03 initialize value:
             iblock=0
-clin-6/2013 for charge conservation:
-            ianti=0
-            if((lb(i1).lt.0.and.lb(i1).ne.-30.and.lb(i1).ne.-33).or.
-     1           (lb(i2).lt.0.and.lb(i2).ne.-30.and.lb(i2).ne.-33)) 
-     2           ianti=1
-            if(iabs(lb(i1)).eq.42.and.iabs(lb(i2)).eq.42) then
-               netq=ISIGN(1,lb(i1))+ISIGN(1,lb(i2))
-            elseif(iabs(lb(i1)).eq.42) then
-               netq=ISIGN(1,lb(i1))+LUCHGE(INVFLV(lb(i2)))/3
-            elseif(iabs(lb(i2)).eq.42) then
-               netq=LUCHGE(INVFLV(lb(i1)))/3+ISIGN(1,lb(i2))
-            else
-               netq=LUCHGE(INVFLV(lb(i1)))/3+LUCHGE(INVFLV(lb(i2)))/3
-            endif
-clin-6/2013: check baryon # conservation:
-            netsini=0
-            netsini=nstrange(lb(i1))+nstrange(lb(i2))
-            netbini=0
-            if(iabs(INVFLV(lb(i1))).gt.1000
-     1           .and.iabs(INVFLV(lb(i1))).lt.10000) then
-               netbini=netbini+ISIGN(1,INVFLV(lb(i1)))
-            elseif(iabs(INVFLV(lb(i1))).eq.42) then
-               netbini=netbini+ISIGN(2,lb(i1))
-            endif
-            if(iabs(INVFLV(lb(i2))).gt.1000
-     1           .and.iabs(INVFLV(lb(i2))).lt.10000) then
-               netbini=netbini+ISIGN(1,INVFLV(lb(i2)))
-            elseif(iabs(INVFLV(lb(i2))).eq.42) then
-               netbini=netbini+ISIGN(2,lb(i2))
-            endif
 c
 * TO SAVE COMPUTING TIME we do the following
 * (1) make a ROUGH estimate to see whether particle i2 will collide with
@@ -2115,21 +2099,18 @@ c
 * interaction distance DELTR0=2.6
 * for ppbar production from meson (pi rho omega) interactions:
 c
-clin-cma-4/2018 To make sure cross section does not exceed pi*deltr0**2,
-c     we use a constant large deltra0 value (~no effect on speed):
-c            DELTR0=3.
-            DELTR0=15.
-c
-c        if( (iabs(lb1).ge.14.and.iabs(lb1).le.17) .or.
-c     &      (iabs(lb1).ge.30.and.iabs(lb1).le.45) ) DELTR0=5.0
-c        if( (iabs(lb2).ge.14.and.iabs(lb2).le.17) .or.
-c     &      (iabs(lb2).ge.30.and.iabs(lb2).le.45) ) DELTR0=5.0
-c            if(lb1.eq.28.and.lb2.eq.28) DELTR0=4.84
+            DELTR0=3.
+        if( (iabs(lb1).ge.14.and.iabs(lb1).le.17) .or.
+     &      (iabs(lb1).ge.30.and.iabs(lb1).le.45) ) DELTR0=5.0
+        if( (iabs(lb2).ge.14.and.iabs(lb2).le.17) .or.
+     &      (iabs(lb2).ge.30.and.iabs(lb2).le.45) ) DELTR0=5.0
+
+            if(lb1.eq.28.and.lb2.eq.28) DELTR0=4.84
 clin-10/08/00 to include pi pi -> rho rho:
             if((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.3.and.lb2.le.5)) then
                E2=SQRT(EM2**2+PX2**2+PY2**2+PZ2**2)
          spipi=(e1+e2)**2-(px1+px2)**2-(py1+py2)**2-(pz1+pz2)**2
-c               if(spipi.ge.(4*0.77**2)) DELTR0=3.5
+               if(spipi.ge.(4*0.77**2)) DELTR0=3.5
             endif
 
 c khyperon
@@ -2138,74 +2119,44 @@ c khyperon
 
 * K(K*) + Kbar(K*bar) scattering including 
 *     K(K*) + Kbar(K*bar) --> phi + pi(rho,omega) and pi pi(rho,omega)
-clin-ch-5/2016:
-c       if(lb1.eq.21.and.lb2.eq.23)go to 3699
-c       if(lb2.eq.21.and.lb1.eq.23)go to 3699
-c       if(lb1.eq.30.and.lb2.eq.21)go to 3699
-c       if(lb2.eq.30.and.lb1.eq.21)go to 3699
-c       if(lb1.eq.-30.and.lb2.eq.23)go to 3699
-c       if(lb2.eq.-30.and.lb1.eq.23)go to 3699
-c       if(lb1.eq.-30.and.lb2.eq.30)go to 3699
-c       if(lb2.eq.-30.and.lb1.eq.30)go to 3699
-       if((lb1.eq.21.or.lb1.eq.22).and.
-     1           (lb2.eq.23.or.lb2.eq.24))go to 3699
-       if((lb2.eq.21.or.lb2.eq.22).and.
-     1      (lb1.eq.23.or.lb1.eq.24))go to 3699
-       if((lb1.eq.30.or.lb1.eq.33).and.
-     1      (lb2.eq.21.or.lb2.eq.22))go to 3699
-cma-ch-05/16
-       if((lb2.eq.30 .or. lb2.eq.33).and.
-     1      (lb1.eq.21 .or. lb1.eq.22))go to 3699
-       if((lb1.eq.-30 .or. lb1.eq.-33).and.
-     1      (lb2.eq.23 .or. lb2.eq.24))go to 3699
-       if((lb2.eq.-30 .or. lb2.eq.-33).and.
-     1      (lb1.eq.23 .or. lb1.eq.24))go to 3699
-       if((lb1.eq.-30 .or. lb1.eq.-33).and.
-     1      (lb2.eq.30 .or. lb2.eq.33))go to 3699
-       if((lb2.eq.-30 .or. lb2.eq.-33).and.
-     1      (lb1.eq.30 .or. lb1.eq.33))go to 3699
+       if(lb1.eq.21.and.lb2.eq.23)go to 3699
+       if(lb2.eq.21.and.lb1.eq.23)go to 3699
+       if(lb1.eq.30.and.lb2.eq.21)go to 3699
+       if(lb2.eq.30.and.lb1.eq.21)go to 3699
+       if(lb1.eq.-30.and.lb2.eq.23)go to 3699
+       if(lb2.eq.-30.and.lb1.eq.23)go to 3699
+       if(lb1.eq.-30.and.lb2.eq.30)go to 3699
+       if(lb2.eq.-30.and.lb1.eq.30)go to 3699
 c
 clin-12/15/00
 c     kaon+rho(omega,eta) collisions:
-cma-ch-05/16      if(lb1.eq.21.or.lb1.eq.23) then
-      if(lb1.eq.21.or.lb1.eq.23.or.
-     1  lb1.eq.22.or.lb1.eq.24) then
+      if(lb1.eq.21.or.lb1.eq.23) then
          if(lb2.eq.0.or.(lb2.ge.25.and.lb2.le.28)) then
             go to 3699
          endif
-cma-ch-05/16      elseif(lb2.eq.21.or.lb2.eq.23) then
-      elseif(lb2.eq.21.or.lb2.eq.23.or.
-     1  lb2.eq.22.or.lb2.eq.24) then
+      elseif(lb2.eq.21.or.lb2.eq.23) then
          if(lb1.eq.0.or.(lb1.ge.25.and.lb1.le.28)) then
             goto 3699
          endif
       endif
 
 clin-8/14/02 K* (pi, rho, omega, eta) collisions:
-cma-ch-05/16      if(iabs(lb1).eq.30 .and.
-      if((iabs(lb1).eq.30 .or.iabs(lb1).eq.33) .and.
-
+      if(iabs(lb1).eq.30 .and.
      1     (lb2.eq.0.or.(lb2.ge.25.and.lb2.le.28)
      2     .or.(lb2.ge.3.and.lb2.le.5))) then
          go to 3699
-cma-ch-05/16      elseif(iabs(lb2).eq.30 .and.
-      elseif((iabs(lb2).eq.30 .or.iabs(lb2).eq.33) .and.
-
+      elseif(iabs(lb2).eq.30 .and.
      1        (lb1.eq.0.or.(lb1.ge.25.and.lb1.le.28)
      2        .or.(lb1.ge.3.and.lb1.le.5))) then
          goto 3699
 clin-8/14/02-end
 c K*/K*-bar + baryon/antibaryon collisions:
-cma-ch-05/16        elseif( iabs(lb1).eq.30 .and.
-        elseif( (iabs(lb1).eq.30 .or.iabs(lb1).eq.33) .and.
-
+        elseif( iabs(lb1).eq.30 .and.
      1     (iabs(lb2).eq.1.or.iabs(lb2).eq.2.or.
      2     (iabs(lb2).ge.6.and.iabs(lb2).le.13)) )then
               go to 3699
            endif
-cma-ch-05/16         if( iabs(lb2).eq.30 .and.
-         if( (iabs(lb2).eq.30 .or.iabs(lb2).eq.33) .and.
-
+         if( iabs(lb2).eq.30 .and.
      1         (iabs(lb1).eq.1.or.iabs(lb1).eq.2.or.
      2         (iabs(lb1).ge.6.and.iabs(lb1).le.13)) )then
                 go to 3699
@@ -2214,17 +2165,11 @@ cma-ch-05/16         if( iabs(lb2).eq.30 .and.
 c** K+ + B-bar  --> La(Si)-bar + pi
 * K^- and antibaryons, note K^- and baryons are included in newka():
 * note that we fail to satisfy charge conjugation for these cross sections:
-cma-ch-05/16        if((lb1.eq.23.or.lb1.eq.21).and.
-        if((lb1.eq.23.or.lb1.eq.21
-     1      .or.lb1.eq.24.or.lb1.eq.22).and.
-
+        if((lb1.eq.23.or.lb1.eq.21).and.
      1       (iabs(lb2).eq.1.or.iabs(lb2).eq.2.or.
      2       (iabs(lb2).ge.6.and.iabs(lb2).le.13))) then
            go to 3699
-cma-ch-05/16        elseif((lb2.eq.23.or.lb2.eq.21).and.
-        elseif((lb2.eq.23.or.lb2.eq.21
-     1       .or.lb2.eq.24.or.lb2.eq.22).and.
-
+        elseif((lb2.eq.23.or.lb2.eq.21).and.
      1       (iabs(lb1).eq.1.or.iabs(lb1).eq.2.or.
      2       (iabs(lb1).ge.6.and.iabs(lb1).le.13))) then
            go to 3699
@@ -2247,11 +2192,11 @@ cma-ch-05/16        elseif((lb2.eq.23.or.lb2.eq.21).and.
 * anti-baryon on baryons
         if((lb1.eq.-1.or.lb1.eq.-2.or.(lb1.ge.-13.and.lb1.le.-6))
      1 .and.(lb2.eq.1.or.lb2.eq.2.or.(lb2.ge.6.and.lb2.le.13))) then
-c            DELTR0=RPPMAX
+            DELTR0 = RPPMAX
             GOTO 2699
        else if((lb2.eq.-1.or.lb2.eq.-2.or.(lb2.ge.-13.and.lb2.le.-6))
      1 .and.(lb1.eq.1.or.lb1.eq.2.or.(lb1.ge.6.and.lb1.le.13))) then
-c            DELTR0=RPPMAX
+            DELTR0 = RPPMAX
             GOTO 2699
          END IF
 
@@ -2263,12 +2208,12 @@ clin-9/2008 maximum sigma~2810mb for deuteron+nucleon elastic collisions:
          IF (iabs(LB1).EQ.42.or.iabs(LB2).EQ.42) THEN
             ilb1=iabs(LB1)
             ilb2=iabs(LB2)
-c            if((ILB1.GE.1.AND.ILB1.LE.2)
-c     1           .or.(ILB1.GE.6.AND.ILB1.LE.13)
-c     2           .or.(ILB2.GE.1.AND.ILB2.LE.2)
-c     3           .or.(ILB2.GE.6.AND.ILB2.LE.13)) then
-c               if((lb1*lb2).gt.0) deltr0=9.5
-c            endif
+            if((ILB1.GE.1.AND.ILB1.LE.2)
+     1           .or.(ILB1.GE.6.AND.ILB1.LE.13)
+     2           .or.(ILB2.GE.1.AND.ILB2.LE.2)
+     3           .or.(ILB2.GE.6.AND.ILB2.LE.13)) then
+               if((lb1*lb2).gt.0) deltr0=9.5
+            endif
          ENDIF
 c
         if( (iabs(lb1).ge.40.and.iabs(lb1).le.45) .or. 
@@ -2276,14 +2221,10 @@ c
 c
 c* phi channel --> elastic + inelastic scatt.  
          IF( (lb1.eq.29 .and.((lb2.ge.1.and.lb2.le.13).or.  
-cma-ch-05/16     &       (lb2.ge.21.and.lb2.le.28).or.iabs(lb2).eq.30)) .OR.
-     &       (lb2.ge.21.and.lb2.le.28).or.(iabs(lb2).eq.30
-     &      .or.iabs(lb2).eq.33))) .OR.
+     &       (lb2.ge.21.and.lb2.le.28).or.iabs(lb2).eq.30)) .OR.
      &     (lb2.eq.29 .and.((lb1.ge.1.and.lb1.le.13).or.
-cma-ch-05/16     &       (lb1.ge.21.and.lb1.le.28).or.iabs(lb1).eq.30)) )THEN
-     &       (lb1.ge.21.and.lb1.le.28).or.(iabs(lb1).eq.30
-     &      .or.iabs(lb1).eq.33))) )THEN
-c             DELTR0=3.0
+     &       (lb1.ge.21.and.lb1.le.28).or.iabs(lb1).eq.30)) )THEN
+             DELTR0=3.0
              go to 3699
         endif
 c
@@ -2291,19 +2232,10 @@ c  La/Si, Cas, Om (bar)-meson elastic colln
 * pion vs. La & Ca (bar) coll. are treated in resp. subroutines
 
 * SKIP all other K* RESCATTERINGS
-cma-ch-05/16        If(iabs(lb1).eq.30.or.iabs(lb2).eq.30) go to 400
-        If(iabs(lb1).eq.30.or.iabs(lb2).eq.30
-     &      .or.iabs(lb1).eq.33 .or.iabs(lb2).eq.33) go to 400
+        If(iabs(lb1).eq.30.or.iabs(lb2).eq.30) go to 400
 * SKIP KAON(+) RESCATTERINGS WITH particles other than pions and baryons 
-cma-ch-05/16         If(lb1.eq.23.and.(lb2.lt.1.or.lb2.gt.17))go to 400
-cma-ch-05/16         If(lb2.eq.23.and.(lb1.lt.1.or.lb1.gt.17))go to 400
-
-         If((lb1.eq.23.or.lb1.eq.24)
-     &      .and.(lb2.lt.1.or.lb2.gt.17))go to 400
-clin-4/2018 typo correction:
-c         If((lb2.eq.23.or.lb1.eq.24)
-         If((lb2.eq.23.or.lb2.eq.24)
-     &      .and.(lb1.lt.1.or.lb1.gt.17))go to 400
+         If(lb1.eq.23.and.(lb2.lt.1.or.lb2.gt.17))go to 400
+         If(lb2.eq.23.and.(lb1.lt.1.or.lb1.gt.17))go to 400
 c
 c anti-baryon proccess: B-bar+M, N-bar+R-bar, N-bar+N-bar, R-bar+R-bar
 c  R = (D,N*)
@@ -2327,13 +2259,13 @@ c         go to 400
 
  2699    CONTINUE
 * for baryon-baryon collisions
-c         IF (LB1 .EQ. 1 .OR. LB1 .EQ. 2 .OR. (LB1 .GE. 6 .AND.
-c     &        LB1 .LE. 17)) THEN
-c            IF (LB2 .EQ. 1 .OR. LB2 .EQ. 2 .OR. (LB2 .GE. 6 .AND.
-c     &           LB2 .LE. 17)) THEN
-c               DELTR0=2.
-c            END IF
-c         END IF
+         IF (LB1 .EQ. 1 .OR. LB1 .EQ. 2 .OR. (LB1 .GE. 6 .AND.
+     &        LB1 .LE. 17)) THEN
+            IF (LB2 .EQ. 1 .OR. LB2 .EQ. 2 .OR. (LB2 .GE. 6 .AND.
+     &           LB2 .LE. 17)) THEN
+               DELTR0 = 2.
+            END IF
+         END IF
 c
  3699   RSQARE = (X1-X2)**2 + (Y1-Y2)**2 + (Z1-Z2)**2
         IF (RSQARE .GT. DELTR0**2) GO TO 400
@@ -2347,7 +2279,8 @@ c
             ipz2 = nint(pz2/dpz)
 * FIND MOMENTA OF PARTICLES IN THE CMS OF THE TWO COLLIDING PARTICLES
 * AND THE CMS ENERGY SRT
-          CALL CMS(I1,I2,PCX,PCY,PCZ,SRT)
+            CALL CMS(I1,I2,PCX,PCY,PCZ,SRT)
+
 clin-7/26/03 improve speed
           drmax=dr0max
           call distc0(drmax,deltr0,DT,
@@ -2384,14 +2317,9 @@ clin-9/2008 Deuteron+Baryon or antiDeuteron+antiBaryon elastic collisions:
          ENDIF
 c
 * K+ + (N,N*,D)-bar --> L/S-bar + pi
-clin-4/2018 The following also includes K* + (N,N*,D)-bar --> L/S-bar + pi,
-c     anti-particle channels such as K- + (N,N*,D) --> L/S + pi
-c     are written in newka():
-cma-ch-05/16          if( ((lb1.eq.23.or.lb1.eq.30).and.
-          if( ((lb1.eq.23.or.lb1.eq.30.or.lb1.eq.24.or.lb1.eq.33).and.
+          if( ((lb1.eq.23.or.lb1.eq.30).and.
      &         (lb2.eq.-1.or.lb2.eq.-2.or.(lb2.ge.-13.and.lb2.le.-6))) 
-cma-ch-05/16     &         .OR.((lb2.eq.23.or.lb2.eq.30).and.
-     &     .OR.((lb2.eq.23.or.lb2.eq.30.or.lb2.eq.24.or.lb2.eq.33).and.
+     &         .OR.((lb2.eq.23.or.lb2.eq.30).and.
      &         (lb1.eq.-1.or.lb1.eq.-2.or.(lb1.ge.-13.and.lb1.le.-6))) )
      &         then
              bmass=0.938
@@ -2406,29 +2334,13 @@ c     for K- + (N,N*,D) --> L/S + pi:
              sigela = 0.5 * (AKPEL(PKAON) + AKNEL(PKAON))
              SIGSGM = 1.5 * AKPSGM(PKAON) + AKNSGM(PKAON)
              SIG = sigela + SIGSGM + AKPLAM(PKAON)
-
-cma-ch-04/18 change for iblock=100 (K Delta-bar ->):
-          if( ((lb1.eq.23.or.lb1.eq.30.or.lb1.eq.24.or.lb1.eq.33).and.
-     &         (lb2.ge.-9.and.lb2.le.-6))
-     &     .OR.((lb2.eq.23.or.lb2.eq.30.or.lb2.eq.24.or.lb2.eq.33).and.
-     &         (lb1.ge.-9.and.lb1.le.-6)) )
-     &         then
-             if(iabs(netq).eq.2) then
-                SIG = sigela + SIGSGM
-             else
-                chratio=8./6.
-                SIG = sigela + SIGSGM + AKPLAM(PKAON)*chratio
-             endif
-           endif
-
              if(sig.gt.1.e-7) then
 c     ! K+ + N-bar reactions
                 icase=3
                 brel=sigela/sig
                 brsgm=sigsgm/sig
                 brsig = sig
-clin-6/2013: netcharge is not always +1, since it could be K+ + B-bar:
-                nchrg=1
+                nchrg = 1
                 go to 3555
              endif
              go to 400
@@ -2497,20 +2409,14 @@ c ! lambda-bar + Pi
                if(nchrg.lt.0) sigma0=akNlam(pkaon)
 c                ! sigma-bar + pi
             else
-clin-4/2018 null statements:
 c !K-p or K-D++
-c               if(nchrg.ge.0) sigma0=akPsgm(pkaon)
+               if(nchrg.ge.0) sigma0=akPsgm(pkaon)
 c !K-n or K-D-
-c               if(nchrg.lt.0) sigma0=akNsgm(pkaon)
+               if(nchrg.lt.0) sigma0=akNsgm(pkaon)
                SIGMA0 = 1.5 * AKPSGM(PKAON) + AKNSGM(PKAON)
             endif
             sig=(srt**2-(aka+bmass)**2)*(srt**2-(aka-bmass)**2)/
      &           (srt**2-(em1+em2)**2)/(srt**2-(em1-em2)**2)*sigma0
-clin-4/2018 Note: no rho mesons in initial state, 
-c     & final states have N-bar or Delta-bar but no N*-bar;
-c     cross section to K N-bar and K Delta-bar should be summed
-c     for allowed charge states (nchrg != +-2) but not done,
-c     thus postpone chratio (=9/7) correction for pi Sigma-bar -> K N-bar:
 c ! K0barD++, K-D-
             if(nchrg.eq.-2.or.nchrg.eq.2) sig=2.*sig
 C*     the factor 2 comes from spin of delta, which is 3/2
@@ -2538,45 +2444,30 @@ c                ! PI + La(Si)-bar => elastic included
 *-
          go to 3555
       endif
+      
 ** MULTISTRANGE PARTICLE (Cas,Omega -bar) PRODUCTION - (NON)PERTURBATIVE
 
 * K-/K*0bar + La/Si --> cascade + pi/eta
-cma-ch-04/18-727      if( ((lb1.eq.21.or.lb1.eq.-30).and.(lb2.ge.14.and.lb2.le.17)).OR.
-cma-ch-04/18-727     &  ((lb2.eq.21.or.lb2.eq.-30).and.(lb1.ge.14.and.lb1.le.17)) )then
-      if( ((lb1.eq.21.or.lb1.eq.22.or.lb1.eq.-30 .or.lb1.eq.-33)
-     &  .and.(lb2.ge.14.and.lb2.le.17)).OR.
-     &  ((lb2.eq.21.or.lb2.eq.22.or.lb2.eq.-30 .or.lb2.eq.-33)
-     &  .and.(lb1.ge.14.and.lb1.le.17)) )then
+      if( ((lb1.eq.21.or.lb1.eq.-30).and.(lb2.ge.14.and.lb2.le.17)).OR.
+     &  ((lb2.eq.21.or.lb2.eq.-30).and.(lb1.ge.14.and.lb1.le.17)) )then
           kp = 0
           go to 3455
         endif
 c K+/K*0 + La/Si(bar) --> cascade-bar + pi/eta
-cma-ch-04/18-727      if( ((lb1.eq.23.or.lb1.eq.30).and.(lb2.le.-14.and.lb2.ge.-17)).OR.
-cma-ch-04/18-727     &  ((lb2.eq.23.or.lb2.eq.30).and.(lb1.le.-14.and.lb1.ge.-17)) )then
-      if( ((lb1.eq.23.or.lb1.eq.30.or.lb1.eq.24.or.lb1.eq.33)
-     &  .and.(lb2.le.-14.and.lb2.ge.-17)).OR.
-     &  ((lb2.eq.23.or.lb2.eq.30.or.lb2.eq.24.or.lb2.eq.33)
-     &  .and.(lb1.le.-14.and.lb1.ge.-17)) )then
+      if( ((lb1.eq.23.or.lb1.eq.30).and.(lb2.le.-14.and.lb2.ge.-17)).OR.
+     &  ((lb2.eq.23.or.lb2.eq.30).and.(lb1.le.-14.and.lb1.ge.-17)) )then
           kp = 1
           go to 3455
         endif
 * K-/K*0bar + cascade --> omega + pi
-cma-ch-04/18-727       if( ((lb1.eq.21.or.lb1.eq.-30).and.(lb2.eq.40.or.lb2.eq.41)).OR.
-cma-ch-04/18-727     & ((lb2.eq.21.or.lb2.eq.-30).and.(lb1.eq.40.or.lb1.eq.41)) )then
-       if( ((lb1.eq.21.or.lb1.eq.-30 .or.lb1.eq.22.or.lb1.eq.-33)
-     &  .and.(lb2.eq.40.or.lb2.eq.41)).OR.
-     & ((lb2.eq.21.or.lb2.eq.-30 .or.lb2.eq.22.or.lb2.eq.-33)
-     &  .and.(lb1.eq.40.or.lb1.eq.41)) )then
+       if( ((lb1.eq.21.or.lb1.eq.-30).and.(lb2.eq.40.or.lb2.eq.41)).OR.
+     & ((lb2.eq.21.or.lb2.eq.-30).and.(lb1.eq.40.or.lb1.eq.41)) )then
           kp = 0
           go to 3455
         endif
 * K+/K*0 + cascade-bar --> omega-bar + pi
-cma-ch-04/18-727       if( ((lb1.eq.23.or.lb1.eq.30).and.(lb2.eq.-40.or.lb2.eq.-41)).OR.
-cma-ch-04/18-727     &  ((lb2.eq.23.or.lb2.eq.30).and.(lb1.eq.-40.or.lb1.eq.-41)) )then
-       if( ((lb1.eq.23.or.lb1.eq.30.or.lb1.eq.24.or.lb1.eq.33)
-     &  .and.(lb2.eq.-40.or.lb2.eq.-41)).OR.
-     &  ((lb2.eq.23.or.lb2.eq.30.or.lb2.eq.24.or.lb2.eq.33)
-     &  .and.(lb1.eq.-40.or.lb1.eq.-41)) )then
+       if( ((lb1.eq.23.or.lb1.eq.30).and.(lb2.eq.-40.or.lb2.eq.-41)).OR.
+     &  ((lb2.eq.23.or.lb2.eq.30).and.(lb1.eq.-40.or.lb1.eq.-41)) )then
           kp = 1
           go to 3455
         endif
@@ -2600,19 +2491,11 @@ c
 ***  MULTISTRANGE PARTICLE PRODUCTION  (END)
 
 c* K+ + La(Si) --> Meson + B
-cma-ch-05/16        IF (LB1.EQ.23 .AND. (LB2.GE.14.AND.LB2.LE.17)) GOTO 5699
-cma-ch-05/16        IF (LB2.EQ.23 .AND. (LB1.GE.14.AND.LB1.LE.17)) GOTO 5699
-        IF ((LB1.EQ.23.OR.LB1.EQ.24) .AND.
-     &  (LB2.GE.14.AND.LB2.LE.17)) GOTO 5699
-        IF ((LB2.EQ.23.OR.LB2.EQ.24) .AND.
-     &  (LB1.GE.14.AND.LB1.LE.17)) GOTO 5699
+        IF (LB1.EQ.23 .AND. (LB2.GE.14.AND.LB2.LE.17)) GOTO 5699
+        IF (LB2.EQ.23 .AND. (LB1.GE.14.AND.LB1.LE.17)) GOTO 5699
 c* K- + La(Si)-bar --> Meson + B-bar
-cma-ch-05/16       IF (LB1.EQ.21 .AND. (LB2.GE.-17.AND.LB2.LE.-14)) GOTO 5699
-cma-ch-05/16       IF (LB2.EQ.21 .AND. (LB1.GE.-17.AND.LB1.LE.-14)) GOTO 5699
-       IF ((LB1.EQ.21.OR.LB1.EQ.22) .AND.
-     &  (LB2.GE.-17.AND.LB2.LE.-14)) GOTO 5699
-       IF ((LB2.EQ.21.OR.LB1.EQ.22) .AND.
-     &  (LB1.GE.-17.AND.LB1.LE.-14)) GOTO 5699
+       IF (LB1.EQ.21 .AND. (LB2.GE.-17.AND.LB2.LE.-14)) GOTO 5699
+       IF (LB2.EQ.21 .AND. (LB1.GE.-17.AND.LB1.LE.-14)) GOTO 5699
 
 c La/Si-bar + B --> pi + K+
        IF( (((LB1.eq.1.or.LB1.eq.2).or.(LB1.ge.6.and.LB1.le.13))
@@ -2627,50 +2510,23 @@ c La/Si + B-bar --> pi + K-
 *
 *
 * K(K*) + Kbar(K*bar) --> phi + pi(rho,omega), M + M (M=pi,rho,omega,eta)
-cma-ch-05/16       if(lb1.eq.21.and.lb2.eq.23) go to 8699
-cma-ch-05/16       if(lb2.eq.21.and.lb1.eq.23) go to 8699
-cma-ch-05/16       if(lb1.eq.30.and.lb2.eq.21) go to 8699
-cma-ch-05/16       if(lb2.eq.30.and.lb1.eq.21) go to 8699
-cma-ch-05/16       if(lb1.eq.-30.and.lb2.eq.23) go to 8699
-cma-ch-05/16       if(lb2.eq.-30.and.lb1.eq.23) go to 8699
-cma-ch-05/16       if(lb1.eq.-30.and.lb2.eq.30) go to 8699
-cma-ch-05/16       if(lb2.eq.-30.and.lb1.eq.30) go to 8699
-
-       if((lb1.eq.21.or.lb1.eq.22).and.(lb2.eq.23.or.lb2.eq.24))
-     &  go to 8699
-       if((lb2.eq.21.or.lb2.eq.22).and.(lb1.eq.23.or.lb1.eq.24))
-     &  go to 8699
-       if((lb1.eq.30.or.lb1.eq.33).and.(lb2.eq.21.or.lb2.eq.22))
-     &  go to 8699
-       if((lb2.eq.30.or.lb2.eq.33).and.(lb1.eq.21.or.lb1.eq.22))
-     &  go to 8699
-       if((lb1.eq.-30 .or.lb1 .eq.-33).and.(lb2.eq.23 .or.lb2.eq.24))
-     &  go to 8699
-       if((lb2.eq.-30 .or.lb2 .eq.-33).and.(lb1.eq.23 .or.lb1.eq.24))
-     &  go to 8699
-       if((lb1.eq.-30 .or.lb1 .eq.-33).and.(lb2.eq.30 .or.lb2.eq.33))
-     &  go to 8699
-       if((lb2.eq.-30 .or.lb2 .eq.-33).and.(lb1.eq.30 .or.lb1.eq.33))
-     &  go to 8699
-clin-ch-6/2016: include neutral K and K*:
+       if(lb1.eq.21.and.lb2.eq.23) go to 8699
+       if(lb2.eq.21.and.lb1.eq.23) go to 8699
+       if(lb1.eq.30.and.lb2.eq.21) go to 8699
+       if(lb2.eq.30.and.lb1.eq.21) go to 8699
+       if(lb1.eq.-30.and.lb2.eq.23) go to 8699
+       if(lb2.eq.-30.and.lb1.eq.23) go to 8699
+       if(lb1.eq.-30.and.lb2.eq.30) go to 8699
+       if(lb2.eq.-30.and.lb1.eq.30) go to 8699
 c* (K,K*)-bar + rho(omega) --> phi +(K,K*)-bar, piK and elastic
-c       IF( ((lb1.eq.23.or.lb1.eq.21.or.iabs(lb1).eq.30) .and.
-c     &      (lb2.ge.25.and.lb2.le.28)) .OR.
-c     &     ((lb2.eq.23.or.lb2.eq.21.or.iabs(lb2).eq.30) .and.
-c     &      (lb1.ge.25.and.lb1.le.28)) ) go to 8799
-       IF( ((lb1.eq.23.or.lb1.eq.21.or.iabs(lb1).eq.30
-     1      .or.lb1.eq.24.or.lb1.eq.22.or.iabs(lb1).eq.33) .and.
+       IF( ((lb1.eq.23.or.lb1.eq.21.or.iabs(lb1).eq.30) .and.
      &      (lb2.ge.25.and.lb2.le.28)) .OR.
-     &     ((lb2.eq.23.or.lb2.eq.21.or.iabs(lb2).eq.30
-     1      .or.lb2.eq.24.or.lb2.eq.22.or.iabs(lb2).eq.33).and.
+     &     ((lb2.eq.23.or.lb2.eq.21.or.iabs(lb2).eq.30) .and.
      &      (lb1.ge.25.and.lb1.le.28)) ) go to 8799
+c
 c* K*(-bar) + pi --> phi + (K,K*)-bar
-c       IF( (iabs(lb1).eq.30.and.(lb2.ge.3.and.lb2.le.5)) .OR.
-c     &     (iabs(lb2).eq.30.and.(lb1.ge.3.and.lb1.le.5)) )go to 8799
-       IF( ((iabs(lb1).eq.30.or.iabs(lb1).eq.33)
-     1      .and.(lb2.ge.3.and.lb2.le.5)) .OR.
-     &     ((iabs(lb2).eq.30.or.iabs(lb2).eq.33)
-     1      .and.(lb1.ge.3.and.lb1.le.5)) )go to 8799
+       IF( (iabs(lb1).eq.30.and.(lb2.ge.3.and.lb2.le.5)) .OR.
+     &     (iabs(lb2).eq.30.and.(lb1.ge.3.and.lb1.le.5)) )go to 8799
 *
 c
 c* phi + N --> pi+N(D),  rho+N(D),  K+ +La
@@ -2682,15 +2538,9 @@ c* phi + D --> pi+N(D),  rho+N(D)
 c
 c* phi + (pi,rho,ome,K,K*-bar) --> K+K, K+K*, K*+K*, (pi,rho,omega)+(K,K*-bar)
        IF( (lb1.eq.29 .and.((lb2.ge.3.and.lb2.le.5).or.
-cma-ch-05/16     &      (lb2.ge.21.and.lb2.le.28).or.iabs(lb2).eq.30)) .OR.
-     &      (lb2.ge.21.and.lb2.le.28).or.
-     &      (iabs(lb2).eq.30.or.iabs(lb2).eq.33))) .OR.
-
+     &      (lb2.ge.21.and.lb2.le.28).or.iabs(lb2).eq.30)) .OR.
      &     (lb2.eq.29 .and.((lb1.ge.3.and.lb1.le.5).or.
-cma-ch-05/16     &      (lb1.ge.21.and.lb1.le.28).or.iabs(lb1).eq.30)) )THEN
-     &      (lb1.ge.21.and.lb1.le.28).or.
-     &      (iabs(lb1).eq.30 .or.iabs(lb1).eq.33))) )THEN
-
+     &      (lb1.ge.21.and.lb1.le.28).or.iabs(lb1).eq.30)) )THEN
              go to 7444
       endif
 *
@@ -2701,28 +2551,15 @@ c
      &    .and.((lb2.ge.25.and.lb2.le.29).or.lb2.eq.0) )go to 888
       if( ((iabs(lb2).ge.14.and.iabs(lb2).le.17).or.iabs(lb2).ge.40)
      &    .and.((lb1.ge.25.and.lb1.le.29).or.lb1.eq.0) )go to 888
-
+c
 c K+/K* (N,R)  OR   K-/K*- (N,R)-bar  elastic scatt
-cma-ch-05/16        if( ((lb1.eq.23.or.lb1.eq.30).and.(lb2.eq.1.or.lb2.eq.2.or.
-cma-ch-05/16     &         (lb2.ge.6.and.lb2.le.13))) .OR.
-cma-ch-05/16     &      ((lb2.eq.23.or.lb2.eq.30).and.(lb1.eq.1.or.lb1.eq.2.or.
-cma-ch-05/16     &         (lb1.ge.6.and.lb1.le.13))) ) go to 888
-cma-ch-05/16        if( ((lb1.eq.21.or.lb1.eq.-30).and.(lb2.eq.-1.or.lb2.eq.-2.or.
-cma-ch-05/16     &       (lb2.ge.-13.and.lb2.le.-6))) .OR.
-cma-ch-05/16     &      ((lb2.eq.21.or.lb2.eq.-30).and.(lb1.eq.-1.or.lb1.eq.-2.or.
-cma-ch-05/16     &       (lb1.ge.-13.and.lb1.le.-6))) ) go to 888
-
-        if( ((lb1.eq.23.or.lb1.eq.30.or.lb1.eq.24.or.lb1 .eq.33)
-     &      .and.(lb2.eq.1.or.lb2.eq.2.or.
+        if( ((lb1.eq.23.or.lb1.eq.30).and.(lb2.eq.1.or.lb2.eq.2.or.
      &         (lb2.ge.6.and.lb2.le.13))) .OR.
-     &      ((lb2.eq.23.or.lb2.eq.30.or.lb2.eq.24.or.lb2 .eq.33)
-     &      .and.(lb1.eq.1.or.lb1.eq.2.or.
+     &      ((lb2.eq.23.or.lb2.eq.30).and.(lb1.eq.1.or.lb1.eq.2.or.
      &         (lb1.ge.6.and.lb1.le.13))) ) go to 888
-        if( ((lb1.eq.21.or.lb1.eq.-30 .or.lb1.eq.22.or.lb1 .eq.-33)
-     &      .and.(lb2.eq.-1.or.lb2.eq.-2.or.
+        if( ((lb1.eq.21.or.lb1.eq.-30).and.(lb2.eq.-1.or.lb2.eq.-2.or.
      &       (lb2.ge.-13.and.lb2.le.-6))) .OR. 
-     &      ((lb2.eq.21.or.lb2.eq.-30 .or.lb2.eq.22.or.lb2 .eq.-33)
-     &      .and.(lb1.eq.-1.or.lb1.eq.-2.or.
+     &      ((lb2.eq.21.or.lb2.eq.-30).and.(lb1.eq.-1.or.lb1.eq.-2.or.
      &       (lb1.ge.-13.and.lb1.le.-6))) ) go to 888
 c
 * L/S-baryon elastic collision 
@@ -2739,8 +2576,7 @@ c skip other collns with perturbative particles or hyperon-bar
      &    .or. (lb2.le.-14.and.lb2.ge.-17) )go to 400
 c
 c
-clin-cma-4/2018 anti-baryon on baryon (including resonance):
-c* anti-baryon on baryon resonaces 
+* anti-baryon on baryon resonaces 
         if((lb1.eq.-1.or.lb1.eq.-2.or.(lb1.ge.-13.and.lb1.le.-6))
      1 .and.(lb2.eq.1.or.lb2.eq.2.or.(lb2.ge.6.and.lb2.le.13))) then
             GOTO 2799
@@ -2786,23 +2622,14 @@ c
        if((lb2.ge.25.and.lb2.le.28).and.lb1.eq.0)go to 777
 c
 * if kaon+pion collisions go to 889
-cma-ch-07/16       if((lb1.eq.23.or.lb1.eq.21).and.(lb2.ge.3.and.lb2.le.5))go to 889
-cma-ch-07/16       if((lb2.eq.23.or.lb2.eq.21).and.(lb1.ge.3.and.lb1.le.5))go to 889
-       if((lb1.ge.21.and.lb1.le.24).and.(lb2.ge.3.and.lb2.le.5))
-     1      go to 889
-       if((lb2.ge.21.and.lb2.le.24).and.(lb1.ge.3.and.lb1.le.5))
-     1      go to 889
+       if((lb1.eq.23.or.lb1.eq.21).and.(lb2.ge.3.and.lb2.le.5))go to 889
+       if((lb2.eq.23.or.lb2.eq.21).and.(lb1.ge.3.and.lb1.le.5))go to 889
 c
 clin-2/06/03 skip all other (K K* Kbar K*bar) channels:
 * SKIP all other K and K* RESCATTERINGS
-cma-ch-05/16        If(iabs(lb1).eq.30.or.iabs(lb2).eq.30) go to 400
-cma-ch-05/16        If(lb1.eq.21.or.lb2.eq.21) go to 400
-cma-ch-05/16        If(lb1.eq.23.or.lb2.eq.23) go to 400
-
-        If(iabs(lb1).eq.30.or.iabs(lb2).eq.30 .or.
-     &  iabs(lb1).eq.33.or.iabs(lb2).eq.33) go to 400
-        If(lb1.eq.21.or.lb2.eq.21.or.lb1.eq.22.or.lb2.eq.22) go to 400
-        If(lb1.eq.23.or.lb2.eq.23.or.lb1.eq.24.or.lb2.eq.24) go to 400
+        If(iabs(lb1).eq.30.or.iabs(lb2).eq.30) go to 400
+        If(lb1.eq.21.or.lb2.eq.21) go to 400
+        If(lb1.eq.23.or.lb2.eq.23) go to 400
 c
 * IF PION+baryon COLLISION GO TO 3
            IF( (LB1.ge.3.and.LB1.le.5) .and. 
@@ -3047,8 +2874,7 @@ c***
 * if direct elastic process
         if(icheck.eq.2)then
 c  !!sp11/21/01
-cma-05/16      if(xnelas/(xnelas+xkaon+Xphi).ge.RANART(NSEED))then
-      if(xnelas/(xnelas+xkaon+Xphi).gt.RANART(NSEED))then
+      if(xnelas/(xnelas+xkaon+Xphi).ge.RANART(NSEED))then
 c               call Crdir(PX1CM,PY1CM,PZ1CM,SRT,I1,I2)
                call Crdir(PX1CM,PY1CM,PZ1CM,SRT,I1,I2,IBLOCK)
               go to 440
@@ -3065,8 +2891,7 @@ c        IF(XKAON/(XKAON+Xnelas).GT.RANART(NSEED))GO TO 95
        IF((XKAON+Xphi)/(XKAON+Xphi+Xnelas).GT.RANART(NSEED))GO TO 95
 
 * direct process
-cma-05/16        if(xdirct/xnelas.ge.RANART(NSEED))then
-        if(xdirct/xnelas.gt.RANART(NSEED))then
+        if(xdirct/xnelas.ge.RANART(NSEED))then
 c               call Crdir(PX1CM,PY1CM,PZ1CM,SRT,I1,I2)
                call Crdir(PX1CM,PY1CM,PZ1CM,SRT,I1,I2,IBLOCK)
               go to 440
@@ -3132,16 +2957,9 @@ c            IF(LB(I1)*LB(I2).EQ.3)THEN
      &      .OR.(LB(I1)*LB(I2).EQ.-5) )THEN
             LB(I)=10
             ENDIF
-clin-6/2013:
-c303         CALL DRESON(I1,I2)
-303         CALL DRESON(I1,I2,iblock)
-
+303         CALL DRESON(I1,I2)
             if(LB1.lt.0.or.LB2.lt.0) LB(I)=-LB(I)
             lres=lres+1
-cma-05/16
-            IF(E(I1).NE.0)LB(I1)=LB(I)
-            IF(E(I2).NE.0)LB(I2)=LB(I)
-
             GO TO 101
 *COM: GO TO 101 TO CHANGE THE PHASE SPACE DENSITY OF THE NUCLEON
             ENDIF
@@ -3188,17 +3006,9 @@ c            if((lb(i1).eq.1).or.(lb(i2).eq.1))then
            LB(I)=12
            ENDIF
            endif
-clin-6/2013:
-c304         CALL DRESON(I1,I2)
- 304        CALL DRESON(I1,I2,iblock)
-
+304         CALL DRESON(I1,I2)
             if(LB1.lt.0.or.LB2.lt.0) LB(I)=-LB(I) 
             lres=lres+1
-
-cma-05/16
-            IF(E(I1).NE.0)LB(I1)=LB(I)
-            IF(E(I2).NE.0)LB(I2)=LB(I)
-
             GO TO 101
 *COM: GO TO 101 TO CHANGE THE PHASE SPACE DENSITY OF THE NUCLEON
             ENDIF
@@ -3246,16 +3056,8 @@ c        IF(LB(I1)*LB(I2).EQ.6.AND.(LB(I1).EQ.2.OR.LB(I2).EQ.2))THEN
      & .OR.(LB(I1)*LB(I2).EQ.-10.AND.(LB(I1).EQ.5.OR.LB(I2).EQ.5)) )THEN 
         LB(I)=6
         ENDIF
-clin-6/2013:
-c305         CALL DRESON(I1,I2)
- 305    CALL DRESON(I1,I2,iblock)
-
-        if(LB1.lt.0.or.LB2.lt.0) LB(I)=-LB(I)
-
-cma-05/16
-        IF(E(I1).NE.0)LB(I1)=LB(I)
-        IF(E(I2).NE.0)LB(I2)=LB(I)
-
+305     CALL DRESON(I1,I2)
+        if(LB1.lt.0.or.LB2.lt.0) LB(I)=-LB(I) 
        GO TO 101
 
 csp-11/08/01 K*
@@ -3293,18 +3095,9 @@ c
          endif
 
        if(icase .eq. 1)then
-cma-test-07/16
-c        lbi1=LB(I1)
-c        lbi2=LB(I2)
-
              call KSRESO(I1,I2)
 clin-4/30/03 give non-zero iblock for resonance selections:
-             iblock=171
-
-cma-test-07/16
-c        if(E(I1).gt.0)write(*,*),iblock,lbi1,lbi2,LB(I1),E(I1)
-c        if(E(I2).gt.0)write(*,*),iblock,lbi1,lbi2,LB(I2),E(I2)
-
+             iblock = 171
 ctest off for resonance (phi, K*) studies:
 c             if(iabs(lb(i1)).eq.30) then
 c             write(17,112) 'ks',lb(i1),p(1,i1),p(2,i1),p(3,i1),e(i1),nt
@@ -3315,39 +3108,28 @@ c
               lres=lres+1
               go to 101
        elseif(icase .eq. 2)then
-             iblock=71
+             iblock = 71
 c
 * La/Si (bar) formation                                                   
 
        elseif(iabs(icase).eq.5)then
-             iblock=88
+             iblock = 88
 
-clin-4/2018 cib:
-cczbyin-8/24/10 correct the iblock number for processes
-c       else if(icase.eq.3) then
-c          iblock=224
-c       else if (icase.eq.-3) then
-c          iblock=124
-c       else if (iabs(icase).eq.4) then
-c          iblock=226
        else
 *
 * phi formation
-             iblock=222
-czbyin-8/24/10 end of correction on the iblock number for processes
-cib-end
-
+             iblock = 222
        endif
-       LB(I1) = lbp1
-       LB(I2) = lbp2
-       E(I1) = emm1
-       E(I2) = emm2
-       em1=e(i1)
-       em2=e(i2)
-       ntag = 0
-       go to 440
+             LB(I1) = lbp1
+             LB(I2) = lbp2
+             E(I1) = emm1
+             E(I2) = emm2
+             em1=e(i1)
+             em2=e(i2)
+             ntag = 0
+             go to 440
 c             
- 33    continue
+33       continue
        em1=e(i1)
        em2=e(i2)
 * (1) if rho or omega collide with a nucleon we allow both elastic 
@@ -3369,95 +3151,6 @@ c
            if(srt.ge.1.63.AND.SRT.LE.1.7)xkaon0=pnlka(srt)
            IF(SRT.GT.1.7)XKAON0=PNLKA(SRT)+pnska(srt)
            if(xkaon0.lt.0)xkaon0=0
-
-cma-ch-04/18-start change for iblock=7
-            if(((lb1.ge.3.and.lb1.le.5).and.
-     &    (iabs(lb2).eq.1.or.iabs(lb2).eq.2)).or.
-     &    ((lb2.ge.3.and.lb2.le.5).and.
-     &    (iabs(lb1).eq.1.or.iabs(lb1).eq.2))) then
-           chratio=6./4.
-           if(srt.ge.1.63.AND.SRT.LE.1.7)
-     &     xkaon0=chratio*pnlka(srt)
-           IF(SRT.GT.1.7)XKAON0=chratio*PNLKA(SRT)+pnska(srt)
-           endif
-
-            if(((lb1.ge.25.and.lb1.le.27).and.
-     &    (iabs(lb2).eq.1.or.iabs(lb2).eq.2)).or.
-     &    ((lb2.ge.25.and.lb2.le.27).and.
-     &    (iabs(lb1).eq.1.or.iabs(lb1).eq.2))) then
-           chratio=6./4.
-           if(srt.ge.1.63.AND.SRT.LE.1.7)
-     &     xkaon0=chratio*pnlka(srt)
-           IF(SRT.GT.1.7)XKAON0=chratio*PNLKA(SRT)+pnska(srt)
-           endif
-
-            if(((lb1.ge.3.and.lb1.le.5).and.
-     &    (iabs(lb2).ge.10.and.iabs(lb2).le.13)).or.
-     &    ((lb2.ge.3.and.lb2.le.5).and.
-     &    (iabs(lb1).ge.10.or.iabs(lb1).le.13))) then
-           chratio=6./4.
-           if(srt.ge.1.63.AND.SRT.LE.1.7)
-     &     xkaon0=chratio*pnlka(srt)
-           IF(SRT.GT.1.7)XKAON0=chratio*PNLKA(SRT)+pnska(srt)
-           endif
-
-            if(((lb1.ge.25.and.lb1.le.27).and.
-     &    (iabs(lb2).ge.10.and.iabs(lb2).le.13)).or.
-     &    ((lb2.ge.25.and.lb2.le.27).and.
-     &    (iabs(lb1).ge.10.or.iabs(lb1).le.13))) then
-           chratio=6./4.
-           if(srt.ge.1.63.AND.SRT.LE.1.7)
-     &     xkaon0=chratio*pnlka(srt)
-           IF(SRT.GT.1.7)XKAON0=chratio*PNLKA(SRT)+pnska(srt)
-           endif
-
-            if(((lb1.ge.3.and.lb1.le.5).and.
-     &    (iabs(lb2).ge.6.and.iabs(lb2).le.9)).or.
-     &    ((lb2.ge.3.and.lb2.le.5).and.
-     &    (iabs(lb1).ge.6.or.iabs(lb1).le.9))) then
-           chratio1=12./6.
-           if(srt.ge.1.63.AND.SRT.LE.1.7)
-     &     xkaon0=chratio1*pnlka(srt)
-           chratio2=12./10.
-        IF(SRT.GT.1.7)XKAON0=chratio1*PNLKA(SRT)+chratio2*pnska(srt)
-           endif
-
-            if(((lb1.ge.25.and.lb1.le.27).and.
-     &    (iabs(lb2).ge.6.and.iabs(lb2).le.9)).or.
-     &    ((lb2.ge.25.and.lb2.le.27).and.
-     &    (iabs(lb1).ge.6.or.iabs(lb1).le.9))) then
-           chratio1=12./6.
-           if(srt.ge.1.63.AND.SRT.LE.1.7)
-     &     xkaon0=chratio1*pnlka(srt)
-           chratio2=12./10.
-        IF(SRT.GT.1.7)XKAON0=chratio1*PNLKA(SRT)+chratio2*pnska(srt)
-           endif
-
-            if(((lb1.ge.0.or.lb1.le.28).and.
-     &    (iabs(lb2).ge.6.and.iabs(lb2).le.9)).or.
-     &    ((lb2.ge.0.or.lb2.le.28).and.
-     &    (iabs(lb1).ge.6.or.iabs(lb1).le.9))) then
-           chratio=4./2.
-           if(srt.ge.1.63.AND.SRT.LE.1.7)
-     &     xkaon0=chratio*pnlka(srt)
-           IF(SRT.GT.1.7)XKAON0=chratio*PNLKA(SRT)+pnska(srt)
-           endif
-
-          if(srt.ge.1.63.AND.SRT.LE.1.7)then
-          if((ianti.eq.0.and.(netq.gt.1.or.netq.lt.0))
-     1         .or.(ianti.eq.1.and.(netq.gt.0.or.netq.lt.-1))) then
-          xkaon0=0.
-          endif
-          endif
-
-          if(SRT.GT.1.7)then
-          if((ianti.eq.0.and.(netq.gt.2.or.netq.lt.-1))
-     1         .or.(ianti.eq.1.and.(netq.gt.1.or.netq.lt.-2))) then
-          xkaon0=0.
-          endif
-          endif
-
-cma-ch-04/18-end change for iblock=7
 
 cbz3/7/99 neutralk
             XKAON0 = 2.0 * XKAON0
@@ -3593,12 +3286,6 @@ C        ENDIF
 * negelecting the pauli blocking at high energies
 
 101       continue
-clin-6/2013:
-          call checkq(nt,i1,i2,iblock,netq,netbini,netsini,
-     1         lb1i,lb2i,irun,nnnini,nnn)
-cma-test
-        ibc(iblock)=ibc(iblock)+1
-
         IF(E(I2).EQ.0.)GO TO 600
         IF(E(I1).EQ.0.)GO TO 800
 * IF NUCLEON+BARYON RESONANCE COLLISIONS
@@ -3626,11 +3313,9 @@ cma-test
         PZ1CM=PCZ
 
 clin-6/2008 Deuteron production:
-clin-6/2013:
-c        ianti=0
-c        if(lb(i1).lt.0 .and. lb(i2).lt.0) ianti=1
-c        call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
-        call sbbdm(srt,sdprod,lbm,xmm,pfinal)
+        ianti=0
+        if(lb(i1).lt.0 .and. lb(i2).lt.0) ianti=1
+        call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
         sig=sig+sdprod
 clin-6/2008 perturbative treatment of deuterons:
         ipdflag=0
@@ -3723,11 +3408,9 @@ c    !! sp12/17/01
 clin-5/2008 Deuteron production cross sections were not included 
 c     in the previous parameterized inelastic cross section of NN collisions  
 c     (SIGinel=SIG-SIGNN), so they are added here:
-clin-6/2013:
-c        ianti=0
-c        if(lb(i1).lt.0 .and. lb(i2).lt.0) ianti=1
-c        call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
-        call sbbdm(srt,sdprod,lbm,xmm,pfinal)
+        ianti=0
+        if(lb(i1).lt.0 .and. lb(i2).lt.0) ianti=1
+        call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
         sig=sig+sdprod
 c
 clin-5/2008 perturbative treatment of deuterons:
@@ -3823,11 +3506,9 @@ clin-8/2008 B+B->Deuteron+Meson over
 c
 clin-8/2008 Deuteron+Meson->B+B collisions:
  505    continue
-clin-6/2013:
-c        ianti=0
-c        if(lb(i1).lt.0 .or. lb(i2).lt.0) ianti=1
-c        call sdmbb(SRT,sdm,ianti)
-        call sdmbb(SRT,sdm)
+        ianti=0
+        if(lb(i1).lt.0 .or. lb(i2).lt.0) ianti=1
+        call sdmbb(SRT,sdm,ianti)
         PX1CM=PCX
         PY1CM=PCY
         PZ1CM=PCZ
@@ -3838,17 +3519,15 @@ c     minimum srt**2, note a 2.012GeV lower cutoff is used in N+N->Deuteron+pi:
         CALL DISTCE(I1,I2,dsr,ds,DT,EC,SRT,IC,PX1CM,PY1CM,PZ1CM)
         IF(IC.EQ.-1) GO TO 400
         CALL crdmbb(PX1CM,PY1CM,PZ1CM,SRT,I1,I2,IBLOCK,
-     1       NTAG,sdm,NT)
-clin-6/2013:     1       NTAG,sdm,NT,ianti)
+     1       NTAG,sdm,NT,ianti)
         LCOLL=LCOLL+1
         GO TO 400
 clin-8/2008 Deuteron+Meson->B+B collisions over
 c
 clin-9/2008 Deuteron+Baryon elastic collisions:
  506    continue
-clin-6/2013:
-c        ianti=0
-c        if(lb(i1).lt.0 .or. lb(i2).lt.0) ianti=1
+        ianti=0
+        if(lb(i1).lt.0 .or. lb(i2).lt.0) ianti=1
         call sdbelastic(SRT,sdb)
         PX1CM=PCX
         PY1CM=PCY
@@ -3860,8 +3539,7 @@ c     minimum srt**2, note a 2.012GeV lower cutoff is used in N+N->Deuteron+pi:
         CALL DISTCE(I1,I2,dsr,ds,DT,EC,SRT,IC,PX1CM,PY1CM,PZ1CM)
         IF(IC.EQ.-1) GO TO 400
         CALL crdbel(PX1CM,PY1CM,PZ1CM,SRT,I1,I2,IBLOCK,
-     1       NTAG,sdb,NT)
-clin-6/2013:     1       NTAG,sdb,NT,ianti)
+     1       NTAG,sdb,NT,ianti)
         LCOLL=LCOLL+1
         GO TO 400
 clin-9/2008 Deuteron+Baryon elastic collisions over
@@ -3888,11 +3566,9 @@ c
         PZ1CM=PCZ
 
 clin-6/2008 Deuteron production:
-clin-6/2013:
-c        ianti=0
-c        if(lb(i1).lt.0 .and. lb(i2).lt.0) ianti=1
-c        call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
-        call sbbdm(srt,sdprod,lbm,xmm,pfinal)
+        ianti=0
+        if(lb(i1).lt.0 .and. lb(i2).lt.0) ianti=1
+        call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
         sig=sig+sdprod
 clin-6/2008 perturbative treatment of deuterons:
         ipdflag=0
@@ -3976,22 +3652,11 @@ clin-8/15/02       ppel=1.e-09
        ppel=ppsig
 778       ppink=pipik(srt)
 
-* pi+eta and eta+eta are assumed to be the same as pipik( for pi+pi -> K+K-)
+* pi+eta and eta+eta are assumed to be the same as pipik( for pi+pi -> K+K-) 
 * estimated from Ko's paper:
         ppink = 2.0 * ppink
-        if(lb1.ge.25.and.lb2.ge.25) ppink=rrkk
+       if(lb1.ge.25.and.lb2.ge.25) ppink=rrkk
 
-clin-cma-ch-04/18 change for iblock=66
-c     (pi,eta)+(pi,eta) or (rho,omega)+(rho,omega)->K+Kbar:
-c     Adjust cross section of allowed pi+pi & rho+rho channels:
-        if(((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.3.and.lb2.le.5))
-     &       .or.((lb1.ge.25.and.lb1.le.27).and.
-     &       (lb2.ge.25.and.lb2.le.27))) then
-           chratio=6./4.
-           ppink=ppink*chratio
-        endif
-
-clin-cma-ch-04/18 change for iblock=366: (pi,eta)+(rho,omega)->Kbar+K* or K+K*bar:
 clin-2/13/03 include omega the same as rho, eta the same as pi:
 c        if(((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.25.and.lb2.le.27))
 c     1  .or.((lb2.ge.3.and.lb2.le.5).and.(lb1.ge.25.and.lb1.le.27)))
@@ -4001,15 +3666,7 @@ c     1  .or.((lb2.ge.3.and.lb2.le.5).and.(lb1.ge.25.and.lb1.le.27)))
      3       .and.(lb1.ge.25.and.lb1.le.28))) then
            ppink=0.
            if(srt.ge.(aka+aks)) ppink = prkk
-c     Adjust cross section of allowed pi+pi & rho+rho channels:
-         if(((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.25.and.lb2.le.27)).or.
-     &    ((lb2.ge.3.and.lb2.le.5).and.(lb1.ge.25.and.lb1.le.27)) )then
-              chratio=9./7.
-              ppink=ppink*chratio
-           endif
         endif
-clin-6/2013 netq of +2 or -2 are forbidden for M M -> K Kbar K K*bar Kbar K*.
-        if(netq.eq.2.or.netq.eq.-2) ppink=0.
 
 c pi pi <-> rho rho:
         call spprr(lb1,lb2,srt)
@@ -4026,9 +3683,7 @@ clin-4/03/02 rho rho <-> eta eta:
 
         ppinnb=0.
         if(srt.gt.thresh(1)) then
-clin-5/2016:
-c           call getnst(srt)
-           call getnst(srt,lb1,lb2)
+           call getnst(srt)
            if(lb1.ge.3.and.lb1.le.5.and.lb2.ge.3.and.lb2.le.5) then
               ppinnb=ppbbar(srt)
            elseif((lb1.ge.3.and.lb1.le.5.and.lb2.ge.25.and.lb2.le.27)
@@ -4067,16 +3722,8 @@ c           call getnst(srt)
      1  IBLOCK,ppel,ppin,spprho,ipp)
 
 * rho formation, go to 400
-clin-6/2013:
 c       if(iblock.eq.666)go to 600
-        if(iblock.eq.666) then
-           call checkq(nt,i1,i2,iblock,netq,netbini,netsini,
-     1          lb1i,lb2i,irun,nnnini,nnn)
-cma-test
-        ibc(iblock)=ibc(iblock)+1
-           go to 600
-        endif
-c
+       if(iblock.eq.666)go to 555
        if(iblock.eq.6)LPP=LPP+1
        if(iblock.eq.66)then
           LPPk=LPPk+1
@@ -4102,15 +3749,6 @@ clin assume the same cross section (as a function of sqrt s) as for PPbar:
 clin-ctest annih maximum
 c        DSppb=SQRT(amin1(xppbar(srt),30.)/PI/10.)
        DSppb=SQRT(xppbar(srt)/PI/10.)
-clin-4/2018-new need to modify cross section before DISTCE():
-c     so determine charge correction of total cross section to MM:
-       call pbarfs(srt,npion,iseed,lb1,lb2,0)
-       DSppb=DSppb*sqrt(xcorr)
-clin-ctest on make sure cross section does not exceed pi*deltr0**2:
-       if(DSppb.gt.deltr0) then
-          write(6,*) 'DSppb>deltr0: ',DSppb,deltr0,xcorr
-       endif
-c
        dsppbr=dsppb+0.1
         CALL DISTCE(I1,I2,dsppbr,DSppb,DT,EC,SRT,IC,
      1  PX1CM,PY1CM,PZ1CM)
@@ -4145,7 +3783,7 @@ c perturbative production of cascade and omega
 c     inelastic collisions:
          em1 = e(i1)
          em2 = e(i2)
-         iblock=727
+         iblock = 727
           go to 440
         endif
 c     elastic collisions:
@@ -4232,9 +3870,7 @@ c* K- + La(Si)-bar --> Meson + B-bar
      1  PX1CM,PY1CM,PZ1CM)
         IF(IC.EQ.-1) GO TO 400
 c
-cma-ch-05/16       if(lb(i1).eq.23 .or. lb(i2).eq.23)then
-       if((lb(i1).eq.23 .or.lb(i1).eq.24) .or.
-     &      (lb(i2).eq.23 .or.lb(i2).eq.24))then
+       if(lb(i1).eq.23 .or. lb(i2).eq.23)then
              IKMP = 1
         else
              IKMP = -1
@@ -4252,39 +3888,13 @@ c khyperon end
 csp11/03/01 La/Si-bar + N --> pi + K+
 c  La/Si + N-bar --> pi + K-
 5999     CONTINUE
-cma-05/16clin-ma-5/2016: these charge states are not possible:
-cma-05/16 La/Si-bar + B --> pi + K+, La/Si + B-bar --> pi + K-
-       if( (lb(i1).ge.14.and.lb(i1).le.17) .OR.
-     &      (lb(i2).ge.14.and.lb(i2).le.17) )then
-          if(netq.eq.-3.or.netq.eq.2) then
-             iblock=0
-             goto 440
-          endif
-       else
-          if(netq.eq.3.or.netq.eq.-2) then
-             iblock=0
-             goto 440
-          endif
-       endif
-cma-05/16-end
-
         PX1CM=PCX
         PY1CM=PCY
         PZ1CM=PCZ
         EC=(em1+em2+0.02)**2
         sigkp = 15.
-clin-cma-4/2018 modify cross section of Sigma-bar Delta or Sigma Delta-bar:
 c      if((lb1.ge.14.and.lb1.le.17)
 c     &    .or.(lb2.ge.14.and.lb2.le.17))sigkp=10.
-cma-ch-06/16 change for reverse channel of iblock=71:
-        if(((abs(lb(i1)).ge.15.and.abs(lb(i1)).le.17).and.
-     &       (abs(lb(i2)).ge.6.and.abs(lb(i2)).le.9)).or.
-     &       ((abs(lb(i2)).ge.15.and.abs(lb(i2)).le.17).and.
-     &       (abs(lb(i1)).ge.6.and.abs(lb(i1)).le.9))) then
-           chratio=12./10.
-           sigkp = sigkp *chratio
-        endif
-
         DSkk=SQRT(SIGKP/PI/10.)
         dskk0=dskk+0.1
         CALL DISTCE(I1,I2,dskk0,DSkk,DT,EC,SRT,IC,
@@ -4320,7 +3930,7 @@ c*---
         ERT = ER1+ER2
         yy = 0.5*log( (ERT+PZRT)/(ERT-PZRT) )
 c*------
-             iblock=222
+             iblock = 222
              ntag = 0
           endif
 
@@ -4371,10 +3981,7 @@ c*---
         EC=(em1+em2+0.02)**2
          sig = 10.
          if(iabs(lb1).eq.14.or.iabs(lb2).eq.14 .or.
-cma-ch-05/16     &      iabs(lb1).eq.30.or.iabs(lb2).eq.30)sig=20.
-     &      iabs(lb1).eq.30.or.iabs(lb2).eq.30
-     &      .or.iabs(lb1).eq.33.or.iabs(lb2).eq.33)sig=20.
-
+     &      iabs(lb1).eq.30.or.iabs(lb2).eq.30)sig=20.
          if(lb1.eq.29.or.lb2.eq.29)sig=5.0
 
        DSkn=SQRT(sig/PI/10.)
@@ -4419,7 +4026,7 @@ cbz3/9/99 khyperon end
 cbali2/1/99end
 
 clin-9/28/00 Processes: m(pi rho omega)+m(pi rho omega)
-c     to anti-(p n D N*1440 N*1535)+(p n D N*1440 N*1535):
+c     to anti-(p n D N*1 N*2)+(p n D N*1 N*2):
 *           iblock   - 1801  mm -->pbar p 
 *           iblock   - 18021 mm -->pbar n 
 *           iblock   - 18022 mm -->nbar p 
@@ -4458,13 +4065,12 @@ clin-08/14/02 Processes: pi pi <-> eta eta
 * Processes: pi pi <-> pi eta
 *           iblock   - 1870  pi pi -> pi eta
 *           iblock   - 1871  pi eta -> pi pi
-clin-6/2013 corrections: 
 * Processes: rho pi <-> rho eta
-*           iblock   - 1880  rho pi -> rho eta
-*           iblock   - 1881  rho eta -> rho pi
+*           iblock   - 1880  pi pi -> pi eta
+*           iblock   - 1881  pi eta -> pi pi
 * Processes: omega pi <-> omega eta
-*           iblock   - 1890  omega pi -> omega eta
-*           iblock   - 1891  omega eta -> omega pi
+*           iblock   - 1890  pi pi -> pi eta
+*           iblock   - 1891  pi eta -> pi pi
 * Processes: rho rho <-> eta eta
 *           iblock   - 1895  rho rho -> eta eta
 *           iblock   - 1896  eta eta -> rho rho
@@ -4766,6 +4372,7 @@ c               write(92,'a3,5(1x,f8.3)')
 c     1              'F:',efin,pxfin,pyfin,pzfin,devio
 c            endif
 c
+ 555        continue
 ctest off only one collision for the same 2 particles in the same timestep:
 c            if(iblock.ne.0) then
 c               goto 800
@@ -4774,28 +4381,31 @@ ctest off collisions history:
 c            if(iblock.ne.0) then 
 c               write(10,*) nt,i1,i2,iblock,x1,z1,x2,z2
 c            endif
-c
- 555        if(iblock.eq.0) then
-c     nothing happens:
-               goto 600
-            elseif(lb1i.eq.lb(i1).and.lb2i.eq.lb(i2)
-     1              .and.nnn.eq.nnnini) then
-c     elastic scatterings:
-               goto 600
-            else
-clin-8/09/10 ctest on for charge conservation: check each reaction:
-clin-6/2013:
-c            netqini=LUCHGE(INVFLV(lb1i))/3+LUCHGE(INVFLV(lb2i))/3
-               call checkq(nt,i1,i2,iblock,netq,netbini,netsini,
-     1     lb1i,lb2i,irun,nnnini,nnn)
-cma-test
-           ibc(iblock)=ibc(iblock)+1
 
-clin-8/09/10-end
-            endif
- 600     CONTINUE
+  600     CONTINUE
 
- 800  CONTINUE
+clin-4/2012 option of pi0 decays:
+c     particles in lpion() may be a pi0, and when ipi0dcy=1 
+c     we need to decay them at nt=ntmax after all lb(i1) decays are done:
+ 798      if(nt.eq.ntmax.and.ipi0dcy.eq.1
+     1         .and.i1.eq.(MASSR(IRUN)+MSUM)) then
+             do ipion=1,NNN
+                if(LPION(ipion,IRUN).eq.4) then
+                   wid=7.85e-9
+                   call resdec(i1,nt,nnn,wid,idecay,ipion)
+                endif
+             enddo
+          endif
+ctest off
+c          if(nt.eq.ntmax.and.i1.eq.(MASSR(IRUN)+MSUM)) then
+c             do ip=1,i1
+c                write(98,*) lb(ip),e(ip),ip
+c             enddo
+c          endif
+
+clin-4/2012 option of pi0 decays-end
+
+  800   CONTINUE
 * RELABLE MESONS LEFT IN THIS RUN EXCLUDING THOSE BEING CREATED DURING
 * THIS TIME STEP AND COUNT THE TOTAL NO. OF PARTICLES IN THIS RUN
 * note that the first mass=mta+mpr particles are baryons
@@ -4929,6 +4539,53 @@ c        call hbtout(MASSR(IRUN),nt,ntmax)
 c
       RETURN
       END
+
+clin-9/2012: use double precision for S in CMS(): to avoid crash 
+c     (segmentation fault due to s<0, which happened at high energies 
+c     such as LHC with large NTMAX for two almost-comoving hadrons
+c     that have small Pt but large |Pz|):
+****************************************
+c            SUBROUTINE CMS(I1,I2,PX1CM,PY1CM,PZ1CM,SRT)
+* PURPOSE : FIND THE MOMENTA OF PARTICLES IN THE CMS OF THE
+*          TWO COLLIDING PARTICLES
+* VARIABLES :
+*****************************************
+c            PARAMETER (MAXSTR=150001)
+c            COMMON   /AA/  R(3,MAXSTR)
+ccc      SAVE /AA/
+c            COMMON   /BB/  P(3,MAXSTR)
+ccc      SAVE /BB/
+c            COMMON   /CC/  E(MAXSTR)
+ccc      SAVE /CC/
+c            COMMON   /BG/  BETAX,BETAY,BETAZ,GAMMA
+ccc      SAVE /BG/
+c            SAVE   
+c            PX1=P(1,I1)
+c            PY1=P(2,I1)
+c            PZ1=P(3,I1)
+c            PX2=P(1,I2)
+c            PY2=P(2,I2)
+c            PZ2=P(3,I2)
+c            EM1=E(I1)
+c            EM2=E(I2)
+c            E1=SQRT(EM1**2+PX1**2+PY1**2+PZ1**2)
+c            E2=SQRT(EM2**2 + PX2**2 + PY2**2 + PZ2**2 )
+c            S=(E1+E2)**2-(PX1+PX2)**2-(PY1+PY2)**2-(PZ1+PZ2)**2
+c            SRT=SQRT(S)
+c*LORENTZ-TRANSFORMATION IN I1-I2-C.M. SYSTEM
+c              ETOTAL = E1 + E2
+c              BETAX  = (PX1+PX2) / ETOTAL
+c              BETAY  = (PY1+PY2) / ETOTAL
+c              BETAZ  = (PZ1+PZ2) / ETOTAL
+c              GAMMA  = 1.0 / SQRT(1.0-BETAX**2-BETAY**2-BETAZ**2)
+c*TRANSFORMATION OF MOMENTA (PX1CM = - PX2CM)
+c              P1BETA = PX1*BETAX + PY1*BETAY + PZ1 * BETAZ
+c              TRANSF = GAMMA * ( GAMMA * P1BETA / (GAMMA + 1) - E1 )
+c              PX1CM  = BETAX * TRANSF + PX1
+c              PY1CM  = BETAY * TRANSF + PY1
+c              PZ1CM  = BETAZ * TRANSF + PZ1
+c              RETURN
+c              END
 ****************************************
             SUBROUTINE CMS(I1,I2,PX1CM,PY1CM,PZ1CM,SRT)
 * PURPOSE : FIND THE MOMENTA OF PARTICLES IN THE CMS OF THE
@@ -4936,41 +4593,51 @@ c
 * VARIABLES :
 *****************************************
             PARAMETER (MAXSTR=150001)
-            COMMON   /AA/  R(3,MAXSTR)
-cc      SAVE /AA/
+            double precision px1,py1,pz1,px2,py2,pz2,em1,em2,e1,e2,
+     1      s,ETOTAL,P1BETA,TRANSF,dBETAX,dBETAY,dBETAZ,dGAMMA,scheck
             COMMON   /BB/  P(3,MAXSTR)
-cc      SAVE /BB/
             COMMON   /CC/  E(MAXSTR)
-cc      SAVE /CC/
             COMMON   /BG/  BETAX,BETAY,BETAZ,GAMMA
-cc      SAVE /BG/
-      SAVE   
-            PX1=P(1,I1)
-            PY1=P(2,I1)
-            PZ1=P(3,I1)
-            PX2=P(1,I2)
-            PY2=P(2,I2)
-            PZ2=P(3,I2)
-            EM1=E(I1)
-            EM2=E(I2)
-            E1=SQRT(EM1**2+PX1**2+PY1**2+PZ1**2)
-            E2=SQRT(EM2**2 + PX2**2 + PY2**2 + PZ2**2 )
+            SAVE   
+            PX1=dble(P(1,I1))
+            PY1=dble(P(2,I1))
+            PZ1=dble(P(3,I1))
+            PX2=dble(P(1,I2))
+            PY2=dble(P(2,I2))
+            PZ2=dble(P(3,I2))
+            EM1=dble(E(I1))
+            EM2=dble(E(I2))
+            E1=dSQRT(EM1**2+PX1**2+PY1**2+PZ1**2)
+            E2=dSQRT(EM2**2+PX2**2+PY2**2+PZ2**2)
             S=(E1+E2)**2-(PX1+PX2)**2-(PY1+PY2)**2-(PZ1+PZ2)**2
-            SRT=SQRT(S)
+            IF(S.LE.0) S=0d0
+            SRT=sngl(dSQRT(S))
 *LORENTZ-TRANSFORMATION IN I1-I2-C.M. SYSTEM
-              ETOTAL = E1 + E2
-              BETAX  = (PX1+PX2) / ETOTAL
-              BETAY  = (PY1+PY2) / ETOTAL
-              BETAZ  = (PZ1+PZ2) / ETOTAL
-              GAMMA  = 1.0 / SQRT(1.0-BETAX**2-BETAY**2-BETAZ**2)
+            ETOTAL = E1 + E2
+            dBETAX  = (PX1+PX2) / ETOTAL
+            dBETAY  = (PY1+PY2) / ETOTAL
+            dBETAZ  = (PZ1+PZ2) / ETOTAL
+clin-9/2012: check argument in sqrt():
+            scheck=1.d0-dBETAX**2-dBETAY**2-dBETAZ**2
+            if(scheck.le.0d0) then
+               write(99,*) 'scheck1: ', scheck
+               stop
+            endif
+            dGAMMA=1.d0/dSQRT(scheck)
 *TRANSFORMATION OF MOMENTA (PX1CM = - PX2CM)
-              P1BETA = PX1*BETAX + PY1*BETAY + PZ1 * BETAZ
-              TRANSF = GAMMA * ( GAMMA * P1BETA / (GAMMA + 1) - E1 )
-              PX1CM  = BETAX * TRANSF + PX1
-              PY1CM  = BETAY * TRANSF + PY1
-              PZ1CM  = BETAZ * TRANSF + PZ1
-              RETURN
-              END
+            P1BETA = PX1*dBETAX + PY1*dBETAY + PZ1 * dBETAZ
+            TRANSF = dGAMMA * ( dGAMMA * P1BETA / (dGAMMA + 1d0) - E1 )
+            PX1CM  = sngl(dBETAX * TRANSF + PX1)
+            PY1CM  = sngl(dBETAY * TRANSF + PY1)
+            PZ1CM  = sngl(dBETAZ * TRANSF + PZ1)
+            BETAX  = sngl(dBETAX)
+            BETAY  = sngl(dBETAY)
+            BETAZ  = sngl(dBETAZ)
+            GAMMA  = sngl(dGAMMA)
+            RETURN
+            END
+clin-9/2012-end
+
 ***************************************
             SUBROUTINE DISTCE(I1,I2,DELTAR,DS,DT,EC,SRT
      1      ,IC,PX1CM,PY1CM,PZ1CM)
@@ -5183,8 +4850,6 @@ cc      SAVE /RNDF77/
      1     dpdcy(MAXSTR),dpdpi(MAXSTR,MAXR),dpt(MAXSTR, MAXR),
      2     dpp1(MAXSTR,MAXR),dppion(MAXSTR,MAXR)
       common /para8/ idpert,npertd,idxsec
-clin-6/2013:
-      COMMON/charge/netq,ianti
       dimension ppd(3,npdmax),lbpd(npdmax)
       SAVE   
 *-----------------------------------------------------------------------
@@ -5197,11 +4862,9 @@ clin-6/2013:
       PR=SQRT( PX**2 + PY**2 + PZ**2 )
       C2=PZ / PR
       X1=RANART(NSEED)
-c      ianti=0
-c      if(lb(i1).lt.0 .and. lb(i2).lt.0) ianti=1
-clin-6/2013:
-c      call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
-      call sbbdm(srt,sdprod,lbm,xmm,pfinal)
+      ianti=0
+      if(lb(i1).lt.0 .and. lb(i2).lt.0) ianti=1
+      call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
 clin-5/2008 Production of perturbative deuterons for idpert=1:
       if(idpert.eq.1.and.ipert1.eq.1) then
          IF (SRT .LT. 2.012) RETURN
@@ -5217,8 +4880,7 @@ c
 *COM: TEST FOR ELASTIC SCATTERING (EITHER N-N OR DELTA-DELTA 0R
 *      N-DELTA OR N*-N* or N*-Delta)
 c      IF (X1 .LE. SIGNN/SIG) THEN
-cma-05/16      IF (X1.LE.(SIGNN/SIG)) THEN
-      IF (X1.LT.(SIGNN/SIG)) THEN
+      IF (X1.LE.(SIGNN/SIG)) THEN
 *COM:  PARAMETRISATION IS TAKEN FROM THE CUGNON-PAPER
          AS  = ( 3.65 * (SRT - 1.8766) )**6
          A   = 6.0 * AS / (1.0 + AS)
@@ -5268,7 +4930,6 @@ clin-5/2008: Mdeuteron+Mpi=2.0106 to 2.0152 GeV/c2, so we can still use this:
        xsk5=0
        t1nlk=ana+al+akp
        if(srt.le.t1nlk)go to 222
-clin-6/2013: NN initial state can have any charge:
        XSK1=1.5*PPLPK(SRT)
 * for DLK channel
        t1dlk=ada+al+akp
@@ -5284,7 +4945,6 @@ clin-6/2013: NN initial state can have any charge:
        if(srt.le.t1nsk)go to 222
        pmnsk2=(es**2-t1nsk**2)*(es**2-t2nsk**2)/(4.*es**2)
        pmnsk=sqrt(pmnsk2)
-clin-6/2013:
        XSK2=1.5*(PPK1(srt)+PPK0(srt))
 * for DSK channel
        t1DSk=aDa+aS+akp
@@ -5321,8 +4981,7 @@ c       lb2=lb(i2)
      &       or.((lb1.le.2).and.(lb2.le.17.and.lb2.ge.14)).
      &       or.((lb2.le.2).and.(lb1.le.17.and.lb1.ge.14)))THEN
 clin-8/2008 PP->d+meson here:
-cma-05/16           IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-           IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+           IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
            SIG1=SIGMA(SRT,1,1,0)+0.5*SIGMA(SRT,1,1,1)
            SIG2=1.5*SIGMA(SRT,1,1,1)
            SIGND=SIG1+SIG2+SIG3+SIG4+X1535+SIGK+s4pi+srho+somega
@@ -5330,27 +4989,20 @@ clin-5/2008:
 c           IF (X1.GT.(SIGNN+SIGND)/SIG)RETURN
            IF (X1.GT.(SIGNN+SIGND+sdprod)/SIG)RETURN
            DIR=SIG3/SIGND
-cma-05/16           IF(RANART(NSEED).LE.DIR)GO TO 106
-           IF(RANART(NSEED).LT.DIR)GO TO 106
-cma-05/16           IF(RANART(NSEED).LE.SIGK/(SIGK+X1535+SIG4+SIG2+SIG1
-           IF(RANART(NSEED).LT.SIGK/(SIGK+X1535+SIG4+SIG2+SIG1
+           IF(RANART(NSEED).LE.DIR)GO TO 106
+           IF(RANART(NSEED).LE.SIGK/(SIGK+X1535+SIG4+SIG2+SIG1
      &          +s4pi+srho+somega))GO TO 306
-cma-05/16           if(RANART(NSEED).le.s4pi/(x1535+sig4+sig2+sig1
-           if(RANART(NSEED).lt.s4pi/(x1535+sig4+sig2+sig1
+           if(RANART(NSEED).le.s4pi/(x1535+sig4+sig2+sig1
      &          +s4pi+srho+somega))go to 307
-cma-05/16           if(RANART(NSEED).le.srho/(x1535+sig4+sig2+sig1
-           if(RANART(NSEED).lt.srho/(x1535+sig4+sig2+sig1
+           if(RANART(NSEED).le.srho/(x1535+sig4+sig2+sig1
      &          +srho+somega))go to 308
-cma-05/16           if(RANART(NSEED).le.somega/(x1535+sig4+sig2+sig1
-           if(RANART(NSEED).lt.somega/(x1535+sig4+sig2+sig1
+           if(RANART(NSEED).le.somega/(x1535+sig4+sig2+sig1
      &          +somega))go to 309
-cma-05/16           if(RANART(NSEED).le.x1535/(sig1+sig2+sig4+x1535))then
-           if(RANART(NSEED).lt.x1535/(sig1+sig2+sig4+x1535))then
+           if(RANART(NSEED).le.x1535/(sig1+sig2+sig4+x1535))then
 * N*(1535) production
               N12=9
            ELSE 
-cma-05/16              IF(RANART(NSEED).LE.SIG4/(SIG1+sig2+sig4))THEN
-              IF(RANART(NSEED).LT.SIG4/(SIG1+sig2+sig4))THEN
+              IF(RANART(NSEED).LE.SIG4/(SIG1+sig2+sig4))THEN
 * DOUBLE DELTA PRODUCTION
                  N12=66
                  GO TO 1012
@@ -5365,8 +5017,7 @@ cma-05/16              IF(RANART(NSEED).LE.SIG4/(SIG1+sig2+sig4))THEN
 ** FOR N+N COLLISION:
         IF(iabs(LB(I1)).EQ.2.AND.iabs(LB(I2)).EQ.2)THEN
 clin-8/2008 NN->d+meson here:
-cma-05/16           IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-           IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+           IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
            SIG1=SIGMA(SRT,1,1,0)+0.5*SIGMA(SRT,1,1,1)
            SIG2=1.5*SIGMA(SRT,1,1,1)
            SIGND=SIG1+SIG2+X1535+SIG3+SIG4+SIGK+s4pi+srho+somega
@@ -5374,27 +5025,20 @@ clin-5/2008:
 c           IF (X1.GT.(SIGNN+SIGND)/SIG)RETURN
            IF (X1.GT.(SIGNN+SIGND+sdprod)/SIG)RETURN
            dir=sig3/signd
-cma-05/16           IF(RANART(NSEED).LE.DIR)GO TO 106
-           IF(RANART(NSEED).LT.DIR)GO TO 106
-cma-05/16           IF(RANART(NSEED).LE.SIGK/(SIGK+X1535+SIG4+SIG2+SIG1
-           IF(RANART(NSEED).LT.SIGK/(SIGK+X1535+SIG4+SIG2+SIG1
+           IF(RANART(NSEED).LE.DIR)GO TO 106
+           IF(RANART(NSEED).LE.SIGK/(SIGK+X1535+SIG4+SIG2+SIG1
      &          +s4pi+srho+somega))GO TO 306
-cma-05/16           if(RANART(NSEED).le.s4pi/(x1535+sig4+sig2+sig1
-           if(RANART(NSEED).lt.s4pi/(x1535+sig4+sig2+sig1
+           if(RANART(NSEED).le.s4pi/(x1535+sig4+sig2+sig1
      &          +s4pi+srho+somega))go to 307
-cma-05/16           if(RANART(NSEED).le.srho/(x1535+sig4+sig2+sig1
-           if(RANART(NSEED).lt.srho/(x1535+sig4+sig2+sig1
+           if(RANART(NSEED).le.srho/(x1535+sig4+sig2+sig1
      &          +srho+somega))go to 308
-cma-05/16           if(RANART(NSEED).le.somega/(x1535+sig4+sig2+sig1
-           if(RANART(NSEED).lt.somega/(x1535+sig4+sig2+sig1
+           if(RANART(NSEED).le.somega/(x1535+sig4+sig2+sig1
      &          +somega))go to 309
-cma-05/16           IF(RANART(NSEED).LE.X1535/(x1535+sig1+sig2+sig4))THEN
-           IF(RANART(NSEED).LT.X1535/(x1535+sig1+sig2+sig4))THEN
+           IF(RANART(NSEED).LE.X1535/(x1535+sig1+sig2+sig4))THEN
 * N*(1535) PRODUCTION
               N12=10
            ELSE 
-cma-05/16              if(RANART(NSEED).le.sig4/(sig1+sig2+sig4))then
-              if(RANART(NSEED).lt.sig4/(sig1+sig2+sig4))then
+              if(RANART(NSEED).le.sig4/(sig1+sig2+sig4))then
 * double delta production
                  N12=67
                  GO TO 1013
@@ -5409,8 +5053,7 @@ cma-05/16              if(RANART(NSEED).le.sig4/(sig1+sig2+sig4))then
 ** FOR N+P COLLISION
         IF(LB(I1)*LB(I2).EQ.2)THEN
 clin-5/2008 NP->d+meson here:
-cma-05/16           IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-           IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+           IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
            SIG1=0.5*SIGMA(SRT,1,1,1)+0.25*SIGMA(SRT,1,1,0)
            IF(NSTAR.EQ.1)THEN
               SIG2=(3./4.)*SIGMA(SRT,2,0,1)
@@ -5422,30 +5065,23 @@ clin-5/2008:
 c           IF (X1.GT.(SIGNN+SIGND)/SIG)RETURN
            IF (X1.GT.(SIGNN+SIGND+sdprod)/SIG)RETURN
            dir=sig3/signd
-cma-05/16           IF(RANART(NSEED).LE.DIR)GO TO 106
-           IF(RANART(NSEED).LT.DIR)GO TO 106
-cma-05/16           IF(RANART(NSEED).LE.SIGK/(SIGND-SIG3))GO TO 306
-           IF(RANART(NSEED).LT.SIGK/(SIGND-SIG3))GO TO 306
-cma-05/16           if(RANART(NSEED).le.s4pi/(signd-sig3-sigk))go to 307
-           if(RANART(NSEED).lt.s4pi/(signd-sig3-sigk))go to 307
-cma-05/16           if(RANART(NSEED).le.srho/(signd-sig3-sigk-s4pi))go to 308
-           if(RANART(NSEED).lt.srho/(signd-sig3-sigk-s4pi))go to 308
-cma-05/16           if(RANART(NSEED).le.somega/(signd-sig3-sigk-s4pi-srho))
-           if(RANART(NSEED).lt.somega/(signd-sig3-sigk-s4pi-srho))
+           IF(RANART(NSEED).LE.DIR)GO TO 106
+           IF(RANART(NSEED).LE.SIGK/(SIGND-SIG3))GO TO 306
+           if(RANART(NSEED).le.s4pi/(signd-sig3-sigk))go to 307
+           if(RANART(NSEED).le.srho/(signd-sig3-sigk-s4pi))go to 308
+           if(RANART(NSEED).le.somega/(signd-sig3-sigk-s4pi-srho))
      1          go to 309
            IF(RANART(NSEED).LT.X1535/(SIG1+SIG2+X1535+0.5*sig4))THEN
 * N*(1535) PRODUCTION
               N12=11
               IF(RANART(NSEED).LE.0.5)N12=12
            ELSE 
-cma-05/16              if(RANART(NSEED).le.sig4/(sig4+2.*(sig1+sig2)))then
-              if(RANART(NSEED).lt.sig4/(sig4+2.*(sig1+sig2)))then
+              if(RANART(NSEED).le.sig4/(sig4+2.*(sig1+sig2)))then
 * double resonance production
                  N12=68
                  GO TO 1014
               else
-cma-05/16                 IF(RANART(NSEED).LE.SIG1/(SIG1+SIG2))THEN
-                 IF(RANART(NSEED).LT.SIG1/(SIG1+SIG2))THEN
+                 IF(RANART(NSEED).LE.SIG1/(SIG1+SIG2))THEN
 * DELTA PRODUCTION
                     N12=2
                     IF(RANART(NSEED).GE.0.5)N12=1
@@ -5518,9 +5154,7 @@ c     (here taken as its central value + 2* B-W fullwidth):
 
               GO TO 13
               ENDIF
-cma-05/16 take missed N*(1535) channels back
-cma-05/16                    IF(n12.ge.17)then
-          if((n12.ge.9 .and. n12.le.12) .or. n12.ge.17)then
+                    IF(n12.ge.17)then
 * N*(1535) production
           IF(DMAX.LT.1.535) THEN
           FM=FD5(DMAX,SRT,0.)
@@ -5632,10 +5266,7 @@ c     (here taken as its central value + 2* B-W fullwidth):
        ENDIF
        IF(XFINAL.gt.0.75)then
 * (2.4) D++N*+ 
-clin-6/2013: bug in charge conservation:
-c       LB(I1)=8
-       LB(I1)=6
-c
+       LB(I1)=8
        LB(I2)=11
        e(i1)=dm1n
        e(i2)=dm2n
@@ -5844,7 +5475,15 @@ c         cc1=ptr(0.33*pr,iseed)
              cc1=ptr(xptr,iseed)
 clin-10/25/02-end
 
-         c1=sqrt(pr**2-cc1**2)/pr
+clin-9/2012: check argument in sqrt():
+             scheck=pr**2-cc1**2
+             if(scheck.lt.0) then
+                write(99,*) 'scheck2: ', scheck
+                scheck=0.
+             endif
+             c1=sqrt(scheck)/pr
+c             c1=sqrt(pr**2-cc1**2)/pr
+
          endif
           T1   = 2.0 * PI * RANART(NSEED)
        if(ianti.eq.1 .and. lb(i1).ge.1 .and. lb(i2).ge.1)then
@@ -5916,9 +5555,7 @@ C       if(icou1.lt.0)return
                 LPION(NNN,IRUN)=4
                 EPION(NNN,IRUN)=AP1
               LB(I1)=6
-clin-6/2013: bug in charge conservation:
-c              LB(I2)=7
-              LB(I2)=8
+              LB(I2)=7
        GO TO 205
                 ENDIF
 * (2.2)N+N -->D+++D-+PION(-)
@@ -5929,21 +5566,15 @@ c              LB(I2)=7
                 LB(I2)=9
        GO TO 205
               ENDIF 
-clin-6/2013: bug in charge conservation:
-c* (2.3)P+P-->D0+D-+PION(+)
-* (2.3)N+N-->D0+D-+PION(+)
+* (2.3)P+P-->D0+D-+PION(+)
                 IF((XDIR.GT.0.4).AND.(XDIR.LE.0.6))THEN
                 LPION(NNN,IRUN)=5
                 EPION(NNN,IRUN)=AP2
-                LB(I1)=7
-clin-6/2013: bug in charge conservation:
-c                LB(I2)=8
-                LB(I2)=6
+                LB(I1)=9
+                LB(I2)=8
        GO TO 205
               ENDIF 
-clin-6/2013: bug in charge conservation:
-c* (2.4)P+P-->D0+D0+PION(0)
-* (2.4)N+N-->D0+D0+PION(0)
+* (2.4)P+P-->D0+D0+PION(0)
                 IF((XDIR.GT.0.6).AND.(XDIR.LE.0.8))THEN
                 LPION(NNN,IRUN)=4
                 EPION(NNN,IRUN)=AP1
@@ -5951,9 +5582,7 @@ c* (2.4)P+P-->D0+D0+PION(0)
                 LB(I2)=7
        GO TO 205
               ENDIF 
-clin-6/2013: bug in charge conservation:
-c* (2.5)P+P-->D0+D++PION(-)
-* (2.5)N+N-->D0+D++PION(-)
+* (2.5)P+P-->D0+D++PION(-)
                 IF(XDIR.GT.0.8)THEN
                 LPION(NNN,IRUN)=3
                 EPION(NNN,IRUN)=AP2
@@ -5984,9 +5613,7 @@ c* (2.5)P+P-->D0+D++PION(-)
                 IF((XDIR.GT.0.34).AND.(XDIR.LE.0.51))THEN
                 LPION(NNN,IRUN)=5
                 EPION(NNN,IRUN)=AP2
-clin-6/2013: bug in charge conservation:
-c                LB(I1)=7
-                LB(I1)=6
+                LB(I1)=7
                 LB(I2)=8
        GO TO 205
               ENDIF 
@@ -6107,9 +5734,7 @@ c     Just create the regular deuteron+pi:
 c
            dprob1=sdprod/sig/float(npertd)
            do idloop=1,ndloop
-clin-6/2013:
-c              CALL bbdangle(pxd,pyd,pzd,nt,ipert1,ianti,idloop,pfinal,
-              CALL bbdangle(pxd,pyd,pzd,nt,ipert1,idloop,pfinal,
+              CALL bbdangle(pxd,pyd,pzd,nt,ipert1,ianti,idloop,pfinal,
      1 dprob1,lbm)
               CALL ROTATE(PX,PY,PZ,PXd,PYd,PZd)
 *     LORENTZ-TRANSFORMATION OF THE MOMENTUM OF PARTICLES IN THE FINAL STATE 
@@ -6211,35 +5836,30 @@ csp11/21/01 phi production
               if(XSK5/sigK.gt.RANART(NSEED))then
               pz1=p(3,i1)
               pz2=p(3,i2)
-clin-6/2013:
-              ic=0
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c                LB(I2) = 1 + int(2 * RANART(NSEED))
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+                LB(I2) = 1 + int(2 * RANART(NSEED))
               nnn=nnn+1
-clin-6/2013:
-c                LPION(NNN,IRUN)=29
+                LPION(NNN,IRUN)=29
                 EPION(NNN,IRUN)=APHI
-                iblock=222
+                iblock = 222
               GO TO 208
                ENDIF
 c
                  IBLOCK=9
-                 if(ianti.eq.1)iblock=-9
+                 if(ianti .eq. 1)iblock=-9
 c
               pz1=p(3,i1)
               pz2=p(3,i2)
 * DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
               nnn=nnn+1
-clin-6/2013:
-c                LPION(NNN,IRUN)=23
+                LPION(NNN,IRUN)=23
                 EPION(NNN,IRUN)=Aka
               if(srt.le.2.63)then
 * only lambda production is possible
 * (1.1)P+P-->p+L+kaon+
               ic=1
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               GO TO 208
                 ENDIF
        if(srt.le.2.74.and.srt.gt.2.63)then
@@ -6247,14 +5867,12 @@ c              LB(I2)=14
               if(XSK1/(XSK1+XSK2).gt.RANART(NSEED))then
 * lambda production
               ic=1
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               else
 * sigma production
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c                LB(I2) = 15 + int(3 * RANART(NSEED))
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+                LB(I2) = 15 + int(3 * RANART(NSEED))
               ic=2
               endif
               GO TO 208
@@ -6265,23 +5883,20 @@ c                LB(I2) = 15 + int(3 * RANART(NSEED))
      1          gt.RANART(NSEED))then
 * * (1.1)P+P-->p+L+kaon+
               ic=1
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               go to 208
               else
               if(xsk2/(xsk2+xsk3).gt.RANART(NSEED))then
 * pp-->psk
               ic=2
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c                LB(I2) = 15 + int(3 * RANART(NSEED))
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+                LB(I2) = 15 + int(3 * RANART(NSEED))
               else
 * pp-->D+l+k        
               ic=3
-clin-6/2013:
-c                LB(I1) = 6 + int(4 * RANART(NSEED))
-c              lb(i2)=14
+                LB(I1) = 6 + int(4 * RANART(NSEED))
+              lb(i2)=14
               endif
               GO TO 208
               endif
@@ -6291,57 +5906,36 @@ c              lb(i2)=14
               if(xsk1/(xsk1+xsk2+xsk3+xsk4).gt.RANART(NSEED))then
 * p lambda k production
               ic=1
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               go to 208
        else
           if(xsk3/(xsk2+xsk3+xsk4).gt.RANART(NSEED))then
 * delta l K production
               ic=3
-clin-6/2013:
-c                LB(I1) = 6 + int(4 * RANART(NSEED))
-c              lb(i2)=14
+                LB(I1) = 6 + int(4 * RANART(NSEED))
+              lb(i2)=14
               go to 208
           else
               if(xsk2/(xsk2+xsk4).gt.RANART(NSEED))then
 * n sigma k production
-clin-6/2013:
-c                   LB(I1) = 1 + int(2 * RANART(NSEED))
-c                   LB(I2) = 15 + int(3 * RANART(NSEED))
+                   LB(I1) = 1 + int(2 * RANART(NSEED))
+                   LB(I2) = 15 + int(3 * RANART(NSEED))
               ic=2
               else
               ic=4
-clin-6/2013:
-c                LB(I1) = 6 + int(4 * RANART(NSEED))
-c                LB(I2) = 15 + int(3 * RANART(NSEED))
+                LB(I1) = 6 + int(4 * RANART(NSEED))
+                LB(I2) = 15 + int(3 * RANART(NSEED))
               endif
               go to 208
           endif
        endif
        endif
 208             continue
-clin-6/2013:
-       call nnnddd(ic,ianti,netq,lb1f,lb2f,lbpif)
-       LB(I1)=lb1f
-       LB(I2)=lb2f
-       LPION(NNN,IRUN)=lbpif
-c
          if(ianti.eq.1 .and. lb(i1).ge.1 .and. lb(i2).ge.1)then
           lb(i1) = - lb(i1)
           lb(i2) = - lb(i2)
-clin-6/2013:
-c          if(LPION(NNN,IRUN) .eq. 23)LPION(NNN,IRUN)=21
-          if(LPION(NNN,IRUN).eq.23) then
-             LPION(NNN,IRUN)=21
-          elseif(LPION(NNN,IRUN).eq.21) then
-             LPION(NNN,IRUN)=23
-          elseif(LPION(NNN,IRUN).eq.24) then
-             LPION(NNN,IRUN)=22
-          elseif(LPION(NNN,IRUN).eq.22) then
-             LPION(NNN,IRUN)=24
-          endif
-c
+          if(LPION(NNN,IRUN) .eq. 23)LPION(NNN,IRUN)=21
          endif
 * KEEP ALL COORDINATES OF PARTICLE 2 FOR POSSIBLE PHASE SPACE CHANGE
            NTRY1=0
@@ -6482,9 +6076,7 @@ C       if(icou1.lt.0)return
                 LPION(NNN,IRUN)=26
                 EPION(NNN,IRUN)=Arho
               LB(I1)=6
-clin-6/2013: bug in charge conservation:
-c              LB(I2)=7
-              LB(I2)=8
+              LB(I2)=7
        GO TO 2051
                 ENDIF
 * (2.2)N+N -->D+++D-+rho(-)
@@ -6495,22 +6087,15 @@ c              LB(I2)=7
                 LB(I2)=9
        GO TO 2051
               ENDIF 
-clin-6/2013: bug in charge conservation:
-c* (2.3)P+P-->D0+D-+rho(+)
-* (2.3)N+N-->D0+D-+rho(+)
+* (2.3)P+P-->D0+D-+rho(+)
                 IF((XDIR.GT.0.4).AND.(XDIR.LE.0.6))THEN
                 LPION(NNN,IRUN)=27
                 EPION(NNN,IRUN)=Arho
-clin-6/2013: bug in charge conservation:
-c                LB(I1)=9
-c                LB(I2)=8
-                LB(I1)=6
-                LB(I2)=7
+                LB(I1)=9
+                LB(I2)=8
        GO TO 2051
               ENDIF 
-clin-6/2013: bug in charge conservation:
-c* (2.4)P+P-->D0+D0+rho(0)
-* (2.4)N+N-->D0+D0+rho(0)
+* (2.4)P+P-->D0+D0+rho(0)
                 IF((XDIR.GT.0.6).AND.(XDIR.LE.0.8))THEN
                 LPION(NNN,IRUN)=26
                 EPION(NNN,IRUN)=Arho
@@ -6531,9 +6116,7 @@ c* (2.4)P+P-->D0+D0+rho(0)
                 IF(LB(I1)*LB(I2).EQ.2)THEN
                 IF(XDIR.Le.0.17)then
 * (3.1)N+P-->D+++D-+rho(0)
-clin-6/2013: bug in charge conservation:
-c                LPION(NNN,IRUN)=25
-                LPION(NNN,IRUN)=26
+                LPION(NNN,IRUN)=25
                 EPION(NNN,IRUN)=Arho
               LB(I1)=6
               LB(I2)=9
@@ -6551,9 +6134,7 @@ c                LPION(NNN,IRUN)=25
                 IF((XDIR.GT.0.34).AND.(XDIR.LE.0.51))THEN
                 LPION(NNN,IRUN)=27
                 EPION(NNN,IRUN)=Arho
-clin-6/2013: bug in charge conservation:
-c                LB(I1)=7
-                LB(I1)=6
+                LB(I1)=7
                 LB(I2)=8
        GO TO 2051
               ENDIF 
@@ -6970,7 +6551,16 @@ clin-10/25/02-end
       S1   = 1.0 - C1**2 
        IF(S1.LE.0)S1=0
        S1=SQRT(S1)
-      S2  =  SQRT( 1.0 - C2**2 )
+
+clin-9/2012: check argument in sqrt():
+       scheck=1.0 - C2**2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck3: ', scheck
+          scheck=0.
+       endif
+       S2=SQRT(scheck)
+c       S2  =  SQRT( 1.0 - C2**2 )
+
       CT1  = COS(T1)
       ST1  = SIN(T1)
       CT2  = COS(T2)
@@ -7021,23 +6611,16 @@ cc      SAVE /ppb1/
       common/ppmm/pprr,ppee,pppe,rpre,xopoe,rree
 cc      SAVE /ppmm/
       COMMON/RNDF77/NSEED
-clin-6/2013:
-      COMMON/charge/netq,ianti
 cc      SAVE /RNDF77/
       SAVE   
 
       lb1i=lb(i1)
       lb2i=lb(i2)
 
-clin-6/2013:
-cczbyin-8/26/10 net charge of initial particles
-c      netq = LUCHGE(INVFLV(lb(i1)))/3+LUCHGE(INVFLV(lb(i2)))/3 
-cczbyin-8/26/10 end of net charge of initial particles
-
        PX0=PX
        PY0=PY
        PZ0=PZ
-       iblock=1
+        iblock=1
 *-----------------------------------------------------------------------
 * check Meson+Meson inelastic collisions
 clin-9/28/00
@@ -7056,69 +6639,42 @@ c        if(ppin/(ppin+ppel).gt.RANART(NSEED)) then
 clin-10/08/00
 
            ranpi=RANART(NSEED)
-cma-05/16 avoid ranpi=0 for charge conservation
-c           if(ranpi.eq.0) then
-c            write(6,*) 'ranpi=0'
-c            ranpi=1e-6
-c           endif
-cma-05/16 change .ge. to .gt. for charge conservation
-           if((pprr/ppin).gt.ranpi) then
+           if((pprr/ppin).ge.ranpi) then
 
 c     1) pi pi <-> rho rho:
               call pi2ro2(i1,i2,lbb1,lbb2,ei1,ei2,iblock,iseed)
 
 clin-4/03/02 eta equilibration:
-           elseif((pprr+ppee)/ppin.gt.ranpi) then
+           elseif((pprr+ppee)/ppin.ge.ranpi) then
 c     4) pi pi <-> eta eta:
               call pi2et2(i1,i2,lbb1,lbb2,ei1,ei2,iblock,iseed)
-           elseif(((pprr+ppee+pppe)/ppin).gt.ranpi) then
+           elseif(((pprr+ppee+pppe)/ppin).ge.ranpi) then
 c     5) pi pi <-> pi eta:
               call pi3eta(i1,i2,lbb1,lbb2,ei1,ei2,iblock,iseed)
-           elseif(((pprr+ppee+pppe+rpre)/ppin).gt.ranpi) then
+           elseif(((pprr+ppee+pppe+rpre)/ppin).ge.ranpi) then
 c     6) rho pi <-> pi eta:
               call rpiret(i1,i2,lbb1,lbb2,ei1,ei2,iblock,iseed)
-           elseif(((pprr+ppee+pppe+rpre+xopoe)/ppin).gt.ranpi) then
+           elseif(((pprr+ppee+pppe+rpre+xopoe)/ppin).ge.ranpi) then
 c     7) omega pi <-> omega eta:
               call opioet(i1,i2,lbb1,lbb2,ei1,ei2,iblock,iseed)
            elseif(((pprr+ppee+pppe+rpre+xopoe+rree)
-     1             /ppin).gt.ranpi) then
+     1             /ppin).ge.ranpi) then
 c     8) rho rho <-> eta eta:
               call ro2et2(i1,i2,lbb1,lbb2,ei1,ei2,iblock,iseed)
 clin-4/03/02-end
 
 c     2) BBbar production:
            elseif(((pprr+ppee+pppe+rpre+xopoe+rree+ppinnb)/ppin)
-     1             .gt.ranpi) then
+     1             .ge.ranpi) then
+
               call bbarfs(lbb1,lbb2,ei1,ei2,iblock,iseed)
 c     3) KKbar production:
            else
               iblock=66
               ei1=aka
               ei2=aka
-clin-6/2013 forbidden if netq=2 or -2:
-czbyin-8/26/10 make sure charge is conserved
-              if(netq.eq.0) then
-clin-6/2013 corrections: include K+K- & K0-K0bar:
-                 if(RANART(NSEED).le.0.5) then
-                    lbb1=21
-                    lbb2=23
-                 else
-                    lbb1=22
-                    lbb2=24
-                 endif
-              else if (netq.eq.1)then
-                 lbb1=22
-                 lbb2=23
-              else if (netq.eq.-1)then
-                 lbb1=21
-                 lbb2=24
-              else
-                 write(6,*) 'netq forbidden 0: ',netq
-              endif
-clin-9/02/10 pi+pi+ initial state also comes here with 2 charges, 
-c     but it should not produce KKbar due to isospin consideration.
-czbyin-8/26/10 end of making sure charge conservation
-
+              lbb1=21
+              lbb2=23
 clin-11/07/00 pi rho -> K* Kbar and K*bar K productions:
               lb1=lb(i1)
               lb2=lb(i2)
@@ -7131,57 +6687,15 @@ c     1  .or.((lb2.ge.3.and.lb2.le.5).and.(lb1.ge.25.and.lb1.le.27)))
      3       .and.(lb1.ge.25.and.lb1.le.28))) then
            ei1=aks
            ei2=aka
-clin-6/2013:
-c           if(RANART(NSEED).ge.0.5) then
-c              iblock=366
-c              lbb1=30
-c              lbb2=21
-c           else
-c              iblock=367
-c              lbb1=-30
-c              lbb2=23
-c           endif
-           rd=RANART(NSEED)
-           if(netq.eq.-1) then
-              if(rd.ge.0.5) then
-                 iblock=366
-                 lbb1=33
-                 lbb2=21
-              else
-                 iblock=367
-                 lbb1=-30
-                 lbb2=24
-              endif
-           elseif(netq.eq.0) then
-              if(rd.ge.0.25) then
-                 iblock=366
-                 lbb1=33
-                 lbb2=22
-              elseif(rd.ge.0.5) then
-                 iblock=366
-                 lbb1=30
-                 lbb2=21
-              elseif(rd.ge.0.75) then
-                 iblock=367
-                 lbb1=-33
-                 lbb2=24
-              else
-                 iblock=367
-                 lbb1=-30
-                 lbb2=23
-              endif
+           if(RANART(NSEED).ge.0.5) then
+              iblock=366
+              lbb1=30
+              lbb2=21
            else
-              if(rd.ge.0.5) then
-                 iblock=366
-                 lbb1=30
-                 lbb2=22
-              else
-                 iblock=367
-                 lbb1=-33
-                 lbb2=23
-              endif
+              iblock=367
+              lbb1=-30
+              lbb2=23
            endif
-c
         endif
 clin-11/07/00-end
            endif
@@ -7218,7 +6732,7 @@ cbzdbg10/15/99 end
           PR=SQRT(PR2)/(2.*SRT)
           C1   = 1.0 - 2.0 * RANART(NSEED)
           T1   = 2.0 * PI * RANART(NSEED)
-      S1   = SQRT( 1.0 - C1**2 )
+          S1   = SQRT( 1.0 - C1**2 )
       CT1  = COS(T1)
       ST1  = SIN(T1)
       PZ   = PR * C1
@@ -7348,8 +6862,6 @@ cc      SAVE /RNDF77/
      2     dpp1(MAXSTR,MAXR),dppion(MAXSTR,MAXR)
       common /dpi/em2,lb2
       common /para8/ idpert,npertd,idxsec
-clin-6/2013:
-      COMMON/charge/netq,ianti
       dimension ppd(3,npdmax),lbpd(npdmax)
       SAVE   
 *-----------------------------------------------------------------------
@@ -7362,12 +6874,11 @@ clin-6/2013:
         PR  = SQRT( PX**2 + PY**2 + PZ**2 )
         C2  = PZ / PR
         X1  = RANART(NSEED)
-clin-6/2013:
-c        ianti=0
-c        if(lb(i1).lt.0 .and. lb(i2).lt.0)ianti=1
+        ianti=0
+        if(lb(i1).lt.0 .and. lb(i2).lt.0)ianti=1
+
 clin-6/2008 Production of perturbative deuterons for idpert=1:
-c      call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
-      call sbbdm(srt,sdprod,lbm,xmm,pfinal)
+      call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
       if(idpert.eq.1.and.ipert1.eq.1) then
          IF (SRT .LT. 2.012) RETURN
          if((iabs(lb(i1)).eq.1.or.iabs(lb(i1)).eq.2)
@@ -7383,8 +6894,7 @@ c      call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
 *-----------------------------------------------------------------------
 *COM: TEST FOR ELASTIC SCATTERING (EITHER N-N OR DELTA-DELTA 0R
 *      N-DELTA OR N*-N* or N*-Delta)
-cma-05/16      IF (X1 .LE. SIGNN/SIG) THEN
-      IF (X1 .LT. SIGNN/SIG) THEN
+      IF (X1 .LE. SIGNN/SIG) THEN
 *COM:  PARAMETRISATION IS TAKEN FROM THE CUGNON-PAPER
         AS  = ( 3.65 * (SRT - 1.8766) )**6
         A   = 6.0 * AS / (1.0 + AS)
@@ -7405,8 +6915,7 @@ clin-6/2008 add d+meson production for n*N*(0)(1440) and p*N*(+)(1440) channels
 c     (they did not have any inelastic reactions before):
         if(((iabs(LB(I1)).EQ.2.or.iabs(LB(I2)).EQ.2).AND.
      1       (LB(I1)*LB(I2)).EQ.20).or.(LB(I1)*LB(I2)).EQ.13) then
-cma-05/16           IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-           IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+           IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
         ENDIF
 c
 * Resonance absorption or Delta + N-->N*(1440), N*(1535)
@@ -7440,11 +6949,9 @@ c
      &         ((iabs(lb(i1)).eq.1).and.(iabs(lb(i2)).eq.9)).OR.
      &         ((iabs(lb(i2)).eq.1).and.(iabs(lb(i1)).eq.9)))THEN
 clin-6/2008
-cma-05/16          IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-          IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+          IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c          IF((SIGK+SIGNN)/SIG.GE.X1)GO TO 306
-cma-05/16          IF((SIGK+SIGNN+sdprod)/SIG.GE.X1)GO TO 306
-          IF((SIGK+SIGNN+sdprod)/SIG.GT.X1)GO TO 306
+          IF((SIGK+SIGNN+sdprod)/SIG.GE.X1)GO TO 306
 c
        ENDIF
 * WE DETERMINE THE REACTION CHANNELS IN THE FOLLOWING
@@ -7455,8 +6962,7 @@ c
         SIGND=SIGMA(SRT,1,1,0)+0.5*SIGMA(SRT,1,1,1)
         SIGDN=0.25*SIGND*RENOM
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF(X1.GT.(SIGNN+SIGDN+X1440+X1535+SIGK)/SIG)RETURN
         IF(X1.GT.(SIGNN+SIGDN+X1440+X1535+SIGK+sdprod)/SIG)RETURN
 c
@@ -7488,8 +6994,7 @@ c     replace by elastic process (return):
         SIGND=SIGMA(SRT,1,1,0)+0.5*SIGMA(SRT,1,1,1)
         SIGDN=0.25*SIGND*RENOM
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF (X1.GT.(SIGNN+SIGDN+X1440+X1535+SIGK)/SIG)RETURN
         IF (X1.GT.(SIGNN+SIGDN+X1440+X1535+SIGK+sdprod)/SIG)RETURN
 c
@@ -7518,8 +7023,7 @@ clin-2/26/03 causes energy violation, replace by elastic process (return):
         SIGND=1.5*SIGMA(SRT,1,1,1)
         SIGDN=0.25*SIGND*RENOM
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF(X1.GT.(SIGNN+SIGDN+x1440+x1535+SIGK)/SIG)RETURN
         IF(X1.GT.(SIGNN+SIGDN+x1440+x1535+SIGK+sdprod)/SIG)RETURN
 c
@@ -7543,8 +7047,7 @@ c
         SIGND=1.5*SIGMA(SRT,1,1,1)
         SIGDN=0.25*SIGND*RENOM
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF(X1.GT.(SIGNN+SIGDN+x1440+x1535+SIGK)/SIG)RETURN
         IF(X1.GT.(SIGNN+SIGDN+x1440+x1535+SIGK+sdprod)/SIG)RETURN
 c
@@ -7569,8 +7072,7 @@ c
         SIGND=0.5*SIGMA(SRT,1,1,1)+0.25*SIGMA(SRT,1,1,0)
         SIGDN=0.5*SIGND*RENOM
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF(X1.GT.(SIGNN+SIGDN+2.*x1440+2.*x1535+SIGK)/SIG)RETURN
         IF(X1.GT.(SIGNN+SIGDN+2.*x1440+2.*x1535+SIGK+sdprod)/SIG)RETURN
 c
@@ -7595,8 +7097,7 @@ c
         SIGND=0.5*SIGMA(SRT,1,1,1)+0.25*SIGMA(SRT,1,1,0)
         SIGDN=0.5*SIGND*RENOM
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF(X1.GT.(SIGNN+SIGDN+2.*x1440+2.*x1535+SIGK)/SIG)RETURN
         IF(X1.GT.(SIGNN+SIGDN+2.*x1440+2.*x1535+SIGK+sdprod)/SIG)RETURN
 c
@@ -7622,8 +7123,7 @@ c
         SIGND=(3./4.)*SIGMA(SRT,2,0,1)
         SIGDN=SIGND*RENOMN
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF(X1.GT.(SIGNN+SIGDN+X1535+SIGK)/SIG)RETURN
         IF(X1.GT.(SIGNN+SIGDN+X1535+SIGK+sdprod)/SIG)RETURN
 c
@@ -7643,8 +7143,7 @@ c
         SIGND=(3./4.)*SIGMA(SRT,2,0,1)
         SIGDN=SIGND*RENOMN
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF(X1.GT.(SIGNN+SIGDN+X1535+SIGK)/SIG)RETURN
         IF(X1.GT.(SIGNN+SIGDN+X1535+SIGK+sdprod)/SIG)RETURN
 c
@@ -7664,8 +7163,7 @@ c
         SIGND=X1535
         SIGDN=SIGND*RENOM1
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF(X1.GT.(SIGNN+SIGDN+SIGK)/SIG)RETURN
         IF(X1.GT.(SIGNN+SIGDN+SIGK+sdprod)/SIG)RETURN
 c
@@ -8182,7 +7680,15 @@ c         cc1=ptr(0.33*pr,iseed)
          cc1=ptr(xptr,iseed)
 clin-10/25/02-end
 
-         c1=sqrt(pr**2-cc1**2)/pr
+clin-9/2012: check argument in sqrt():
+         scheck=pr**2-cc1**2
+         if(scheck.lt.0) then
+            write(99,*) 'scheck4: ', scheck
+            scheck=0.
+         endif
+         c1=sqrt(scheck)/pr
+c         c1=sqrt(pr**2-cc1**2)/pr
+
          endif
           T1   = 2.0 * PI * RANART(NSEED)
           IBLOCK=3
@@ -8199,8 +7705,25 @@ clin-10/25/02-end
       ELSE
          T2=ATAN2(PY,PX)
       END IF
-      S1   = SQRT( 1.0 - C1**2 )
-      S2  =  SQRT( 1.0 - C2**2 )
+
+clin-9/2012: check argument in sqrt():
+      scheck=1.0 - C1**2
+      if(scheck.lt.0) then
+         write(99,*) 'scheck5: ', scheck
+         scheck=0.
+      endif
+      S1=SQRT(scheck)
+c      S1   = SQRT( 1.0 - C1**2 )
+
+clin-9/2012: check argument in sqrt():
+      scheck=1.0 - C2**2
+      if(scheck.lt.0) then
+         write(99,*) 'scheck6: ', scheck
+         scheck=0.
+      endif
+      S2=SQRT(scheck)
+c      S2  =  SQRT( 1.0 - C2**2 )
+
       CT1  = COS(T1)
       ST1  = SIN(T1)
       CT2  = COS(T2)
@@ -8217,14 +7740,12 @@ csp11/21/01 phi production
               if(XSK5/sigK.gt.RANART(NSEED))then
               pz1=p(3,i1)
               pz2=p(3,i2)
-clin-6/2013:
-              ic=0
-c              LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2) = 1 + int(2 * RANART(NSEED))
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+                LB(I2) = 1 + int(2 * RANART(NSEED))
               nnn=nnn+1
-c              LPION(NNN,IRUN)=29
-              EPION(NNN,IRUN)=APHI
-              iblock=222
+                LPION(NNN,IRUN)=29
+                EPION(NNN,IRUN)=APHI
+                iblock = 222
               GO TO 208
                ENDIF
 csp11/21/01 end
@@ -8235,31 +7756,30 @@ c
               pz2=p(3,i2)
 * DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
               nnn=nnn+1
-clin-6/2013:
-c                LPION(NNN,IRUN)=23
+                LPION(NNN,IRUN)=23
                 EPION(NNN,IRUN)=Aka
               if(srt.le.2.63)then
 * only lambda production is possible
 * (1.1)P+P-->p+L+kaon+
-                 ic=1
-clin-6/2013:
-c                 LB(I1) = 1 + int(2 * RANART(NSEED))
-c                 LB(I2)=14
-                 GO TO 208
-              ENDIF
+              ic=1
+
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
+              GO TO 208
+                ENDIF
        if(srt.le.2.74.and.srt.gt.2.63)then
 * both Lambda and sigma production are possible
               if(XSK1/(XSK1+XSK2).gt.RANART(NSEED))then
 * lambda production
               ic=1
-clin-6/2013:
-c              LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               else
 * sigma production
-clin-6/2013:
-c                   LB(I1) = 1 + int(2 * RANART(NSEED))
-c                   LB(I2) = 15 + int(3 * RANART(NSEED))
+
+                   LB(I1) = 1 + int(2 * RANART(NSEED))
+                   LB(I2) = 15 + int(3 * RANART(NSEED))
               ic=2
               endif
               GO TO 208
@@ -8270,23 +7790,24 @@ c                   LB(I2) = 15 + int(3 * RANART(NSEED))
      1          gt.RANART(NSEED))then
 * * (1.1)P+P-->p+L+kaon+
               ic=1
-clin-6/2013:
-c              LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               go to 208
               else
               if(xsk2/(xsk2+xsk3).gt.RANART(NSEED))then
 * pp-->psk
               ic=2
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c                LB(I2) = 15 + int(3 * RANART(NSEED))
+
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+                LB(I2) = 15 + int(3 * RANART(NSEED))
+
               else
 * pp-->D+l+k        
               ic=3
-clin-6/2013:
-c                LB(I1) = 6 + int(4 * RANART(NSEED))
-c              lb(i2)=14
+
+                LB(I1) = 6 + int(4 * RANART(NSEED))
+              lb(i2)=14
               endif
               GO TO 208
               endif
@@ -8296,58 +7817,43 @@ c              lb(i2)=14
               if(xsk1/(xsk1+xsk2+xsk3+xsk4).gt.RANART(NSEED))then
 * p lambda k production
               ic=1
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               go to 208
        else
           if(xsk3/(xsk2+xsk3+xsk4).gt.RANART(NSEED))then
 * delta l K production
               ic=3
-clin-6/2013:
-c                LB(I1) = 6 + int(4 * RANART(NSEED))
-c              lb(i2)=14
+
+                LB(I1) = 6 + int(4 * RANART(NSEED))
+              lb(i2)=14
               go to 208
           else
               if(xsk2/(xsk2+xsk4).gt.RANART(NSEED))then
 * n sigma k production
-clin-6/2013:
-c                   LB(I1) = 1 + int(2 * RANART(NSEED))
-c                   LB(I2) = 15 + int(3 * RANART(NSEED))
+
+                   LB(I1) = 1 + int(2 * RANART(NSEED))
+                   LB(I2) = 15 + int(3 * RANART(NSEED))
+
               ic=2
               else
               ic=4
-clin-6/2013:
-c                LB(I1) = 6 + int(4 * RANART(NSEED))
-c                LB(I2) = 15 + int(3 * RANART(NSEED))
+
+                LB(I1) = 6 + int(4 * RANART(NSEED))
+                LB(I2) = 15 + int(3 * RANART(NSEED))
+
               endif
               go to 208
           endif
        endif
        endif
 208             continue
-clin-6/2013:
-       call nnnddd(ic,ianti,netq,lb1f,lb2f,lbpif)
-       LB(I1)=lb1f
-       LB(I2)=lb2f
-       LPION(NNN,IRUN)=lbpif
-c
-       if(ianti.eq.1 .and. lb(i1).ge.1 .and. lb(i2).ge.1)then
+         if(ianti.eq.1 .and. lb(i1).ge.1 .and. lb(i2).ge.1)then
           lb(i1) = - lb(i1)
           lb(i2) = - lb(i2)
-clin-6/2013:
-c          if(LPION(NNN,IRUN) .eq. 23)LPION(NNN,IRUN)=21
-          if(LPION(NNN,IRUN).eq.23) then
-             LPION(NNN,IRUN)=21
-          elseif(LPION(NNN,IRUN).eq.21) then
-             LPION(NNN,IRUN)=23
-          elseif(LPION(NNN,IRUN).eq.24) then
-             LPION(NNN,IRUN)=22
-          elseif(LPION(NNN,IRUN).eq.22) then
-             LPION(NNN,IRUN)=24
-          endif
-c
-       endif
+          if(LPION(NNN,IRUN) .eq. 23)LPION(NNN,IRUN)=21
+         endif
        lbi1=lb(i1)
        lbi2=lb(i2)
 * KEEP ALL COORDINATES OF PARTICLE 2 FOR POSSIBLE PHASE SPACE CHANGE
@@ -8447,9 +7953,7 @@ c     Just create the regular deuteron+pi:
 c
            dprob1=sdprod/sig/float(npertd)
            do idloop=1,ndloop
-clin-6/2013:
-c              CALL bbdangle(pxd,pyd,pzd,nt,ipert1,ianti,idloop,pfinal,
-              CALL bbdangle(pxd,pyd,pzd,nt,ipert1,idloop,pfinal,
+              CALL bbdangle(pxd,pyd,pzd,nt,ipert1,ianti,idloop,pfinal,
      1 dprob1,lbm)
               CALL ROTATE(PX,PY,PZ,PXd,PYd,PZd)
 *     LORENTZ-TRANSFORMATION OF THE MOMENTUM OF PARTICLES IN THE FINAL STATE 
@@ -8668,8 +8172,6 @@ cc      SAVE /RNDF77/
      2     dpp1(MAXSTR,MAXR),dppion(MAXSTR,MAXR)
       common /dpi/em2,lb2
       common /para8/ idpert,npertd,idxsec
-clin-6/2013:
-      COMMON/charge/netq,ianti
       dimension ppd(3,npdmax),lbpd(npdmax)
       SAVE   
 *-----------------------------------------------------------------------
@@ -8687,12 +8189,11 @@ clin-6/2013:
         T2=ATAN2(PY,PX)
       END IF
       X1  = RANART(NSEED)
-clin-6/2013:
-c      ianti=0
-c      if(lb(i1).lt.0 .and. lb(i2).lt.0)ianti=1
+      ianti=0
+      if(lb(i1).lt.0 .and. lb(i2).lt.0)ianti=1
+
 clin-6/2008 Production of perturbative deuterons for idpert=1:
-c      call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
-      call sbbdm(srt,sdprod,lbm,xmm,pfinal)
+      call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
       if(idpert.eq.1.and.ipert1.eq.1) then
          IF (SRT .LT. 2.012) RETURN
          if((iabs(lb(i1)).ge.6.and.iabs(lb(i1)).le.13)
@@ -8706,8 +8207,7 @@ c      call sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
 *-----------------------------------------------------------------------
 *COM: TEST FOR ELASTIC SCATTERING (EITHER N-N OR DELTA-DELTA 0R
 *      N-DELTA OR N*-N* or N*-Delta)
-cma-05/16      IF (X1 .LE. SIGNN/SIG) THEN
-      IF (X1 .LT. SIGNN/SIG) THEN
+      IF (X1 .LE. SIGNN/SIG) THEN
 *COM:  PARAMETRISATION IS TAKEN FROM THE CUGNON-PAPER
         AS  = ( 3.65 * (SRT - 1.8766) )**6
         A   = 6.0 * AS / (1.0 + AS)
@@ -8756,14 +8256,7 @@ C       if((lb(i2).ge.12).and.(lb(i1).ge.3))return
        xsk5=0
        t1nlk=ana+al+akp
        if(srt.le.t1nlk)go to 222
-clin-6/2013:
-c       XSK1=1.5*PPLPK(SRT)
-       if((ianti.eq.0.and.(netq.gt.2.or.netq.lt.0)).or.
-     1      (ianti.eq.1.and.(netq.gt.0.or.netq.lt.-2))) then
-          XSK1=0.
-       else
-          XSK1=1.5*PPLPK(SRT)
-       endif
+       XSK1=1.5*PPLPK(SRT)
 * for DLK channel
        t1dlk=ada+al+akp
        t2dlk=ada+al-akp
@@ -8771,28 +8264,14 @@ c       XSK1=1.5*PPLPK(SRT)
        es=srt
        pmdlk2=(es**2-t1dlk**2)*(es**2-t2dlk**2)/(4.*es**2)
        pmdlk=sqrt(pmdlk2)
-clin-6/2013:
-c       XSK3=1.5*PPLPK(srt)
-       if((ianti.eq.0.and.(netq.gt.3.or.netq.lt.-1)).or.
-     1      (ianti.eq.1.and.(netq.gt.1.or.netq.lt.-3))) then
-          XSK3=0.
-       else
-          XSK3=1.5*PPLPK(srt)
-       endif
+       XSK3=1.5*PPLPK(srt)
 * for NSK channel
        t1nsk=ana+as+akp
        t2nsk=ana+as-akp
        if(srt.le.t1nsk)go to 222
        pmnsk2=(es**2-t1nsk**2)*(es**2-t2nsk**2)/(4.*es**2)
        pmnsk=sqrt(pmnsk2)
-clin-6/2013:
-c       XSK2=1.5*(PPK1(srt)+PPK0(srt))
-       if((ianti.eq.0.and.(netq.gt.3.or.netq.lt.-1)).or.
-     1      (ianti.eq.1.and.(netq.gt.1.or.netq.lt.-3))) then
-          XSK2=0.
-       else
-          XSK2=1.5*(PPK1(srt)+PPK0(srt))
-       endif
+       XSK2=1.5*(PPK1(srt)+PPK0(srt))
 * for DSK channel
        t1DSk=aDa+aS+akp
        t2DSk=aDa+aS-akp
@@ -8832,24 +8311,18 @@ cbz3/16/99 pion end
      &       ((iabs(lb(i2)).ge.12).and.(iabs(lb(i1)).ge.6)))THEN
        signd=sigk+s2d
 clin-6/2008
-cma-05/16       IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-       IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+       IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c       if(x1.gt.(signd+signn)/sig)return
        if(x1.gt.(signd+signn+sdprod)/sig)return
 c
 * if kaon production
 clin-6/2008
 c       IF(SIGK/SIG.GE.RANART(NSEED))GO TO 306
-cma-05/16       IF((SIGK+sdprod)/SIG.GE.RANART(NSEED))GO TO 306
-       IF((SIGK+sdprod)/SIG.GT.RANART(NSEED))GO TO 306
+       IF((SIGK+sdprod)/SIG.GE.RANART(NSEED))GO TO 306
 c
 * if reabsorption
-ctest off
-c       if(nt.eq.45) write(11,*) 'a0 ',lb(i1),lb(i2),iblock,netq,netq0
-c
        go to 1012
        ENDIF
-c
        IDD=iabs(LB(I1)*LB(I2))
 * channels have the same charge as pp 
         IF((IDD.EQ.63).OR.(IDD.EQ.64).OR.(IDD.EQ.48).
@@ -8858,8 +8331,7 @@ c
      3  OR.(IDD.EQ.90).OR.(IDD.EQ.70))THEN
         SIGND=X1535+SIGK+s2d
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF (X1.GT.(SIGNN+SIGND)/SIG)RETURN
         IF (X1.GT.(SIGNN+SIGND+sdprod)/SIG)RETURN
 c
@@ -8880,14 +8352,12 @@ c
        IF(IDD.EQ.70)N12=35
        GO TO 1011
         ENDIF
-c
 * IN DELTA+N*(1440) and N*(1440)+N*(1440) COLLISIONS, 
 * N*(1535), kaon production and reabsorption are ALLOWED
 * IN N*(1440)+N*(1440) COLLISIONS, ONLY N*(1535) IS ALLOWED
        IF((IDD.EQ.110).OR.(IDD.EQ.77).OR.(IDD.EQ.80))THEN
 clin-6/2008
-cma-05/16          IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-          IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+          IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c       IF(X1.GT.(SIGNN+X1535+SIGK+s2d)/SIG)RETURN
           IF(X1.GT.(SIGNN+X1535+SIGK+s2d+sdprod)/SIG)RETURN
 c
@@ -8901,15 +8371,13 @@ c
        IF((IDD.EQ.110).AND.(RANART(NSEED).LE.0.5))N12=28
        GO TO 1011
         ENDIF
-c
        IF((IDD.EQ.54).OR.(IDD.EQ.56))THEN
 * LIKE FOR N+P COLLISION, 
 * IN DELTA+DELTA COLLISIONS BOTH N*(1440) AND N*(1535) CAN BE PRODUCED
         SIG2=(3./4.)*SIGMA(SRT,2,0,1)
         SIGND=2.*(SIG2+X1535)+SIGK+s2d
 clin-6/2008
-cma-05/16        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
-        IF(X1.LT.((SIGNN+sdprod)/SIG)) GO TO 108
+        IF(X1.LE.((SIGNN+sdprod)/SIG)) GO TO 108
 c        IF(X1.GT.(SIGNN+SIGND)/SIG)RETURN
         IF(X1.GT.(SIGNN+SIGND+sdprod)/SIG)RETURN
 c
@@ -8929,7 +8397,6 @@ c
        IF((IDD.EQ.56).AND.(RANART(NSEED).LE.0.5))N12=16
               ENDIF
        ENDIF
-c
 1011       CONTINUE
        iblock=5
 *PARAMETRIZATION OF THE SHAPE OF THE N*(1440) AND N*(1535) 
@@ -8994,9 +8461,6 @@ c     (here taken as its central value + 2* B-W fullwidth):
 *-------------------------------------------------------
 * RELABLE BARYON I1 AND I2
 *13 D(++)+D(-)--> N*(+)(14)+n
-ctest off
-c         if(nt.eq.45) write(11,*) 'a ',lb(i1),lb(i2),iblock,netq,netq0
-c
           IF(N12.EQ.13)THEN
           IF(RANART(NSEED).LE.0.5)THEN
           LB(I2)=11
@@ -9163,9 +8627,8 @@ c
          go to 200
           ENDIF
 *25 N*(+)+N*(+)--> N*(0)(15)+P
-cma-05/16 change into N*(+)+N*(+)--> N*(+)(15)+P
           IF(N12.EQ.25)THEN
-          LB(I2)=13
+          LB(I2)=12
           E(I2)=DM
          LB(I1)=1
          E(I1)=AMP
@@ -9507,10 +8970,6 @@ cma-05/16 change into N*(+)+N*(+)--> N*(+)(15)+P
           ENDIF
          go to 200
           ENDIF
-clin-6/2013: forbid certain charge states:
-          if((ianti.eq.0.and.netq.ne.1).or.
-     1         (ianti.eq.1.and.netq.ne.-1)) goto 200
-c
          lb(i1)=1
          e(i1)=amp
          lb(i2)=2
@@ -9521,9 +8980,6 @@ c
 * assumed to have the same pt distribution as pp
 200       EM1=E(I1)
           EM2=E(I2)
-ctest off
-c         if(nt.eq.45) write(11,*) 'b ',lb(i1),lb(i2),iblock,netq,netq0
-c
           PR2   = (SRT**2 - EM1**2 - EM2**2)**2
      1                - 4.0 * (EM1*EM2)**2
           IF(PR2.LE.0.)PR2=1.e-09
@@ -9538,7 +8994,15 @@ c         cc1=ptr(0.33*pr,iseed)
          cc1=ptr(xptr,iseed)
 clin-10/25/02-end
 
-         c1=sqrt(pr**2-cc1**2)/pr
+clin-9/2012: check argument in sqrt():
+         scheck=pr**2-cc1**2
+         if(scheck.lt.0) then
+            write(99,*) 'scheck7: ', scheck
+            scheck=0.
+         endif
+         c1=sqrt(scheck)/pr
+c         c1=sqrt(pr**2-cc1**2)/pr
+
          endif
           T1   = 2.0 * PI * RANART(NSEED)
        if(ianti.eq.1 .and. lb(i1).ge.1 .and. lb(i2).ge.1)then
@@ -9547,8 +9011,25 @@ clin-10/25/02-end
        endif
          ENDIF
 *COM: SET THE NEW MOMENTUM COORDINATES
-107   S1   = SQRT( 1.0 - C1**2 )
-      S2  =  SQRT( 1.0 - C2**2 )
+
+clin-9/2012: check argument in sqrt():
+ 107     scheck=1.0 - C1**2
+         if(scheck.lt.0) then
+            write(99,*) 'scheck8: ', scheck
+            scheck=0.
+         endif
+         S1=SQRT(scheck)
+c107   S1   = SQRT( 1.0 - C1**2 )
+
+clin-9/2012: check argument in sqrt():
+      scheck=1.0 - C2**2
+      if(scheck.lt.0) then
+         write(99,*) 'scheck9: ', scheck
+         scheck=0.
+      endif
+      S2=SQRT(scheck)
+c      S2  =  SQRT( 1.0 - C2**2 )
+
       CT1  = COS(T1)
       ST1  = SIN(T1)
       CT2  = COS(T2)
@@ -9565,14 +9046,12 @@ csp11/21/01 phi production
               if(XSK5/sigK.gt.RANART(NSEED))then
               pz1=p(3,i1)
               pz2=p(3,i2)
-clin-6/2013:
-              ic=0
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c                LB(I2) = 1 + int(2 * RANART(NSEED))
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+                LB(I2) = 1 + int(2 * RANART(NSEED))
               nnn=nnn+1
-c                LPION(NNN,IRUN)=29
+                LPION(NNN,IRUN)=29
                 EPION(NNN,IRUN)=APHI
-                iblock=222
+                iblock = 222
               GO TO 208
                ENDIF
               iblock=10
@@ -9581,16 +9060,14 @@ c                LPION(NNN,IRUN)=29
               pz2=p(3,i2)
 * DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
               nnn=nnn+1
-clin-6/2013:
-c                LPION(NNN,IRUN)=23
+                LPION(NNN,IRUN)=23
                 EPION(NNN,IRUN)=Aka
               if(srt.le.2.63)then
 * only lambda production is possible
 * (1.1)P+P-->p+L+kaon+
               ic=1
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               GO TO 208
                 ENDIF
        if(srt.le.2.74.and.srt.gt.2.63)then
@@ -9598,14 +9075,12 @@ c              LB(I2)=14
               if(XSK1/(XSK1+XSK2).gt.RANART(NSEED))then
 * lambda production
               ic=1
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               else
 * sigma production
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c                LB(I2) = 15 + int(3 * RANART(NSEED))
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+                LB(I2) = 15 + int(3 * RANART(NSEED))
               ic=2
               endif
               GO TO 208
@@ -9615,23 +9090,20 @@ c                LB(I2) = 15 + int(3 * RANART(NSEED))
               if(xsk1/(xsk1+xsk2+xsk3).gt.RANART(NSEED))then
 * * (1.1)P+P-->p+L+kaon+
               ic=1
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               go to 208
               else
               if(xsk2/(xsk2+xsk3).gt.RANART(NSEED))then
 * pp-->psk
               ic=2
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c                LB(I2) = 15 + int(3 * RANART(NSEED))
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+                LB(I2) = 15 + int(3 * RANART(NSEED))
               else
 * pp-->D+l+k        
               ic=3
-clin-6/2013:
-c                LB(I1) = 6 + int(4 * RANART(NSEED))
-c              lb(i2)=14
+                LB(I1) = 6 + int(4 * RANART(NSEED))
+              lb(i2)=14
               endif
               GO TO 208
               endif
@@ -9641,58 +9113,37 @@ c              lb(i2)=14
               if(xsk1/(xsk1+xsk2+xsk3+xsk4).gt.RANART(NSEED))then
 * p lambda k production
               ic=1
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c              LB(I2)=14
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+              LB(I2)=14
               go to 208
        else
           if(xsk3/(xsk2+xsk3+xsk4).gt.RANART(NSEED))then
 * delta l K production
               ic=3
-clin-6/2013:
-c                LB(I1) = 6 + int(4 * RANART(NSEED))
-c              lb(i2)=14
+                LB(I1) = 6 + int(4 * RANART(NSEED))
+              lb(i2)=14
               go to 208
           else
               if(xsk2/(xsk2+xsk4).gt.RANART(NSEED))then
 * n sigma k production
-clin-6/2013:
-c                LB(I1) = 1 + int(2 * RANART(NSEED))
-c                LB(I2) = 15 + int(3 * RANART(NSEED))
+                LB(I1) = 1 + int(2 * RANART(NSEED))
+                LB(I2) = 15 + int(3 * RANART(NSEED))
               ic=2
               else
 * D sigma K
               ic=4
-clin-6/2013:
-c                LB(I1) = 6 + int(4 * RANART(NSEED))
-c                LB(I2) = 15 + int(3 * RANART(NSEED))
+                LB(I1) = 6 + int(4 * RANART(NSEED))
+                LB(I2) = 15 + int(3 * RANART(NSEED))
               endif
               go to 208
           endif
        endif
        endif
 208             continue
-clin-6/2013:
-       call nnnddd(ic,ianti,netq,lb1f,lb2f,lbpif)
-       LB(I1)=lb1f
-       LB(I2)=lb2f
-       LPION(NNN,IRUN)=lbpif
-c
          if(ianti.eq.1 .and. lb(i1).ge.1 .and. lb(i2).ge.1)then
           lb(i1) = - lb(i1)
           lb(i2) = - lb(i2)
-clin-6/2013:
-c          if(LPION(NNN,IRUN) .eq. 23)LPION(NNN,IRUN)=21
-          if(LPION(NNN,IRUN).eq.23) then
-             LPION(NNN,IRUN)=21
-          elseif(LPION(NNN,IRUN).eq.21) then
-             LPION(NNN,IRUN)=23
-          elseif(LPION(NNN,IRUN).eq.24) then
-             LPION(NNN,IRUN)=22
-          elseif(LPION(NNN,IRUN).eq.22) then
-             LPION(NNN,IRUN)=24
-          endif
-c
+          if(LPION(NNN,IRUN) .eq. 23)LPION(NNN,IRUN)=21
          endif
        lbi1=lb(i1)
        lbi2=lb(i2)
@@ -9792,9 +9243,7 @@ c     Just create the regular deuteron+pi:
 c
            dprob1=sdprod/sig/float(npertd)
            do idloop=1,ndloop
-clin-6/2013:
-c              CALL bbdangle(pxd,pyd,pzd,nt,ipert1,ianti,idloop,pfinal,
-              CALL bbdangle(pxd,pyd,pzd,nt,ipert1,idloop,pfinal,
+              CALL bbdangle(pxd,pyd,pzd,nt,ipert1,ianti,idloop,pfinal,
      1 dprob1,lbm)
               CALL ROTATE(PX,PY,PZ,PXd,PYd,PZd)
 *     LORENTZ-TRANSFORMATION OF THE MOMENTUM OF PARTICLES IN THE FINAL STATE 
@@ -9944,7 +9393,16 @@ cc      SAVE /RNDF77/
       ELSE
         SIGN = 0.
       END IF
-      BETA = SIGN * SQRT(GAMMA**2-1.)/GAMMA
+
+clin-9/2012: check argument in sqrt():
+      scheck=GAMMA**2-1.
+      if(scheck.lt.0) then
+         write(99,*) 'scheck10: ', scheck
+         scheck=0.
+      endif
+      BETA=SIGN*SQRT(scheck)/GAMMA
+c      BETA = SIGN * SQRT(GAMMA**2-1.)/GAMMA
+
 *-----------------------------------------------------------------------
 *     TARGET-ID = 1 AND PROJECTILE-ID = -1
 *
@@ -10639,12 +10097,30 @@ cc      SAVE /ss/
         FD=4.*(AM0**2)*W1535(DMASS)/((DMASS**2-1.535**2)**2
      1  +AM0**2*W1535(DMASS)**2)
         IF(CON.EQ.1.)THEN
-        P1=SQRT((SRT**2+DMASS**2-AMN**2)**2
-     1  /(4.*SRT**2)-DMASS**2)
+
+clin-9/2012: check argument in sqrt():
+           scheck=(SRT**2+DMASS**2-AMN**2)**2/(4.*SRT**2)-DMASS**2
+           if(scheck.lt.0) then
+              write(99,*) 'scheck11: ', scheck
+              scheck=0.
+           endif
+           P1=SQRT(scheck)
+c           P1=SQRT((SRT**2+DMASS**2-AMN**2)**2
+c     1          /(4.*SRT**2)-DMASS**2)
+
         ELSE
         DMASS=AMN+AVPI
-        P1=SQRT((SRT**2+DMASS**2-AMN**2)**2
-     1  /(4.*SRT**2)-DMASS**2)
+
+clin-9/2012: check argument in sqrt():
+        scheck=(SRT**2+DMASS**2-AMN**2)**2/(4.*SRT**2)-DMASS**2
+        if(scheck.lt.0) then
+           write(99,*) 'scheck12: ', scheck
+           scheck=0.
+        endif
+        P1=SQRT(scheck)
+c        P1=SQRT((SRT**2+DMASS**2-AMN**2)**2
+c     1  /(4.*SRT**2)-DMASS**2)
+
         ENDIF
         FD5=FD*P1*DMASS
         RETURN
@@ -10660,12 +10136,29 @@ c     BY USING OF BREIT-WIGNER FORMULA
         AN0=1.43
         FN=4.*(AN0**2)*WIDTH/((DMASS**2-1.44**2)**2+AN0**2*WIDTH**2)
         IF(CON.EQ.1.)THEN
-        P1=SQRT((SRT**2+DMASS**2-AMN**2)**2
-     1  /(4.*SRT**2)-DMASS**2)
+
+clin-9/2012: check argument in sqrt():
+           scheck=(SRT**2+DMASS**2-AMN**2)**2/(4.*SRT**2)-DMASS**2
+           if(scheck.lt.0) then
+              write(99,*) 'scheck13: ', scheck
+              scheck=0.
+           endif
+           P1=SQRT(scheck)
+c        P1=SQRT((SRT**2+DMASS**2-AMN**2)**2
+c     1  /(4.*SRT**2)-DMASS**2)
+
         ELSE
         DMASS=AMN+AVPI
-        P1=SQRT((SRT**2+DMASS**2-AMN**2)**2
-     1  /(4.*SRT**2)-DMASS**2)
+clin-9/2012: check argument in sqrt():
+        scheck=(SRT**2+DMASS**2-AMN**2)**2/(4.*SRT**2)-DMASS**2
+        if(scheck.lt.0) then
+           write(99,*) 'scheck14: ', scheck
+           scheck=0.
+        endif
+        P1=SQRT(scheck)
+c        P1=SQRT((SRT**2+DMASS**2-AMN**2)**2
+c     1  /(4.*SRT**2)-DMASS**2)
+
         ENDIF
         FNS=FN*P1*DMASS
         RETURN
@@ -10707,13 +10200,7 @@ cc      SAVE /INPUT2/
      2     dpp1(MAXSTR,MAXR),dppion(MAXSTR,MAXR)
 cc      SAVE /RNDF77/
       SAVE   
-clin-ch-5/2016-ctest off:
-c      write(15,*) 'decay():',lb(i)
-
         lbanti=LB(I)
-clin-6/2013 check charge conservation:
-        nnnini=nnn-1
-        netqini=LUCHGE(INVFLV(lb(i)))/3
 c
         DM=E(I)
 *1. FOR N*+(1440) DECAY
@@ -10803,31 +10290,25 @@ c
 c
 c     anti-particle ID for anti-N* decays:
         if(lbanti.lt.0) then
-ctest on
-c           lbi=LB(I)
-c           if(lbi.eq.1.or.lbi.eq.2) then
-c              lbi=-lbi
-c           elseif(lbi.eq.3) then
-c              lbi=5
-c           elseif(lbi.eq.5) then
-c              lbi=3
-c           endif
-c           LB(I)=lbi
-           LB(I)=-LB(I)
+           lbi=LB(I)
+           if(lbi.eq.1.or.lbi.eq.2) then
+              lbi=-lbi
+           elseif(lbi.eq.3) then
+              lbi=5
+           elseif(lbi.eq.5) then
+              lbi=3
+           endif
+           LB(I)=lbi
 c
-c           lbi=LPION(NNN,IRUN)
-c           if(lbi.eq.3) then
-c              lbi=5
-c           elseif(lbi.eq.5) then
-c              lbi=3
-c           elseif(lbi.eq.1.or.lbi.eq.2) then
-c              lbi=-lbi
-c           endif
-c           LPION(NNN,IRUN)=lbi
-clin-ch-6/2016:
-c           LPION(NNN,IRUN)=8-LPION(NNN,IRUN)
-           if(LPION(NNN,IRUN).ge.3.and.LPION(NNN,IRUN).le.5)
-     1          LPION(NNN,IRUN)=8-LPION(NNN,IRUN)
+           lbi=LPION(NNN,IRUN)
+           if(lbi.eq.3) then
+              lbi=5
+           elseif(lbi.eq.5) then
+              lbi=3
+           elseif(lbi.eq.1.or.lbi.eq.2) then
+              lbi=-lbi
+           endif
+           LPION(NNN,IRUN)=lbi
         endif
 c
         if(nt.eq.ntmax) then
@@ -10860,20 +10341,6 @@ clin-5/2008:
               dpertp(I)=dpsave
            endif
         endif
-
-clin-6/2013 check charge conservation:
-        netqfinal=0
-        if(e(i).ne.0) then
-           netqfinal=netqfinal+LUCHGE(INVFLV(lb(i)))/3
-        endif
-        if((nnn-nnnini).ge.1) then
-           do imore=nnnini+1,nnn
-              netqfinal=netqfinal+LUCHGE(INVFLV(LPION(imore,IRUN)))/3
-           enddo
-        endif
-        if(netqfinal.ne.netqini) 
-     1       write(11,*) 'decay violates: ',lb(i),netqfinal,netqini,
-     2       nnnini,nnn
 
        RETURN
        END
@@ -11053,13 +10520,8 @@ cc      SAVE /PD/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
       SAVE   
-clin-ch-5/2016-ctest off:
-c      write(15,*) 'decay2():',lb(i)
 
         lbanti=LB(I)
-clin-6/2013 check charge conservation:
-        nnnini=nnn-1
-        netqini=LUCHGE(INVFLV(lb(i)))/3
 c
         DM=E(I)
 * DETERMINE THE DECAY PRODUCTS
@@ -11118,57 +10580,38 @@ c
         CALL DKINE2(IRUN,I,NNN,NLAB,ISEED,wid,nt)
 c
 c     anti-particle ID for anti-N* decays:
-clin-6/2013:
         if(lbanti.lt.0) then
-c           lbi=LB(I)
-c           if(lbi.eq.1.or.lbi.eq.2) then
-c              lbi=-lbi
-c           elseif(lbi.eq.3) then
-c              lbi=5
-c           elseif(lbi.eq.5) then
-c              lbi=3
-c           endif
-c           LB(I)=lbi
-           LB(I)=-LB(I)
+           lbi=LB(I)
+           if(lbi.eq.1.or.lbi.eq.2) then
+              lbi=-lbi
+           elseif(lbi.eq.3) then
+              lbi=5
+           elseif(lbi.eq.5) then
+              lbi=3
+           endif
+           LB(I)=lbi
 c
-c           lbi=LPION(NNN,IRUN)
-c           if(lbi.eq.3) then
-c              lbi=5
-c           elseif(lbi.eq.5) then
-c              lbi=3
-c           elseif(lbi.eq.1.or.lbi.eq.2) then
-c              lbi=-lbi
-c           endif
-c           LPION(NNN,IRUN)=lbi
-           LPION(NNN,IRUN)=8-LPION(NNN,IRUN)
+           lbi=LPION(NNN,IRUN)
+           if(lbi.eq.3) then
+              lbi=5
+           elseif(lbi.eq.5) then
+              lbi=3
+           elseif(lbi.eq.1.or.lbi.eq.2) then
+              lbi=-lbi
+           endif
+           LPION(NNN,IRUN)=lbi
 c
-c           lbi=LPION(NNN+1,IRUN)
-c           if(lbi.eq.3) then
-c              lbi=5
-c           elseif(lbi.eq.5) then
-c              lbi=3
-c           elseif(lbi.eq.1.or.lbi.eq.2) then
-c              lbi=-lbi
-c           endif
-c           LPION(NNN+1,IRUN)=lbi
-           LPION(NNN+1,IRUN)=8-LPION(NNN+1,IRUN)
-c
+           lbi=LPION(NNN+1,IRUN)
+           if(lbi.eq.3) then
+              lbi=5
+           elseif(lbi.eq.5) then
+              lbi=3
+           elseif(lbi.eq.1.or.lbi.eq.2) then
+              lbi=-lbi
+           endif
+           LPION(NNN+1,IRUN)=lbi
         endif
 c
-clin-6/2013 check charge conservation:
-        netqfinal=0
-        if(e(i).ne.0) then
-           netqfinal=netqfinal+LUCHGE(INVFLV(lb(i)))/3
-        endif
-        if((nnn-nnnini).ge.1) then
-           do imore=nnnini+1,nnn+1
-              netqfinal=netqfinal+LUCHGE(INVFLV(LPION(imore,IRUN)))/3
-           enddo
-        endif
-        if(netqfinal.ne.netqini) 
-     1       write(11,*) 'decay2 violates: ',lb(i),netqfinal,netqini,
-     2       nnnini,nnn
-
        RETURN
        END
 *-------------------------------------------------------------------
@@ -11231,7 +10674,16 @@ cc      SAVE /RNDF77/
        IF(NLAB.EQ.1)AM=AMP
 * THE MAXIMUM MOMENTUM OF THE NUCLEON FROM THE DECAY OF A N*
        PMAX2=(DM**2-(AM+PM1+PM2)**2)*(DM**2-(AM-PM1-PM2)**2)/4/DM**2
-       PMAX=SQRT(PMAX2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=PMAX2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck15: ', scheck
+          scheck=0.
+       endif
+       PMAX=SQRT(scheck)
+c       PMAX=SQRT(PMAX2)
+
 * GENERATE THE MOMENTUM OF THE NUCLEON IN THE N* REST FRAME
        CSS=1.-2.*RANART(NSEED)
        SSS=SQRT(1-CSS**2)
@@ -11246,7 +10698,16 @@ c     without no relative momentum, thus producing them with equal momenta,
        BETAX=-PX0/(DM-EP0)
        BETAY=-PY0/(DM-EP0)
        BETAZ=-PZ0/(DM-EP0)
-       GD1=1./SQRT(1-BETAX**2-BETAY**2-BETAZ**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=1-BETAX**2-BETAY**2-BETAZ**2
+       if(scheck.le.0) then
+          write(99,*) 'scheck16: ', scheck
+          stop
+       endif
+       GD1=1./SQRT(scheck)
+c       GD1=1./SQRT(1-BETAX**2-BETAY**2-BETAZ**2)
+
        FGD1=GD1/(1+GD1)
 * GENERATE THE MOMENTA OF PIONS IN THE CMS OF PION+PION-
         Q2=((DM-EP0)/(2.*GD1))**2-PM1**2
@@ -11389,12 +10850,12 @@ c     lorentz boost:
 * NOTE    : 
 *           
 * DATE    : JAN.29,1990
-clin-6/2013:
-c        SUBROUTINE DRESON(I1,I2)
-        SUBROUTINE DRESON(I1,I2,iblock)
+        SUBROUTINE DRESON(I1,I2)
         PARAMETER (MAXSTR=150001,MAXR=1,
      1  AMN=0.939457,AMP=0.93828,
      2  AP1=0.13496,AP2=0.13957,AM0=1.232,PI=3.1415926)
+clin-9/2012: improve precision for argument in sqrt():
+        double precision e10,e20,scheck,p1,p2,p3
         COMMON /AA/ R(3,MAXSTR)
 cc      SAVE /AA/
         COMMON /BB/ P(3,MAXSTR)
@@ -11414,13 +10875,18 @@ cc      SAVE /PC/
         COMMON   /PD/LPION(MAXSTR,MAXR)
 cc      SAVE /PD/
       SAVE   
-
-clin-6/2013 give non-zero iblock for resonance formation:
-      iblock=271
-
 * 1. DETERMINE THE MOMENTUM COMPONENT OF DELTA/N* IN THE LAB. FRAME
-        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
-        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
+clin-9/2012: improve precision for argument in sqrt():
+c        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
+c        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
+        E10=dSQRT(dble(E(I1))**2+dble(P(1,I1))**2
+     1     +dble(P(2,I1))**2+dble(P(3,I1))**2)
+        E20=dSQRT(dble(E(I2))**2+dble(P(1,I2))**2
+     1       +dble(P(2,I2))**2+dble(P(3,I2))**2)
+        p1=dble(P(1,I1))+dble(P(1,I2))
+        p2=dble(P(2,I1))+dble(P(2,I2))
+        p3=dble(P(3,I1))+dble(P(3,I2))
+
         IF(iabs(LB(I2)) .EQ. 1 .OR. iabs(LB(I2)) .EQ. 2 .OR.
      &     (iabs(LB(I2)) .GE. 6 .AND. iabs(LB(I2)) .LE. 17)) THEN
         E(I1)=0.
@@ -11433,7 +10899,19 @@ clin-6/2013 give non-zero iblock for resonance formation:
         P(2,I)=P(2,I1)+P(2,I2)
         P(3,I)=P(3,I1)+P(3,I2)
 * 2. DETERMINE THE MASS OF DELTA/N* BY USING THE REACTION KINEMATICS
-        DM=SQRT((E10+E20)**2-P(1,I)**2-P(2,I)**2-P(3,I)**2)
+
+clin-9/2012: check argument in sqrt():
+        scheck=(E10+E20)**2-p1**2-p2**2-p3**2
+        if(scheck.lt.0) then
+           write(99,*) 'scheck17: ', scheck
+           write(99,*) 'scheck17', scheck,E10,E20,P(1,I),P(2,I),P(3,I)
+           write(99,*) 'scheck17-1',E(I1),P(1,I1),P(2,I1),P(3,I1)
+           write(99,*) 'scheck17-2',E(I2),P(1,I2),P(2,I2),P(3,I2)
+           scheck=0.d0
+        endif
+        DM=SQRT(sngl(scheck))
+c        DM=SQRT((E10+E20)**2-P(1,I)**2-P(2,I)**2-P(3,I)**2)
+
         E(I)=DM
         RETURN
         END
@@ -11445,6 +10923,8 @@ clin-6/2013 give non-zero iblock for resonance formation:
         PARAMETER (MAXSTR=150001,MAXR=1,
      1  AMN=0.939457,AMP=0.93828,
      2  AP1=0.13496,AP2=0.13957,AM0=1.232,PI=3.1415926)
+clin-9/2012: improve precision for argument in sqrt():
+        double precision e10,e20,scheck,p1,p2,p3
         COMMON /AA/ R(3,MAXSTR)
 cc      SAVE /AA/
         COMMON /BB/ P(3,MAXSTR)
@@ -11466,15 +10946,33 @@ cc      SAVE /PD/
       SAVE   
 * 1. DETERMINE THE MOMENTUM COMPONENT OF THE RHO IN THE CMS OF NN FRAME
 *    WE LET I1 TO BE THE RHO AND ABSORB I2
-        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
-        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
+clin-9/2012: improve precision for argument in sqrt():
+c        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
+c        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
+        E10=dSQRT(dble(E(I1))**2+dble(P(1,I1))**2
+     1     +dble(P(2,I1))**2+dble(P(3,I1))**2)
+        E20=dSQRT(dble(E(I2))**2+dble(P(1,I2))**2
+     1       +dble(P(2,I2))**2+dble(P(3,I2))**2)
+        p1=dble(P(1,I1))+dble(P(1,I2))
+        p2=dble(P(2,I1))+dble(P(2,I2))
+        p3=dble(P(3,I1))+dble(P(3,I2))
+
         P(1,I1)=P(1,I1)+P(1,I2)
         P(2,I1)=P(2,I1)+P(2,I2)
         P(3,I1)=P(3,I1)+P(3,I2)
 * 2. DETERMINE THE MASS OF THE RHO BY USING THE REACTION KINEMATICS
-        DM=SQRT((E10+E20)**2-P(1,I1)**2-P(2,I1)**2-P(3,I1)**2)
+
+clin-9/2012: check argument in sqrt():
+        scheck=(E10+E20)**2-p1**2-p2**2-p3**2
+        if(scheck.lt.0) then
+           write(99,*) 'scheck18: ', scheck
+           scheck=0.d0
+        endif
+        DM=SQRT(sngl(scheck))
+c        DM=SQRT((E10+E20)**2-P(1,I1)**2-P(2,I1)**2-P(3,I1)**2)
+
         E(I1)=DM
-        E(I2)=0.
+       E(I2)=0
         RETURN
         END
 *---------------------------------------------------------------------------
@@ -11488,6 +10986,8 @@ cc      SAVE /PD/
         PARAMETER (MAXSTR=150001,MAXR=1,
      1  AMN=0.939457,AMP=0.93828,
      2  AP1=0.13496,AP2=0.13957,AM0=1.232,PI=3.1415926)
+clin-9/2012: improve precision for argument in sqrt():
+        double precision e10,e20,scheck,p1,p2,p3
         COMMON /AA/ R(3,MAXSTR)
 cc      SAVE /AA/
         COMMON /BB/ P(3,MAXSTR)
@@ -11510,13 +11010,31 @@ cc      SAVE /PD/
         AVMASS=0.5*(AMN+AMP)
         AVPI=(2.*AP2+AP1)/3.
 * 1. DETERMINE THE MOMENTUM COMPONENT OF DELTA IN THE LAB. FRAME
-        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
-        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
-        P1=P(1,I1)+P(1,I2)
-        P2=P(2,I1)+P(2,I2)
-        P3=P(3,I1)+P(3,I2)
+clin-9/2012: improve precision for argument in sqrt():
+c        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
+c        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
+        E10=dSQRT(dble(E(I1))**2+dble(P(1,I1))**2
+     1     +dble(P(2,I1))**2+dble(P(3,I1))**2)
+        E20=dSQRT(dble(E(I2))**2+dble(P(1,I2))**2
+     1       +dble(P(2,I2))**2+dble(P(3,I2))**2)
+c        P1=P(1,I1)+P(1,I2)
+c        P2=P(2,I1)+P(2,I2)
+c        P3=P(3,I1)+P(3,I2)
+        p1=dble(P(1,I1))+dble(P(1,I2))
+        p2=dble(P(2,I1))+dble(P(2,I2))
+        p3=dble(P(3,I1))+dble(P(3,I2))
+
 * 2. DETERMINE THE MASS OF DELTA BY USING OF THE REACTION KINEMATICS
-        DM=SQRT((E10+E20)**2-P1**2-P2**2-P3**2)
+
+clin-9/2012: check argument in sqrt():
+        scheck=(E10+E20)**2-p1**2-p2**2-p3**2
+        if(scheck.lt.0) then
+           write(99,*) 'scheck19: ', scheck
+           scheck=0.d0
+        endif
+        DM=SQRT(sngl(scheck))
+c        DM=SQRT((E10+E20)**2-P1**2-P2**2-P3**2)
+
         IF(DM.LE.1.1) THEN
         XNPI=1.e-09
         RETURN
@@ -11618,7 +11136,16 @@ cc      SAVE /PD/
         ENDIF
         SS0=AM0**2
         Q02=(SS0-(AMU-AMP)**2)*(SS0-(AMU+AMP)**2)/(4.*SS0)
-        Q0=SQRT(Q02)
+
+clin-9/2012: check argument in sqrt():
+        scheck=Q02
+        if(scheck.lt.0) then
+           write(99,*) 'scheck20: ', scheck
+           scheck=0.
+        endif
+        Q0=SQRT(scheck)
+c        Q0=SQRT(Q02)
+
         SIGMA=PI*(HC)**2/(2.*P2)*ALFA*(PR/P0)**BETA*AM0**2*T**2
      1  *(Q/Q0)**3/((SS-AM0**2)**2+AM0**2*T**2)
         SIGMA=SIGMA*10.
@@ -11725,18 +11252,9 @@ c      endif
 *--------------------------------------------------------------------------
 *****subprogram * kaon production from pi+B collisions *******************
       real function PNLKA(srt)
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 * units: fm**2
 ***********************************C
-clin-6/2013:
-      if((ianti.eq.0.and.(netq.lt.0.or.netq.gt.1))
-     1     .or.(ianti.eq.1.and.(netq.lt.-1.or.netq.gt.0))) then
-         Pnlka=0
-         return
-      endif
-c
       ala=1.116
       aka=0.498
       ana=0.939
@@ -11755,17 +11273,8 @@ c
 *-------------------------------------------------------------------------
 *****subprogram * kaon production from pi+B collisions *******************
       real function PNSKA(srt)
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 ***********************************
-clin-6/2013:
-      if((ianti.eq.0.and.(netq.lt.-1.or.netq.gt.2))
-     1     .or.(ianti.eq.1.and.(netq.lt.-2.or.netq.gt.1))) then
-         pnska=0
-         return
-      endif
-c     
        if(srt.gt.3.0)then
        pnska=0
        return
@@ -12014,6 +11523,8 @@ c              w1440=0.2
         PARAMETER (MAXSTR=150001,MAXR=1,
      1  AMN=0.939457,AMP=0.93828,ETAM=0.5475,
      2  AP1=0.13496,AP2=0.13957,AM0=1.232,PI=3.1415926)
+clin-9/2012: improve precision for argument in sqrt():
+        double precision e10,e20,scheck,p1,p2,p3
         COMMON /AA/ R(3,MAXSTR)
 cc      SAVE /AA/
         COMMON /BB/ P(3,MAXSTR)
@@ -12036,13 +11547,31 @@ cc      SAVE /PD/
         AVMASS=0.5*(AMN+AMP)
         AVPI=(2.*AP2+AP1)/3.
 * 1. DETERMINE THE MOMENTUM COMPONENT OF N*(1535) IN THE LAB. FRAME
-        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
-        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
-        P1=P(1,I1)+P(1,I2)
-        P2=P(2,I1)+P(2,I2)
-        P3=P(3,I1)+P(3,I2)
+clin-9/2012: improve precision for argument in sqrt():
+c        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
+c        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
+        E10=dSQRT(dble(E(I1))**2+dble(P(1,I1))**2
+     1     +dble(P(2,I1))**2+dble(P(3,I1))**2)
+        E20=dSQRT(dble(E(I2))**2+dble(P(1,I2))**2
+     1       +dble(P(2,I2))**2+dble(P(3,I2))**2)
+c        P1=P(1,I1)+P(1,I2)
+c        P2=P(2,I1)+P(2,I2)
+c        P3=P(3,I1)+P(3,I2)
+        p1=dble(P(1,I1))+dble(P(1,I2))
+        p2=dble(P(2,I1))+dble(P(2,I2))
+        p3=dble(P(3,I1))+dble(P(3,I2))
+
 * 2. DETERMINE THE MASS OF DELTA BY USING OF THE REACTION KINEMATICS
-        DM=SQRT((E10+E20)**2-P1**2-P2**2-P3**2)
+
+clin-9/2012: check argument in sqrt():
+        scheck=(E10+E20)**2-p1**2-p2**2-p3**2
+        if(scheck.lt.0) then
+           write(99,*) 'scheck21: ', scheck
+           scheck=0.d0
+        endif
+        DM=SQRT(sngl(scheck))
+c        DM=SQRT((E10+E20)**2-P1**2-P2**2-P3**2)
+
         IF(DM.LE.1.1) THEN
         XN1535=1.E-06
         RETURN
@@ -12173,7 +11702,16 @@ clin-8/17/00       IF(xratio.LT.RANART(NSEED).and.ntryx.le.50)GO TO 9
        bx=-Px/eln
        by=-Py/eln
        bz=-Pz/eln
-       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=1.-bx**2-by**2-bz**2
+       if(scheck.le.0) then
+          write(99,*) 'scheck22: ', scheck
+          stop
+       endif
+       ga=1./sqrt(scheck)
+c       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
 * the momentum of delta2 and pion in their cms frame
        elnc=eln/ga 
        pn2=((elnc**2+dm2**2-amp**2)/(2.*elnc))**2-dm2**2
@@ -12194,7 +11732,16 @@ clin-10/25/02-end
        pny=pnT*sin(fain)
        SIG=1
        IF(X.GT.0)SIG=-1
-       pnz=SIG*SQRT(pn**2-PNT**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=pn**2-PNT**2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck23: ', scheck
+          scheck=0.
+       endif
+       pnz=SIG*SQRT(scheck)
+c       pnz=SIG*SQRT(pn**2-PNT**2)
+
        en=sqrt(dm2**2+pnx**2+pny**2+pnz**2)
 * (2) the momentum for the pion
        ppx=-pnx
@@ -12254,7 +11801,16 @@ cc      SAVE /RNDF77/
 * (2.1) estimate the maximum transverse momentum
        PTMAX2=(SRT**2-(DM1+DM2+AMP)**2)*
      1  (SRT**2-(DM1-AMP-DM2)**2)/4./SRT**2
-       PTMAX=SQRT(PTMAX2)*1./3.
+
+clin-9/2012: check argument in sqrt():
+       scheck=PTMAX2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck24: ', scheck
+          scheck=0.
+       endif
+       PTMAX=SQRT(scheck)*1./3.
+c       PTMAX=SQRT(PTMAX2)*1./3.
+
 7       PT=PTR(PTMAX,ISEED)
 * (3) GENGRATE THE LONGITUDINAL MOMENTUM FOR DM1
 *     USING THE GIVEN DISTRIBUTION
@@ -12303,7 +11859,16 @@ clin-8/17/00       IF(xratio.LT.RANART(NSEED).and.ntryx.le.50)GO TO 9
        bx=-Px/eln
        by=-Py/eln
        bz=-Pz/eln
-       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=1.-bx**2-by**2-bz**2
+       if(scheck.le.0) then
+          write(99,*) 'scheck25: ', scheck
+          stop
+       endif
+       ga=1./sqrt(scheck)
+c       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
        elnc=eln/ga
        pn2=((elnc**2+dm2**2-amp**2)/(2.*elnc))**2-dm2**2
        if(pn2.le.0)then
@@ -12323,7 +11888,16 @@ clin-10/25/02-end
        pny=pnT*sin(fain)
        SIG=1
        IF(X.GT.0)SIG=-1
-       pnz=SIG*SQRT(pn**2-PNT**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=pn**2-PNT**2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck26: ', scheck
+          scheck=0.
+       endif
+       pnz=SIG*SQRT(scheck)
+c       pnz=SIG*SQRT(pn**2-PNT**2)
+
        en=sqrt(dm2**2+pnx**2+pny**2+pnz**2)
 * (2) the momentum for the rho
        ppx=-pnx
@@ -12383,7 +11957,16 @@ cc      SAVE /RNDF77/
 * (2.1) estimate the maximum transverse momentum
        PTMAX2=(SRT**2-(DM1+DM2+AMP)**2)*
      1  (SRT**2-(DM1-AMP-DM2)**2)/4./SRT**2
-       PTMAX=SQRT(PTMAX2)*1./3.
+
+clin-9/2012: check argument in sqrt():
+       scheck=PTMAX2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck27: ', scheck
+          scheck=0.
+       endif
+       PTMAX=SQRT(scheck)*1./3.
+c       PTMAX=SQRT(PTMAX2)*1./3.
+
 7       PT=PTR(PTMAX,ISEED)
 * (3) GENGRATE THE LONGITUDINAL MOMENTUM FOR DM1
 *     USING THE GIVEN DISTRIBUTION
@@ -12433,7 +12016,16 @@ clin-8/17/00       IF(xratio.LT.RANART(NSEED).and.ntryx.le.50)GO TO 9
        bx=-Px/eln
        by=-Py/eln
        bz=-Pz/eln
-       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=1.-bx**2-by**2-bz**2
+       if(scheck.le.0) then
+          write(99,*) 'scheck28: ', scheck
+          stop
+       endif
+       ga=1./sqrt(scheck)
+c       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
         elnc=eln/ga
        pn2=((elnc**2+dm2**2-amp**2)/(2.*elnc))**2-dm2**2
        if(pn2.le.0)then
@@ -12453,7 +12045,16 @@ clin-10/25/02-end
        pny=pnT*sin(fain)
        SIG=1
        IF(X.GT.0)SIG=-1
-       pnz=SIG*SQRT(pn**2-PNT**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=pn**2-PNT**2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck29: ', scheck
+          scheck=0.
+       endif
+       pnz=SIG*SQRT(scheck)
+c       pnz=SIG*SQRT(pn**2-PNT**2)
+
        en=sqrt(dm2**2+pnx**2+pny**2+pnz**2)
 * (2) the momentum for the rho
        ppx=-pnx
@@ -12507,7 +12108,16 @@ cc      SAVE /RNDF77/
 * (2.1) estimate the maximum transverse momentum
        PTMAX2=(SRT**2-(DM1+DM2+AMP)**2)*
      1  (SRT**2-(DM1-AMP-DM2)**2)/4./SRT**2
-       PTMAX=SQRT(PTMAX2)*1./3.
+
+clin-9/2012: check argument in sqrt():
+       scheck=PTMAX2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck30: ', scheck
+          scheck=0.
+       endif
+       PTMAX=SQRT(scheck)*1./3.
+c       PTMAX=SQRT(PTMAX2)*1./3.
+
 7       PT=PTR(PTMAX,ISEED)
 * (3) GENGRATE THE LONGITUDINAL MOMENTUM FOR DM1
 *     USING THE GIVEN DISTRIBUTION
@@ -12556,7 +12166,16 @@ clin-8/17/00       IF(xratio.LT.RANART(NSEED).and.ntryx.le.50)GO TO 9
        bx=-Px/eln
        by=-Py/eln
        bz=-Pz/eln
-       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=1.-bx**2-by**2-bz**2
+       if(scheck.le.0) then
+          write(99,*) 'scheck31: ', scheck
+          stop
+       endif
+       ga=1./sqrt(scheck)
+c       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
        elnc=eln/ga
        pn2=((elnc**2+dm2**2-amp**2)/(2.*elnc))**2-dm2**2
        if(pn2.le.0)then
@@ -12576,7 +12195,16 @@ clin-10/25/02-end
        pny=pnT*sin(fain)
        SIG=1
        IF(X.GT.0)SIG=-1
-       pnz=SIG*SQRT(pn**2-PNT**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=pn**2-PNT**2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck32: ', scheck
+          scheck=0.
+       endif
+       pnz=SIG*SQRT(scheck)
+c       pnz=SIG*SQRT(pn**2-PNT**2)
+
        en=sqrt(dm2**2+pnx**2+pny**2+pnz**2)
 * (2) the momentum for the rho
        ppx=-pnx
@@ -12932,7 +12560,16 @@ c      real*4 function pp2(srt)
 * 1.Calculate p(lab)  from srt [GeV]
 *   Formula used:   DSQRT(s) = 2 m DSQRT(E_kin/(2m) + 1)
 c      ekin = 2.*pmass*((srt/(2.*pmass))**2 - 1.)
-      plab=sqrt(((srt**2-2.*pmass**2)/(2.*pmass))**2-pmass**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=((srt**2-2.*pmass**2)/(2.*pmass))**2-pmass**2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck33: ', scheck
+          scheck=0.
+       endif
+       plab=sqrt(scheck)
+c      plab=sqrt(((srt**2-2.*pmass**2)/(2.*pmass))**2-pmass**2)
+
        pmin=2.
        pmax=2050
        if(plab.gt.pmax)then
@@ -12969,7 +12606,16 @@ c      real*4 function ppt(srt)
 * 1.Calculate p(lab)  from srt [GeV]
 *   Formula used:   DSQRT(s) = 2 m DSQRT(E_kin/(2m) + 1)
 c      ekin = 2.*pmass*((srt/(2.*pmass))**2 - 1.)
-      plab=sqrt(((srt**2-2.*pmass**2)/(2.*pmass))**2-pmass**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=((srt**2-2.*pmass**2)/(2.*pmass))**2-pmass**2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck34: ', scheck
+          scheck=0.
+       endif
+       plab=sqrt(scheck)
+c      plab=sqrt(((srt**2-2.*pmass**2)/(2.*pmass))**2-pmass**2)
+
        pmin=3. 
        pmax=2100
       if ((plab .lt. pmin).or.(plab.gt.pmax)) then
@@ -13152,7 +12798,16 @@ c      real*4 function pplpk(srt)
 *   find the center of mass energy corresponding to the given pm as
 *   if Lambda+N+K are produced
        pplpk=0.
-        plab=sqrt(((srt**2-2.*pmass**2)/(2.*pmass))**2-pmass**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=((srt**2-2.*pmass**2)/(2.*pmass))**2-pmass**2
+       if(scheck.lt.0) then
+          write(99,*) 'scheck35: ', scheck
+          scheck=0.
+       endif
+       plab=sqrt(scheck)
+c        plab=sqrt(((srt**2-2.*pmass**2)/(2.*pmass))**2-pmass**2)
+
        pmin=2.82
        pmax=25.0
        if(plab.gt.pmax)then
@@ -13307,20 +12962,16 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
-c
+
       PX0=PX
       PY0=PY
       PZ0=PZ
       iblock=1
       x1=RANART(NSEED)
-clin-6/2013:
-c      ianti=0
-c      if(lb(i1).lt.0 .or. lb(i2).lt.0) ianti=1
-cma-05/16      if(xkaon0/(xkaon+Xphi).ge.x1)then
-      if(xkaon0/(xkaon+Xphi).gt.x1)then
+      ianti=0
+      if(lb(i1).lt.0 .or. lb(i2).lt.0) ianti=1
+      if(xkaon0/(xkaon+Xphi).ge.x1)then
 * kaon production
 *-----------------------------------------------------------------------
         IBLOCK=7
@@ -13330,162 +12981,60 @@ cma-05/16      if(xkaon0/(xkaon+Xphi).ge.x1)then
 * DECIDE LAMBDA OR SIGMA PRODUCTION, AND TO CALCULATE THE NEW
 * MOMENTA FOR PARTICLES IN THE FINAL STATE.
        KAONC=0
-clin-6/2013:
-c       IF(PNLKA(SRT)/(PNLKA(SRT)
-c     &       +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
-       if(ianti.eq.0.and.(netq.eq.0.or.netq.eq.1)
-     1      .or.ianti.eq.1.and.(netq.eq.0.or.netq.eq.-1)) then
-          IF(PNLKA(SRT)/(PNLKA(SRT)
-     &         +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
-       endif
-clin-6/2013:
-       if(E(I1).LE.0.2) then
-          ikaon=I1
-          ibaryon=I2
-       else
-          ikaon=I2
-          ibaryon=I1
-       endif
-c
-       E(ikaon)=AKA
-       if(ianti.eq.0) then
-          if(KAONC.EQ.1) then
-c     pi N -> Lambda K:
-             LB(ikaon)=24-netq
-             LB(ibaryon)=14
-             E(ibaryon)=ALA
-          else
-c     pi N -> Sigma K:
-             if(netq.eq.2) then
-                LB(ikaon)=23
-                LB(ibaryon)=17
-             elseif(netq.eq.1) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=24
-                   LB(ibaryon)=17
-                else
-                   LB(ikaon)=23
-                   LB(ibaryon)=16
-                endif
-             elseif(netq.eq.0) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=24
-                   LB(ibaryon)=16
-                else
-                   LB(ikaon)=23
-                   LB(ibaryon)=15
-                endif
-             else
-                LB(ikaon)=24
-                LB(ibaryon)=15
-             endif
-             E(ibaryon)=ASA
-          endif
-       endif
-c
-       if(ianti.eq.1) then
-          if(KAONC.EQ.1) then
-c     pi Nbar -> Lambda-bar Kbar:
-             LB(ikaon)=22+netq
-             LB(ibaryon)=-14
-             E(ibaryon)=ALA
-          else
-c     pi Nbar -> Sigma-bar K-bar:
-             if(netq.eq.-2) then
-                LB(ikaon)=21
-                LB(ibaryon)=-17
-             elseif(netq.eq.-1) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=22
-                   LB(ibaryon)=-17
-                else
-                   LB(ikaon)=21
-                   LB(ibaryon)=-16
-                endif
-             elseif(netq.eq.0) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=22
-                   LB(ibaryon)=-16
-                else
-                   LB(ikaon)=21
-                   LB(ibaryon)=-15
-                endif
-             else
-                LB(ikaon)=22
-                LB(ibaryon)=-15
-             endif
-             E(ibaryon)=ASA
-          endif
-       endif
-clin-6/2013:
-c       IF(E(I1).LE.0.2)THEN
-c           LB(I1)=23
-c           E(I1)=AKA
-c           IF(KAONC.EQ.1)THEN
-c              LB(I2)=14
-c              E(I2)=ALA
-c           ELSE
-c              LB(I2) = 15 + int(3 * RANART(NSEED))
-c              E(I2)=ASA       
-c           ENDIF
-c           if(ianti .eq. 1)then
-c              lb(i1) = 21
-c              lb(i2) = -lb(i2)
-c           endif
-c       ELSE
-c           LB(I2)=23
-c           E(I2)=AKA
-c           IF(KAONC.EQ.1)THEN
-c              LB(I1)=14
-c              E(I1)=ALA
-c           ELSE
-c              LB(I1) = 15 + int(3 * RANART(NSEED))
-c              E(I1)=ASA       
-c           ENDIF
-c           if(ianti .eq. 1)then
-c              lb(i2) = 21
-c              lb(i1) = -lb(i1)
-c           endif
-c       ENDIF
+       IF(PNLKA(SRT)/(PNLKA(SRT)
+     &       +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
+       IF(E(I1).LE.0.2)THEN
+           LB(I1)=23
+           E(I1)=AKA
+           IF(KAONC.EQ.1)THEN
+              LB(I2)=14
+              E(I2)=ALA
+           ELSE
+              LB(I2) = 15 + int(3 * RANART(NSEED))
+              E(I2)=ASA       
+           ENDIF
+           if(ianti .eq. 1)then
+              lb(i1) = 21
+              lb(i2) = -lb(i2)
+           endif
+       ELSE
+           LB(I2)=23
+           E(I2)=AKA
+           IF(KAONC.EQ.1)THEN
+              LB(I1)=14
+              E(I1)=ALA
+           ELSE
+              LB(I1) = 15 + int(3 * RANART(NSEED))
+              E(I1)=ASA       
+           ENDIF
+           if(ianti .eq. 1)then
+              lb(i2) = 21
+              lb(i1) = -lb(i1)
+           endif
+       ENDIF
         EM1=E(I1)
         EM2=E(I2)
         go to 50
 * to gererate the momentum for the kaon and L/S
-cma-05/16      elseif(Xphi/(xkaon+Xphi).ge.x1)then
-      elseif(Xphi/(xkaon+Xphi).gt.x1)then
-         iblock=222
-cma-05/16         if(xphin/Xphi .ge. RANART(NSEED))then
-         if(xphin/Xphi .gt. RANART(NSEED))then
-clin-6/2013:
-c            LB(I1)= 1+int(2*RANART(NSEED))
-            if(ianti.eq.0) then
-               LB(I1)=2-netq
-            else
-               LB(I1)=-2-netq
-            endif
-            E(I1)=AMN
+      elseif(Xphi/(xkaon+Xphi).ge.x1)then
+          iblock=222
+         if(xphin/Xphi .ge. RANART(NSEED))then
+          LB(I1)= 1+int(2*RANART(NSEED))
+           E(I1)=AMN
          else
-clin-6/2013:
-c            LB(I1)= 6+int(4*RANART(NSEED))
-            if(ianti.eq.0) then            
-               LB(I1)=7+netq
-            else
-               LB(I1)=-7+netq
-            endif
-            E(I1)=AM0
+          LB(I1)= 6+int(4*RANART(NSEED))
+           E(I1)=AM0
          endif
 c  !! at present only baryon
-clin-6/2013:
-c         if(ianti .eq. 1)lb(i1)=-lb(i1)
-         LB(I2)= 29
-         E(I2)=APHI
-         EM1=E(I1)
-         EM2=E(I2)
-         go to 50
-      else
+         if(ianti .eq. 1)lb(i1)=-lb(i1)
+          LB(I2)= 29
+           E(I2)=APHI
+        EM1=E(I1)
+        EM2=E(I2)
+       go to 50
+         else
 * CHECK WHAT KIND OF PION PRODUCTION PROCESS HAS HAPPENED
-cma-05/16       IF(RANART(NSEED).LE.TWOPI(SRT)/
-       IF(RANART(NSEED).LT.TWOPI(SRT)/
+       IF(RANART(NSEED).LE.TWOPI(SRT)/
      &  (TWOPI(SRT)+THREPI(SRT)+FOURPI(SRT)))THEN
        iblock=77
        ELSE 
@@ -14243,7 +13792,15 @@ c         cc1=ptr(0.33*pr,iseed)
          cc1=ptr(xptr,iseed)
 clin-10/25/02-end
 
-         c1=sqrt(pr**2-cc1**2)/pr
+clin-9/2012: check argument in sqrt():
+         scheck=pr**2-cc1**2
+         if(scheck.lt.0) then
+            write(99,*) 'scheck36: ', scheck
+            scheck=0.
+         endif
+         c1=sqrt(scheck)/pr
+c         c1=sqrt(pr**2-cc1**2)/pr
+
 *          C1   = 1.0 - 2.0 * RANART(NSEED)
           T1   = 2.0 * PI * RANART(NSEED)
       S1   = SQRT( 1.0 - C1**2 )
@@ -14288,8 +13845,6 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
        PX0=PX
@@ -14297,122 +13852,46 @@ clin-6/2013:
        PZ0=PZ
         NTAG=0
         IBLOCK=7
-clin-6/2013:
-c        ianti=0
+        ianti=0
         if(lb(i1).lt.0 .or. lb(i2).lt.0)then
-c          ianti=1
+          ianti=1
           iblock=-7
         endif
 * RELABLE PARTICLES FOR THE PROCESS eta+n-->LAMBDA K OR SIGMA k
 * DECIDE LAMBDA OR SIGMA PRODUCTION, AND TO CALCULATE THE NEW
 * MOMENTA FOR PARTICLES IN THE FINAL STATE.
        KAONC=0
-clin-6/2013:
-c       IF(PNLKA(SRT)/(PNLKA(SRT)
-c     & +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
-       if(ianti.eq.0.and.(netq.eq.0.or.netq.eq.1)
-     1      .or.ianti.eq.1.and.(netq.eq.0.or.netq.eq.-1)) then
-          IF(PNLKA(SRT)/(PNLKA(SRT)
-     &         +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
-       endif
-c
-clin-6/2013:
-       if(E(I1).LE.0.6) then
-          ikaon=I1
-          ibaryon=I2
-       else
-          ikaon=I2
-          ibaryon=I1
-       endif
-c
-       E(ikaon)=AKA
-       if(ianti.eq.0) then
-          if(KAONC.EQ.1) then
-c     eta N -> Lambda K:
-             LB(ikaon)=24-netq
-             LB(ibaryon)=14
-             E(ibaryon)=ALA
-          else
-c     eta N -> Sigma K:
-             if(netq.eq.1) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=24
-                   LB(ibaryon)=17
-                else
-                   LB(ikaon)=23
-                   LB(ibaryon)=16
-                endif
-             elseif(netq.eq.0) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=24
-                   LB(ibaryon)=16
-                else
-                   LB(ikaon)=23
-                   LB(ibaryon)=15
-                endif
-             endif
-             E(ibaryon)=ASA
+       IF(PNLKA(SRT)/(PNLKA(SRT)
+     & +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
+       IF(E(I1).LE.0.6)THEN
+       LB(I1)=23
+       E(I1)=AKA
+        IF(KAONC.EQ.1)THEN
+       LB(I2)=14
+       E(I2)=ALA
+        ELSE
+        LB(I2) = 15 + int(3 * RANART(NSEED))
+       E(I2)=ASA       
+        ENDIF
+          if(ianti .eq. 1)then
+            lb(i1)=21
+            lb(i2)=-lb(i2)
           endif
-       endif
-c
-       if(ianti.eq.1) then
-          if(KAONC.EQ.1) then
-c     eta Nbar -> Lambda-bar Kbar:
-             LB(ikaon)=22+netq
-             LB(ibaryon)=-14
-             E(ibaryon)=ALA
-          else
-c     eta Nbar -> Sigma-bar K-bar:
-             if(netq.eq.-1) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=22
-                   LB(ibaryon)=-17
-                else
-                   LB(ikaon)=21
-                   LB(ibaryon)=-16
-                endif
-             elseif(netq.eq.0) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=22
-                   LB(ibaryon)=-16
-                else
-                   LB(ikaon)=21
-                   LB(ibaryon)=-15
-                endif
-             endif
-             E(ibaryon)=ASA
+       ELSE
+       LB(I2)=23
+       E(I2)=AKA
+        IF(KAONC.EQ.1)THEN
+       LB(I1)=14
+       E(I1)=ALA
+        ELSE
+         LB(I1) = 15 + int(3 * RANART(NSEED))
+       E(I1)=ASA       
+        ENDIF
+          if(ianti .eq. 1)then
+            lb(i2)=21
+            lb(i1)=-lb(i1)
           endif
-       endif
-clin-6/2013:
-c       IF(E(I1).LE.0.6)THEN
-c       LB(I1)=23
-c       E(I1)=AKA
-c        IF(KAONC.EQ.1)THEN
-c       LB(I2)=14
-c       E(I2)=ALA
-c        ELSE
-c        LB(I2) = 15 + int(3 * RANART(NSEED))
-c       E(I2)=ASA       
-c        ENDIF
-c          if(ianti .eq. 1)then
-c            lb(i1)=21
-c            lb(i2)=-lb(i2)
-c          endif
-c       ELSE
-c       LB(I2)=23
-c       E(I2)=AKA
-c        IF(KAONC.EQ.1)THEN
-c       LB(I1)=14
-c       E(I1)=ALA
-c        ELSE
-c         LB(I1) = 15 + int(3 * RANART(NSEED))
-c       E(I1)=ASA       
-c        ENDIF
-c          if(ianti .eq. 1)then
-c            lb(i2)=21
-c            lb(i1)=-lb(i1)
-c          endif
-c       ENDIF
+       ENDIF
         EM1=E(I1)
         EM2=E(I2)
 *-----------------------------------------------------------------------
@@ -14489,7 +13968,15 @@ c         cc1=ptr(0.33*pr,iseed)
          cc1=ptr(xptr,iseed)
 clin-10/25/02-end
 
-         c1=sqrt(pr**2-cc1**2)/pr
+clin-9/2012: check argument in sqrt():
+         scheck=pr**2-cc1**2
+         if(scheck.lt.0) then
+            write(99,*) 'scheck37: ', scheck
+            scheck=0.
+         endif
+         c1=sqrt(scheck)/pr
+c         c1=sqrt(pr**2-cc1**2)/pr
+
            T1   = 2.0 * PI * RANART(NSEED)
       S1   = SQRT( 1.0 - C1**2 )
       CT1  = COS(T1)
@@ -14539,8 +14026,6 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
        PX0=PX
@@ -14548,11 +14033,9 @@ clin-6/2013:
        PZ0=PZ
         IBLOCK=1
        x1=RANART(NSEED)
-clin-6/2013:
-c        ianti=0
-c        if(lb(i1).lt.0 .or. lb(i2).lt.0)ianti=1
-cma-05/16       if(xkaon0/(xkaon+Xphi).ge.x1)then
-       if(xkaon0/(xkaon+Xphi).gt.x1)then
+        ianti=0
+        if(lb(i1).lt.0 .or. lb(i2).lt.0)ianti=1
+       if(xkaon0/(xkaon+Xphi).ge.x1)then
 * kaon production
 *-----------------------------------------------------------------------
         IBLOCK=7
@@ -14562,161 +14045,61 @@ cma-05/16       if(xkaon0/(xkaon+Xphi).ge.x1)then
 * DECIDE LAMBDA OR SIGMA PRODUCTION, AND TO CALCULATE THE NEW
 * MOMENTA FOR PARTICLES IN THE FINAL STATE.
        KAONC=0
-clin-6/2013:
-c       IF(PNLKA(SRT)/(PNLKA(SRT)
-c     &       +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
-       if(ianti.eq.0.and.(netq.eq.0.or.netq.eq.1)
-     1      .or.ianti.eq.1.and.(netq.eq.0.or.netq.eq.-1)) then
-          IF(PNLKA(SRT)/(PNLKA(SRT)
-     &         +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
-       endif
-c
-       if(E(I1).LE.0.2) then
-          ikaon=I1
-          ibaryon=I2
-       else
-          ikaon=I2
-          ibaryon=I1
-       endif
-c
-       E(ikaon)=AKA
-       if(ianti.eq.0) then
-          if(KAONC.EQ.1) then
-c     pi (Delta N*) -> Lambda K:
-             LB(ikaon)=24-netq
-             LB(ibaryon)=14
-             E(ibaryon)=ALA
-          else
-c     pi (Delta N*) -> Sigma K:
-             if(netq.eq.2) then
-                LB(ikaon)=23
-                LB(ibaryon)=17
-             elseif(netq.eq.1) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=24
-                   LB(ibaryon)=17
-                else
-                   LB(ikaon)=23
-                   LB(ibaryon)=16
-                endif
-             elseif(netq.eq.0) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=24
-                   LB(ibaryon)=16
-                else
-                   LB(ikaon)=23
-                   LB(ibaryon)=15
-                endif
-             else
-                LB(ikaon)=24
-                LB(ibaryon)=15
-             endif
-             E(ibaryon)=ASA
-          endif
-       endif
-c
-       if(ianti.eq.1) then
-          if(KAONC.EQ.1) then
-c     pi (Delta N*)-bar -> Lambda-bar Kbar:
-             LB(ikaon)=22+netq
-             LB(ibaryon)=-14
-             E(ibaryon)=ALA
-          else
-c     pi (Delta N*)-bar -> Sigma-bar K-bar:
-             if(netq.eq.-2) then
-                LB(ikaon)=21
-                LB(ibaryon)=-17
-             elseif(netq.eq.-1) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=22
-                   LB(ibaryon)=-17
-                else
-                   LB(ikaon)=21
-                   LB(ibaryon)=-16
-                endif
-             elseif(netq.eq.0) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=22
-                   LB(ibaryon)=-16
-                else
-                   LB(ikaon)=21
-                   LB(ibaryon)=-15
-                endif
-             else
-                LB(ikaon)=22
-                LB(ibaryon)=-15
-             endif
-             E(ibaryon)=ASA
-          endif
-       endif
-clin-6/2013:
-c       IF(E(I1).LE.0.2)THEN
-c           LB(I1)=23
-c           E(I1)=AKA
-c           IF(KAONC.EQ.1)THEN
-c              LB(I2)=14
-c              E(I2)=ALA
-c           ELSE
-c              LB(I2) = 15 + int(3 * RANART(NSEED))
-c              E(I2)=ASA       
-c           ENDIF
-c           if(ianti .eq. 1)then
-c              lb(i1)=21
-c              lb(i2)=-lb(i2)
-c           endif
-c       ELSE
-c           LB(I2)=23
-c           E(I2)=AKA
-c           IF(KAONC.EQ.1)THEN
-c              LB(I1)=14
-c              E(I1)=ALA
-c           ELSE
-c              LB(I1) = 15 + int(3 * RANART(NSEED))
-c              E(I1)=ASA       
-c           ENDIF
-c           if(ianti .eq. 1)then
-c              lb(i2)=21
-c              lb(i1)=-lb(i1)
-c           endif
-c       ENDIF
+       IF(PNLKA(SRT)/(PNLKA(SRT)
+     &       +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
+clin-8/17/00     & +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
+       IF(E(I1).LE.0.2)THEN
+           LB(I1)=23
+           E(I1)=AKA
+           IF(KAONC.EQ.1)THEN
+              LB(I2)=14
+              E(I2)=ALA
+           ELSE
+              LB(I2) = 15 + int(3 * RANART(NSEED))
+              E(I2)=ASA       
+           ENDIF
+           if(ianti .eq. 1)then
+              lb(i1)=21
+              lb(i2)=-lb(i2)
+           endif
+       ELSE
+           LB(I2)=23
+           E(I2)=AKA
+           IF(KAONC.EQ.1)THEN
+              LB(I1)=14
+              E(I1)=ALA
+           ELSE
+              LB(I1) = 15 + int(3 * RANART(NSEED))
+              E(I1)=ASA       
+           ENDIF
+           if(ianti .eq. 1)then
+              lb(i2)=21
+              lb(i1)=-lb(i1)
+           endif
+       ENDIF
         EM1=E(I1)
         EM2=E(I2)
        go to 50
 * to gererate the momentum for the kaon and L/S
 c
 c* Phi production
-cma-05/16      elseif(Xphi/(xkaon+Xphi).ge.x1)then
-      elseif(Xphi/(xkaon+Xphi).gt.x1)then
-         iblock=222
-cma-05/16         if(xphin/Xphi .ge. RANART(NSEED))then
-         if(xphin/Xphi .gt. RANART(NSEED))then
-clin-6/2013:
-c            LB(I1)= 1+int(2*RANART(NSEED))
-            if(ianti.eq.0) then
-               LB(I1)=2-netq
-            else
-               LB(I1)=-2-netq
-            endif
-            E(I1)=AMN
+       elseif(Xphi/(xkaon+Xphi).ge.x1)then
+          iblock=222
+         if(xphin/Xphi .ge. RANART(NSEED))then
+          LB(I1)= 1+int(2*RANART(NSEED))
+           E(I1)=AMN
          else
-clin-6/2013:
-c            LB(I1)= 6+int(4*RANART(NSEED))
-            if(ianti.eq.0) then            
-               LB(I1)=7+netq
-            else
-               LB(I1)=-7+netq
-            endif
-            E(I1)=AM0
+          LB(I1)= 6+int(4*RANART(NSEED))
+           E(I1)=AM0
          endif
 c   !! at present only baryon
-clin-6/2013:
-c         if(ianti .eq. 1)lb(i1)=-lb(i1)
-         LB(I2)= 29
-         E(I2)=APHI
-         EM1=E(I1)
-         EM2=E(I2)
-         go to 50
-      else
+          if(ianti .eq. 1)lb(i1)=-lb(i1)
+          LB(I2)= 29
+           E(I2)=APHI
+        EM1=E(I1)
+        EM2=E(I2)
+       go to 50
+         else
 * PION REABSORPTION HAS HAPPENED
        X2=RANART(NSEED)
        IBLOCK=80
@@ -15257,7 +14640,15 @@ c         cc1=ptr(0.33*pr,iseed)
          cc1=ptr(xptr,iseed)
 clin-10/25/02-end
 
-         c1=sqrt(pr**2-cc1**2)/pr
+clin-9/2012: check argument in sqrt():
+         scheck=pr**2-cc1**2
+         if(scheck.lt.0) then
+            write(99,*) 'scheck38: ', scheck
+            scheck=0.
+         endif
+         c1=sqrt(scheck)/pr
+c         c1=sqrt(pr**2-cc1**2)/pr
+
 c         C1   = 1.0 - 2.0 * RANART(NSEED)
           T1   = 2.0 * PI * RANART(NSEED)
       S1   = SQRT( 1.0 - C1**2 )
@@ -15307,24 +14698,16 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
        PX0=PX
        PY0=PY
        PZ0=PZ
        IBLOCK=1
-cma-ch-06/16
-       lb1=lb(I1)
-       lb2=lb(I2)
-
-clin-6/2013:
-c       ianti=0
-c       if(lb(i1).lt.0 .or. lb(i2).lt.0) ianti=1
+       ianti=0
+       if(lb(i1).lt.0 .or. lb(i2).lt.0) ianti=1
        x1=RANART(NSEED)
-cma-05/16       if(xkaon0/(xkaon+Xphi).ge.x1)then
-       if(xkaon0/(xkaon+Xphi).gt.x1)then
+       if(xkaon0/(xkaon+Xphi).ge.x1)then
 * kaon production
 *-----------------------------------------------------------------------
         IBLOCK=7
@@ -15334,231 +14717,61 @@ cma-05/16       if(xkaon0/(xkaon+Xphi).ge.x1)then
 * DECIDE LAMBDA OR SIGMA PRODUCTION, AND TO CALCULATE THE NEW
 * MOMENTA FOR PARTICLES IN THE FINAL STATE.
        KAONC=0
-clin-6/2013:
-c       IF(PNLKA(SRT)/(PNLKA(SRT)
-c     & +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
+       IF(PNLKA(SRT)/(PNLKA(SRT)
+     & +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
 clin-8/17/00     & +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
-       if(ianti.eq.0.and.(netq.eq.0.or.netq.eq.1)
-     1      .or.ianti.eq.1.and.(netq.eq.0.or.netq.eq.-1)) then
-cma-ch-06/16          IF(PNLKA(SRT)/(PNLKA(SRT)
-cma-ch-06/16     &         +PNSKA(SRT)).GT.RANART(NSEED))KAONC=1
-
-          plamb=PNLKA(SRT)/(PNLKA(SRT)+PNSKA(SRT))
-
-cma-ch-04/18-start change for iblock=7
-            if(((lb1.ge.3.and.lb1.le.5).and.
-     &    (iabs(lb2).eq.1.or.iabs(lb2).eq.2)).or.
-     &    ((lb2.ge.3.and.lb2.le.5).and.
-     &    (iabs(lb1).eq.1.or.iabs(lb1).eq.2))) then
-           chratio=6./4.
-           plamb=chratio*PNLKA(SRT)/(chratio*PNLKA(SRT)+pnska(srt))
-           endif
-
-            if(((lb1.ge.25.and.lb1.le.27).and.
-     &    (iabs(lb2).eq.1.or.iabs(lb2).eq.2)).or.
-     &    ((lb2.ge.25.and.lb2.le.27).and.
-     &    (iabs(lb1).eq.1.or.iabs(lb1).eq.2))) then
-           chratio=6./4.
-           plamb=chratio*PNLKA(SRT)/(chratio*PNLKA(SRT)+pnska(srt))
-           endif
-
-            if(((lb1.ge.3.and.lb1.le.5).and.
-     &    (iabs(lb2).ge.10.and.iabs(lb2).le.13)).or.
-     &    ((lb2.ge.3.and.lb2.le.5).and.
-     &    (iabs(lb1).ge.10.or.iabs(lb1).le.13))) then
-           chratio=6./4.
-           plamb=chratio*PNLKA(SRT)/(chratio*PNLKA(SRT)+pnska(srt))
-           endif
-
-            if(((lb1.ge.25.and.lb1.le.27).and.
-     &    (iabs(lb2).ge.10.and.iabs(lb2).le.13)).or.
-     &    ((lb2.ge.25.and.lb2.le.27).and.
-     &    (iabs(lb1).ge.10.or.iabs(lb1).le.13))) then
-           chratio=6./4.
-           plamb=chratio*PNLKA(SRT)/(chratio*PNLKA(SRT)+pnska(srt))
-           endif
-
-            if(((lb1.ge.3.and.lb1.le.5).and.
-     &    (iabs(lb2).ge.6.and.iabs(lb2).le.9)).or.
-     &    ((lb2.ge.3.and.lb2.le.5).and.
-     &    (iabs(lb1).ge.6.or.iabs(lb1).le.9))) then
-           chratio1=6./4.
-           chratio2=12./10.
-           plamb=chratio1*PNLKA(SRT)/
-     &     (chratio1*PNLKA(SRT)+chratio2*pnska(srt))
-           endif
-
-            if(((lb1.ge.25.and.lb1.le.27).and.
-     &    (iabs(lb2).ge.6.and.iabs(lb2).le.9)).or.
-     &    ((lb2.ge.25.and.lb2.le.27).and.
-     &    (iabs(lb1).ge.6.or.iabs(lb1).le.9))) then
-           chratio1=6./4.
-           chratio2=12./10.
-           plamb=chratio1*PNLKA(SRT)/
-     &     (chratio1*PNLKA(SRT)+chratio2*pnska(srt))
-           endif
-
-            if(((lb1.eq.0.or.lb1.eq.28).and.
-     &    (iabs(lb2).ge.6.and.iabs(lb2).le.9)).or.
-     &    ((lb2.eq.0.or.lb2.eq.28).and.
-     &    (iabs(lb1).ge.6.or.iabs(lb1).le.9))) then
-           chratio=4./2.
-           plamb=chratio*PNLKA(SRT)/(chratio*PNLKA(SRT)+pnska(srt))
-           endif
-
-cma-ch-04/18-end change for iblock=7
-
-       IF(plamb.GT.RANART(NSEED))KAONC=1
-
-       endif
-c
-clin-6/2013:
-       if(E(I1).LE.0.92) then
-          ikaon=I1
-          ibaryon=I2
-       else
-          ikaon=I2
-          ibaryon=I1
-       endif
-c
-       E(ikaon)=AKA
-       if(ianti.eq.0) then
-          if(KAONC.EQ.1) then
-c     rho/omega N -> Lambda K:
-             LB(ikaon)=24-netq
-             LB(ibaryon)=14
-             E(ibaryon)=ALA
-          else
-c     rho/omega N -> Sigma K:
-             if(netq.eq.2) then
-                LB(ikaon)=23
-                LB(ibaryon)=17
-             elseif(netq.eq.1) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=24
-                   LB(ibaryon)=17
-                else
-                   LB(ikaon)=23
-                   LB(ibaryon)=16
-                endif
-             elseif(netq.eq.0) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=24
-                   LB(ibaryon)=16
-                else
-                   LB(ikaon)=23
-                   LB(ibaryon)=15
-                endif
-             else
-                LB(ikaon)=24
-                LB(ibaryon)=15
-             endif
-             E(ibaryon)=ASA
-          endif
-       endif
-c
-       if(ianti.eq.1) then
-          if(KAONC.EQ.1) then
-c     rho/omega Nbar -> Lambda-bar Kbar:
-             LB(ikaon)=22+netq
-             LB(ibaryon)=-14
-             E(ibaryon)=ALA
-          else
-c     rho/omega Nbar -> Sigma-bar K-bar:
-             if(netq.eq.-2) then
-                LB(ikaon)=21
-                LB(ibaryon)=-17
-             elseif(netq.eq.-1) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=22
-                   LB(ibaryon)=-17
-                else
-                   LB(ikaon)=21
-                   LB(ibaryon)=-16
-                endif
-             elseif(netq.eq.0) then
-                if(RANART(NSEED).le.0.5) then
-                   LB(ikaon)=22
-                   LB(ibaryon)=-16
-                else
-                   LB(ikaon)=21
-                   LB(ibaryon)=-15
-                endif
-             else
-                LB(ikaon)=22
-                LB(ibaryon)=-15
-             endif
-             E(ibaryon)=ASA
-          endif
-       endif
-clin-6/2013:
-c       IF(E(I1).LE.0.92)THEN
-c       LB(I1)=23
-c       E(I1)=AKA
-c              IF(KAONC.EQ.1)THEN
-c       LB(I2)=14
-c       E(I2)=ALA
-c              ELSE
-c        LB(I2) = 15 + int(3 * RANART(NSEED))
-c       E(I2)=ASA       
-c              ENDIF
-c         if(ianti .eq. 1)then
-c          lb(i1) = 21
-c          lb(i2) = -lb(i2)
-c         endif
-c       ELSE
-c       LB(I2)=23
-c       E(I2)=AKA
-c              IF(KAONC.EQ.1)THEN
-c       LB(I1)=14
-c       E(I1)=ALA
-c              ELSE
-c         LB(I1) = 15 + int(3 * RANART(NSEED))
-c       E(I1)=ASA       
-c              ENDIF
-c         if(ianti .eq. 1)then
-c          lb(i2) = 21
-c          lb(i1) = -lb(i1)
-c         endif
-c       ENDIF
+       IF(E(I1).LE.0.92)THEN
+       LB(I1)=23
+       E(I1)=AKA
+              IF(KAONC.EQ.1)THEN
+       LB(I2)=14
+       E(I2)=ALA
+              ELSE
+        LB(I2) = 15 + int(3 * RANART(NSEED))
+       E(I2)=ASA       
+              ENDIF
+         if(ianti .eq. 1)then
+          lb(i1) = 21
+          lb(i2) = -lb(i2)
+         endif
+       ELSE
+       LB(I2)=23
+       E(I2)=AKA
+              IF(KAONC.EQ.1)THEN
+       LB(I1)=14
+       E(I1)=ALA
+              ELSE
+         LB(I1) = 15 + int(3 * RANART(NSEED))
+       E(I1)=ASA       
+              ENDIF
+         if(ianti .eq. 1)then
+          lb(i2) = 21
+          lb(i1) = -lb(i1)
+         endif
+       ENDIF
         EM1=E(I1)
         EM2=E(I2)
        go to 50
 * to gererate the momentum for the kaon and L/S
 c
 c* Phi production
-cma-05/16       elseif(Xphi/(xkaon+Xphi).ge.x1)then
-       elseif(Xphi/(xkaon+Xphi).gt.x1)then
+       elseif(Xphi/(xkaon+Xphi).ge.x1)then
           iblock=222
-cma-05/16         if(xphin/Xphi .ge. RANART(NSEED))then
-         if(xphin/Xphi .gt. RANART(NSEED))then
-clin-6/2013:
-c          LB(I1)= 1+int(2*RANART(NSEED))
-            if(ianti.eq.0) then
-               LB(I1)=2-netq
-            else
-               LB(I1)=-2-netq
-            endif
-            E(I1)=AMN
+         if(xphin/Xphi .ge. RANART(NSEED))then
+          LB(I1)= 1+int(2*RANART(NSEED))
+           E(I1)=AMN
          else
-clin-6/2013:
-c          LB(I1)= 6+int(4*RANART(NSEED))
-            if(ianti.eq.0) then            
-               LB(I1)=7+netq
-            else
-               LB(I1)=-7+netq
-            endif
-            E(I1)=AM0
+          LB(I1)= 6+int(4*RANART(NSEED))
+           E(I1)=AM0
          endif
 c   !! at present only baryon
-clin-6/2013:
-c         if(ianti .eq. 1)lb(i1)=-lb(i1)
-         LB(I2)= 29
-         E(I2)=APHI
-         EM1=E(I1)
-         EM2=E(I2)
-         go to 50
-      else
+         if(ianti .eq. 1)lb(i1)=-lb(i1)
+          LB(I2)= 29
+           E(I2)=APHI
+        EM1=E(I1)
+        EM2=E(I2)
+       go to 50
+         else
 * rho(omega) REABSORPTION HAS HAPPENED
        X2=RANART(NSEED)
        IBLOCK=81
@@ -16287,7 +15500,15 @@ c         cc1=ptr(0.33*pr,iseed)
          cc1=ptr(xptr,iseed)
 clin-10/25/02-end
 
-         c1=sqrt(pr**2-cc1**2)/pr
+clin-9/2012: check argument in sqrt():
+         scheck=pr**2-cc1**2
+         if(scheck.lt.0) then
+            write(99,*) 'scheck39: ', scheck
+            scheck=0.
+         endif
+         c1=sqrt(scheck)/pr
+c         c1=sqrt(pr**2-cc1**2)/pr
+
           T1   = 2.0 * PI * RANART(NSEED)
       S1   = SQRT( 1.0 - C1**2 )
       CT1  = COS(T1)
@@ -16333,12 +15554,7 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
-
-ctest off: note that nchrg is negative the netcharge of initial particles:
-c      if(nchrg.ne.-netq) write(89,*) nchrg,netq,lb(i1),lb(i2)
 c
       PX0=PX
       PY0=PY
@@ -16349,49 +15565,23 @@ c
          if(rrr.lt.brel) then
 c            !! elastic scat.  (avoid in reverse process)
             IBLOCK=8
-         else 
+        else 
             IBLOCK=100
             if(rrr.lt.(brel+brsgm)) then
-               e(i1)=asa
 c*    K+ + N-bar -> Sigma-bar + PI
-clin-6/2013:
-c               LB(i1) = -15 - int(3 * RANART(NSEED))
-               if(netq.eq.2.or.netq.eq.-2) then
-                  LB(i1)=-16+netq/2
-                  LB(i2)=4+netq/2
-               elseif(netq.eq.1.or.netq.eq.-1) then
-                  if(RANART(NSEED).le.0.5) then
-                     LB(i1)=-16
-                     LB(i2)=4+netq
-                  else
-                     LB(i1)=-16+netq
-                     LB(i2)=4
-                  endif
-               else
-                  rd=RANART(NSEED)
-                  if(rd.le.1./3.) then
-                     LB(i1)=-16
-                     LB(i2)=4
-                  elseif(rd.le.2./3.) then
-                     LB(i1)=-15
-                     LB(i2)=3
-                  else
-                     LB(i1)=-17
-                     LB(i2)=5
-                  endif
-               endif
+               LB(i1) = -15 - int(3 * RANART(NSEED))
+
+               e(i1)=asa
             else
 c*    K+ + N-bar -> Lambda-bar + PI
                LB(i1)= -14  
                e(i1)=ala
-clin-6/2013:
-               LB(i2)=4+netq
             endif
-clin-6/2013:
-c            LB(i2) = 3 + int(3 * RANART(NSEED))
+            LB(i2) = 3 + int(3 * RANART(NSEED))
             e(i2)=0.138
         endif
       endif
+c
 c
       if(icase .eq. 4)then
          rrr=RANART(NSEED)
@@ -16402,67 +15592,13 @@ c            !! elastic scat.
             IBLOCK=102
 c    PI + Sigma(Lambda)-bar -> K+ + N-bar
 c         ! K+
+            LB(i1) = 23
+            LB(i2) = -1 - int(2 * RANART(NSEED))
+            if(nchrg.eq.-2) LB(i2) = -6
+            if(nchrg.eq. 1) LB(i2) = -9
             e(i1) = aka
-            e(i2)=0.938
-clin-6/2013:
-c            LB(i1) = 23
-c            LB(i2) = -1 - int(2 * RANART(NSEED))
-c            if(nchrg.eq.-2) LB(i2) = -6
-c            if(nchrg.eq. 1) LB(i2) = -9
-            if(netq.eq.-2) then
-               LB(i1)=24
-               LB(i2)=-9
-cma-ch-06/16 add for iblock=102
-            elseif(netq.eq.2) then
-               LB(i1)=23
-               LB(i2)=-6
-
-            elseif(netq.eq.-1) then
-               if(RANART(NSEED).le.0.5) then
-                  LB(i1)=23
-                  LB(i2)=-9
-               else
-                  LB(i1)=24
-                  if(RANART(NSEED).le.0.5) then
-                     LB(i2)=-8
-                  else
-                     LB(i2)=-1
-                  endif
-               endif
-            elseif(netq.eq.0) then
-               if(RANART(NSEED).le.0.5) then
-                  LB(i1)=23
-                  if(RANART(NSEED).le.0.5) then
-                     LB(i2)=-8
-                  else
-                     LB(i2)=-1
-                  endif
-               else
-                  LB(i1)=24
-                  if(RANART(NSEED).le.0.5) then
-                     LB(i2)=-7
-                  else
-                     LB(i2)=-2
-                  endif
-               endif
-            elseif(netq.eq.1) then
-               if(RANART(NSEED).le.0.5) then
-                  LB(i1)=23
-                  if(RANART(NSEED).le.0.5) then
-                     LB(i2)=-7
-                  else
-                     LB(i2)=-2
-                  endif
-               else
-                  LB(i1)=24
-                  LB(i2)=-6
-               endif
-            else
-               LB(i1)=23
-               LB(i2)=-6
-            endif
-            if(LB(i2).ge.-9.and.LB(i2).le.-6) e(i2)=1.232
-c            if(nchrg.eq.-2.or.nchrg.eq.1) e(i2)=1.232
+            e(i2) = 0.938
+            if(nchrg.eq.-2.or.nchrg.eq.1) e(i2)=1.232
          endif
       endif
 c
@@ -16517,8 +15653,6 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
        PX0=PX
@@ -16579,10 +15713,8 @@ clin-8/29/00*             DEALING WITH anti-nucleon annihilation with
 *       should be small, but keep it in mind.
 **********************************
         PARAMETER (MAXSTR=150001,MAXR=1,AMN=0.939457,
-     1  AMP=0.93828,AP1=0.13496,AMRHO=0.77,AMOMGA=0.782,
+     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,
      2  AP2=0.13957,AM0=1.232,PI=3.1415926,CUTOFF=1.8966,AVMASS=0.9383)
-clin-6/2013:
-c     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,
         PARAMETER      (AKA=0.498,ALA=1.1157,ASA=1.1974)
         parameter     (MX=4,MY=4,MZ=8,MPX=4,MPY=4,mpz=10,mpzp=10)
         COMMON /AA/ R(3,MAXSTR)
@@ -16597,10 +15729,6 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
-clin-4/2018-new:
-      COMMON/bbmm/xcorr,f4piom,f4rr
       SAVE   
 
        PX0=PX
@@ -16608,9 +15736,7 @@ clin-4/2018-new:
        PZ0=PZ
 * determine the no. of pions in the final state using a 
 * statistical model
-clin-4/2018-new generate number of pions in the final state:
-c       call pbarfs(srt,npion,iseed)
-       call pbarfs(srt,npion,iseed,lb1,lb2,1)
+       call pbarfs(srt,npion,iseed)
 * find the masses of the final state particles before calculate 
 * their momenta, and relable them. The masses of rho and omega 
 * will be generated according to the Breit Wigner formula       (NOTE!!!
@@ -16620,165 +15746,72 @@ cbali2/22/99
 * one or both of them are used directly as the lables of pions
 * similarly, 22+nchrg1 and 22+nchrg2 are used directly 
 * to label rhos  
-c       nchrg1=3+int(3*RANART(NSEED))
-c       nchrg2=3+int(3*RANART(NSEED))
+       nchrg1=3+int(3*RANART(NSEED))
+       nchrg2=3+int(3*RANART(NSEED))
 * the corresponding masses of pions
-c       pmass1=ap1
-c       pmass2=ap1
-c       if(nchrg1.eq.3.or.nchrg1.eq.5) pmass1=ap2
-c       if(nchrg2.eq.3.or.nchrg2.eq.5) pmass2=ap2
+      pmass1=ap1
+       pmass2=ap1
+       if(nchrg1.eq.3.or.nchrg1.eq.5)pmass1=ap2
+       if(nchrg2.eq.3.or.nchrg2.eq.5)pmass2=ap2
 * (1) for 2 pion production
        IF(NPION.EQ.2)THEN 
        IBLOCK=1902
-clin-6/2013:
-c* randomly generate the charges of final state particles,
-c       LB(I1)=nchrg1
-c       E(I1)=pmass1
-c       LB(I2)=nchrg2
-c       E(I2)=pmass2
-       if(netq.eq.2.or.netq.eq.-2) then
-          LB(I1)=4+netq/2
-          E(I1)=ap2
-          LB(I2)=4+netq/2
-          E(I2)=ap2
-       elseif(netq.eq.1.or.netq.eq.-1) then
-          LB(I1)=4
-          E(I1)=ap1
-          LB(I2)=4+netq
-          E(I2)=ap2
-       elseif(netq.eq.0) then
-          if(RANART(NSEED).le.0.5) then
-             LB(I1)=3
-             E(I1)=ap2
-             LB(I2)=5
-             E(I2)=ap2
-          else
-             LB(I1)=4
-             E(I1)=ap1
-             LB(I2)=4
-             E(I2)=ap1
-          endif
-       endif
+* randomly generate the charges of final state particles,
+       LB(I1)=nchrg1
+       E(I1)=pmass1
+       LB(I2)=nchrg2
+       E(I2)=pmass2
 * TO CALCULATE THE FINAL MOMENTA
        GO TO 50
        ENDIF
 * (2) FOR 3 PION PRODUCTION
        IF(NPION.EQ.3)THEN 
        IBLOCK=1903
-clin-6/2013:
-c       LB(I1)=nchrg1
-c       E(I1)=pmass1
-c       LB(I2)=22+nchrg2
-       E(I2)=AMRHO
-       if(netq.eq.2.or.netq.eq.-2) then
-          LB(I1)=4+netq/2
-          E(I1)=ap2
-          LB(I2)=26+netq/2
-       elseif(netq.eq.1.or.netq.eq.-1) then
-          if(RANART(NSEED).le.0.5) then
-             LB(I1)=4
-             E(I1)=ap1
-             LB(I2)=26+netq
-          else
-             LB(I1)=4+netq
-             E(I1)=ap2
-             LB(I2)=26
-          endif
-       elseif(netq.eq.0) then
-          rd=RANART(NSEED)
-          if(rd.le.1./3.) then
-             LB(I1)=3
-             E(I1)=ap2
-             LB(I2)=27
-          elseif(rd.le.2./3.) then
-             LB(I1)=5
-             E(I1)=ap2
-             LB(I2)=25
-          else
-             LB(I1)=4
-             E(I1)=ap1
-             LB(I2)=26
-          endif
-       endif
+       LB(I1)=nchrg1
+       E(I1)=pmass1
+       LB(I2)=22+nchrg2
+            E(I2)=AMRHO
        GO TO 50
        ENDIF
 * (3) FOR 4 PION PRODUCTION
-clin-6/2013 only rho+rho if netq=+2 or -2, else:
 * we allow both rho+rho and pi+omega with 50-50% probability
         IF(NPION.EQ.4)THEN 
-           IBLOCK=1904
-           if(netq.eq.2.or.netq.eq.-2) then
-              LB(I1)=26+netq/2
-              LB(I2)=26+netq/2
-              E(I1)=AMRHO
-              E(I2)=AMRHO
-           else
+       IBLOCK=1904
 * determine rho+rho or pi+omega
-clin-4/2018 B Bbar -> 4 pions relative ratios
-c     to rho rho or pi omega are given by f4rr & f4piom:
-              brToRR=f4rr/(f4rr+f4piom)
-c              if(RANART(NSEED).ge.0.5)then
-              if(RANART(NSEED).le.brToRR)then
-c
+       if(RANART(NSEED).ge.0.5)then
 * rho+rho  
-c       LB(I1)=22+nchrg1
-                 E(I1)=AMRHO
-c       LB(I2)=22+nchrg2
-                 E(I2)=AMRHO
-                 if(netq.eq.1.or.netq.eq.-1) then
-                    LB(I1)=26
-                    LB(I2)=26+netq
-                 elseif(netq.eq.0) then
-                    if(RANART(NSEED).le.0.5) then
-                       LB(I1)=25
-                       LB(I2)=27
-                    else
-                       LB(I1)=26
-                       LB(I2)=26
-                    endif
-                 endif
-              else
+       LB(I1)=22+nchrg1
+       E(I1)=AMRHO
+       LB(I2)=22+nchrg2
+            E(I2)=AMRHO
+       else
 * pion+omega
-c       LB(I1)=nchrg1
-c       E(I1)=pmass1
-                 LB(I2)=28
-                 E(I2)=AMOMGA
-                 if(netq.eq.1.or.netq.eq.-1) then
-                    LB(I1)=4+netq
-                    E(I1)=ap2
-                 elseif(netq.eq.0) then
-                    LB(I1)=4
-                    E(I1)=ap1
-                 endif
-              endif
-           endif
-        GO TO 50
-        ENDIF
+       LB(I1)=nchrg1
+       E(I1)=pmass1
+       LB(I2)=28
+            E(I2)=AMOMGA
+       endif
+       GO TO 50
+       ENDIF
 * (4) FOR 5 PION PRODUCTION
         IF(NPION.EQ.5)THEN 
-           IBLOCK=1905
+       IBLOCK=1905
 * RHO AND OMEGA
-clin-6/2013:
-c           LB(I1)=22+nchrg1
-           E(I1)=AMRHO
-           LB(I2)=28
-           E(I2)=AMOMGA
-           if(netq.eq.1.or.netq.eq.-1) then
-              LB(I1)=26+netq
-           elseif(netq.eq.0) then
-              LB(I1)=26
-           endif
-           GO TO 50
-        ENDIF
+        LB(I1)=22+nchrg1
+       E(I1)=AMRHO
+       LB(I2)=28
+       E(I2)=AMOMGA
+       GO TO 50
+       ENDIF
 * (5) FOR 6 PION PRODUCTION
-        IF(NPION.EQ.6)THEN 
-           IBLOCK=1906
+         IF(NPION.EQ.6)THEN 
+       IBLOCK=1906
 * OMEGA AND OMEGA
-           LB(I1)=28
-           E(I1)=AMOMGA
-           LB(I2)=28
-           E(I2)=AMOMGA
-        ENDIF
+        LB(I1)=28
+       E(I1)=AMOMGA
+       LB(I2)=28
+          E(I2)=AMOMGA
+       ENDIF
 cbali2/22/99
 50    EM1=E(I1)
       EM2=E(I2)
@@ -16819,11 +15852,9 @@ cbali3/5/99
 *             iblock   - 1907
 **********************************
         PARAMETER (MAXSTR=150001,MAXR=1,AMN=0.939457,
-     1  AMP=0.93828,AP1=0.13496,AMRHO=0.77,AMOMGA=0.782,
+     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,
      &  AMETA = 0.5473,
      2  AP2=0.13957,AM0=1.232,PI=3.1415926,CUTOFF=1.8966,AVMASS=0.9383)
-clin-6/2013:
-c     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,
         PARAMETER      (AKA=0.498,ALA=1.1157,ASA=1.1974)
         parameter     (MX=4,MY=4,MZ=8,MPX=4,MPY=4,mpz=10,mpzp=10)
         COMMON /AA/ R(3,MAXSTR)
@@ -16836,13 +15867,11 @@ cc      SAVE /CC/
 cc      SAVE /EE/
         common/input1/ MASSPR,MASSTA,ISEED,IAVOID,DT
 cc      SAVE /input1/
-        COMMON/RNDF77/NSEED
+      COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-        COMMON/charge/netq,ianti
-        SAVE   
+      SAVE   
 
-        IBLOCK=1907
+       IBLOCK=1907
         X1 = RANART(NSEED) * SIGK
         XSK2 = XSK1 + XSK2
         XSK3 = XSK2 + XSK3
@@ -16853,154 +15882,72 @@ clin-6/2013:
         XSK8 = XSK7 + XSK8
         XSK9 = XSK8 + XSK9
         XSK10 = XSK9 + XSK10
-cma-05/16        IF (X1 .LE. XSK1) THEN
-        IF (X1 .LT. XSK1) THEN
-clin-6/2013:
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-c           LB(I2) = 3 + int(3 * RANART(NSEED))
-           if(netq.eq.1.or.netq.eq.-1) then
-              LB(I1)=4+netq
-              LB(I2)=4
-           else
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=4
-                 LB(I2)=4
-              else
-                 LB(I1)=3
-                 LB(I2)=5
-              endif
-           endif
+        IF (X1 .LE. XSK1) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = 3 + int(3 * RANART(NSEED))
            E(I1) = AP2
            E(I2) = AP2
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK2) THEN
-        ELSE IF (X1 .LT. XSK2) THEN
-clin-6/2013:
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-c           LB(I2) = 25 + int(3 * RANART(NSEED))
-           if(netq.eq.1.or.netq.eq.-1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=4+netq
-                 LB(I2)=26
-              else
-                 LB(I1)=4
-                 LB(I2)=26+netq
-              endif
-           else
-              rd=RANART(NSEED)
-              if(rd.le.1./3.) then
-                 LB(I1)=4
-                 LB(I2)=26
-              elseif(rd.le.2./3.) then
-                 LB(I1)=3
-                 LB(I2)=27
-              else
-                 LB(I1)=5
-                 LB(I2)=25
-              endif
-           endif
+        ELSE IF (X1 .LE. XSK2) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = 25 + int(3 * RANART(NSEED))
            E(I1) = AP2
            E(I2) = AMRHO
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK3) THEN
-        ELSE IF (X1 .LT. XSK3) THEN
-clin-6/2013:
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-           if(netq.eq.1.or.netq.eq.-1) then
-              LB(I1)=4+netq
-           else
-              LB(I1)=4
-           endif
+        ELSE IF (X1 .LE. XSK3) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
            LB(I2) = 28
            E(I1) = AP2
            E(I2) = AMOMGA
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK4) THEN
-        ELSE IF (X1 .LT. XSK4) THEN
-clin-6/2013:
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-           if(netq.eq.1.or.netq.eq.-1) then
-              LB(I1)=4+netq
-           else
-              LB(I1)=4
-           endif
+        ELSE IF (X1 .LE. XSK4) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
            LB(I2) = 0
            E(I1) = AP2
            E(I2) = AMETA
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK5) THEN
-        ELSE IF (X1 .LT. XSK5) THEN
-clin-6/2013:
-c           LB(I1) = 25 + int(3 * RANART(NSEED))
-c           LB(I2) = 25 + int(3 * RANART(NSEED))
-           if(netq.eq.1.or.netq.eq.-1) then
-              LB(I1)=26+netq
-              LB(I2)=26
-           else
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=26
-                 LB(I2)=26
-              else
-                 LB(I1)=25
-                 LB(I2)=27
-              endif
-           endif
+        ELSE IF (X1 .LE. XSK5) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
+           LB(I2) = 25 + int(3 * RANART(NSEED))
            E(I1) = AMRHO
            E(I2) = AMRHO
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK6) THEN
-        ELSE IF (X1 .LT. XSK6) THEN
-clin-6/2013:
-c           LB(I1) = 25 + int(3 * RANART(NSEED))
-           if(netq.eq.1.or.netq.eq.-1) then
-              LB(I1)=26+netq
-           else
-              LB(I1)=26
-           endif
+        ELSE IF (X1 .LE. XSK6) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
            LB(I2) = 28
            E(I1) = AMRHO
            E(I2) = AMOMGA
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK7) THEN
-        ELSE IF (X1 .LT. XSK7) THEN
-clin-6/2013:
-c           LB(I1) = 25 + int(3 * RANART(NSEED))
-           if(netq.eq.1.or.netq.eq.-1) then
-              LB(I1)=26+netq
-           else
-              LB(I1)=26
-           endif
+        ELSE IF (X1 .LE. XSK7) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
            LB(I2) = 0
            E(I1) = AMRHO
            E(I2) = AMETA
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK8) THEN
-        ELSE IF (X1 .LT. XSK8) THEN
+        ELSE IF (X1 .LE. XSK8) THEN
            LB(I1) = 28
            LB(I2) = 28
            E(I1) = AMOMGA
            E(I2) = AMOMGA
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK9) THEN
-        ELSE IF (X1 .LT. XSK9) THEN
+        ELSE IF (X1 .LE. XSK9) THEN
            LB(I1) = 28
            LB(I2) = 0
            E(I1) = AMOMGA
            E(I2) = AMETA
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK10) THEN
-        ELSE IF (X1 .LT. XSK10) THEN
+        ELSE IF (X1 .LE. XSK10) THEN
            LB(I1) = 0
            LB(I2) = 0
            E(I1) = AMETA
            E(I2) = AMETA
         ELSE
-          iblock=222
+          iblock = 222
           call rhores(i1,i2)
 c     !! phi
           lb(i1) = 29
 c          return
-c          e(i2)=0.
+          e(i2)=0.
         END IF
 
  100    CONTINUE
@@ -17034,10 +15981,8 @@ c          e(i2)=0.
 *             iblock   - 222   !! phi                                  *
 **********************************
         PARAMETER (MAXSTR=150001,MAXR=1,AMN=0.939457,
-     1  AMP=0.93828,AP1=0.13496,AMRHO=0.77,AMOMGA=0.782,APHI=1.02,
+     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,APHI=1.02,
      2  AP2=0.13957,AM0=1.232,PI=3.1415926,CUTOFF=1.8966,AVMASS=0.9383)
-clin-6/2013:
-c     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,APHI=1.02,
           parameter (pimass=0.140, AMETA = 0.5473, aka=0.498,
      &     aml=1.116,ams=1.193, AM1440 = 1.44, AM1535 = 1.535)
         parameter     (MX=4,MY=4,MZ=8,MPX=4,MPY=4,mpz=10,mpzp=10)
@@ -17053,8 +15998,6 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-        COMMON/charge/netq,ianti
       SAVE   
 
        PX0=PX
@@ -17078,155 +16021,105 @@ c
         XKY14 = XKY13 + XKY14
         XKY15 = XKY14 + XKY15
         XKY16 = XKY15 + XKY16
-cma-05/16        IF (X1 .LE. XKY1) THEN
-        IF (X1 .LT. XKY1) THEN
-clin-6/2013:
-           ic=1
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-c           LB(I2) = 1 + int(2 * RANART(NSEED))
+        IF (X1 .LE. XKY1) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = 1 + int(2 * RANART(NSEED))
            E(I1) = PIMASS
            E(I2) = AMP
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY2) THEN
-        ELSE IF (X1 .LT. XKY2) THEN
-clin-6/2013:
-           ic=2
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-c           LB(I2) = 6 + int(4 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY2) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = 6 + int(4 * RANART(NSEED))
            E(I1) = PIMASS
            E(I2) = AM0
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY3) THEN
-        ELSE IF (X1 .LT. XKY3) THEN
-clin-6/2013:
-           ic=3
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-c           LB(I2) = 10 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY3) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = 10 + int(2 * RANART(NSEED))
            E(I1) = PIMASS
            E(I2) = AM1440
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY4) THEN
-        ELSE IF (X1 .LT. XKY4) THEN
-clin-6/2013:
-           ic=4
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-c           LB(I2) = 12 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY4) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = 12 + int(2 * RANART(NSEED))
            E(I1) = PIMASS
            E(I2) = AM1535
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY5) THEN
-        ELSE IF (X1 .LT. XKY5) THEN
-clin-6/2013:
-           ic=5
-c           LB(I1) = 25 + int(3 * RANART(NSEED))
-c           LB(I2) = 1 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY5) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
+           LB(I2) = 1 + int(2 * RANART(NSEED))
            E(I1) = AMRHO
            E(I2) = AMP
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY6) THEN
-        ELSE IF (X1 .LT. XKY6) THEN
-clin-6/2013:
-           ic=6
-c           LB(I1) = 25 + int(3 * RANART(NSEED))
-c           LB(I2) = 6 + int(4 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY6) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
+           LB(I2) = 6 + int(4 * RANART(NSEED))
            E(I1) = AMRHO
            E(I2) = AM0
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY7) THEN
-        ELSE IF (X1 .LT. XKY7) THEN
-clin-6/2013:
-           ic=7
-c           LB(I1) = 25 + int(3 * RANART(NSEED))
-c           LB(I2) = 10 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY7) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
+           LB(I2) = 10 + int(2 * RANART(NSEED))
            E(I1) = AMRHO
            E(I2) = AM1440
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY8) THEN
-        ELSE IF (X1 .LT. XKY8) THEN
-clin-6/2013:
-           ic=8
-c           LB(I1) = 25 + int(3 * RANART(NSEED))
-c           LB(I2) = 12 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY8) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
+           LB(I2) = 12 + int(2 * RANART(NSEED))
            E(I1) = AMRHO
            E(I2) = AM1535
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY9) THEN
-        ELSE IF (X1 .LT. XKY9) THEN
-clin-6/2013:
-           ic=9
-c           LB(I1) = 28
-c           LB(I2) = 1 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY9) THEN
+           LB(I1) = 28
+           LB(I2) = 1 + int(2 * RANART(NSEED))
            E(I1) = AMOMGA
            E(I2) = AMP
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY10) THEN
-        ELSE IF (X1 .LT. XKY10) THEN
-clin-6/2013:
-           ic=10
-c           LB(I1) = 28
-c           LB(I2) = 6 + int(4 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY10) THEN
+           LB(I1) = 28
+           LB(I2) = 6 + int(4 * RANART(NSEED))
            E(I1) = AMOMGA
            E(I2) = AM0
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY11) THEN
-        ELSE IF (X1 .LT. XKY11) THEN
-clin-6/2013:
-           ic=11
-c           LB(I1) = 28
-c           LB(I2) = 10 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY11) THEN
+           LB(I1) = 28
+           LB(I2) = 10 + int(2 * RANART(NSEED))
            E(I1) = AMOMGA
            E(I2) = AM1440
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY12) THEN
-        ELSE IF (X1 .LT. XKY12) THEN
-clin-6/2013:
-           ic=12
-c           LB(I1) = 28
-c           LB(I2) = 12 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY12) THEN
+           LB(I1) = 28
+           LB(I2) = 12 + int(2 * RANART(NSEED))
            E(I1) = AMOMGA
            E(I2) = AM1535
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY13) THEN
-        ELSE IF (X1 .LT. XKY13) THEN
-clin-6/2013:
-           ic=13
-c           LB(I1) = 0
-c           LB(I2) = 1 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY13) THEN
+           LB(I1) = 0
+           LB(I2) = 1 + int(2 * RANART(NSEED))
            E(I1) = AMETA
            E(I2) = AMP
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY14) THEN
-        ELSE IF (X1 .LT. XKY14) THEN
-clin-6/2013:
-           ic=14
-c           LB(I1) = 0
-c           LB(I2) = 6 + int(4 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY14) THEN
+           LB(I1) = 0
+           LB(I2) = 6 + int(4 * RANART(NSEED))
            E(I1) = AMETA
            E(I2) = AM0
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY15) THEN
-        ELSE IF (X1 .LT. XKY15) THEN
-clin-6/2013:
-           ic=15
-c           LB(I1) = 0
-c           LB(I2) = 10 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY15) THEN
+           LB(I1) = 0
+           LB(I2) = 10 + int(2 * RANART(NSEED))
            E(I1) = AMETA
            E(I2) = AM1440
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XKY16) THEN
-        ELSE IF (X1 .LT. XKY16) THEN
-clin-6/2013:
-           ic=16
-c           LB(I1) = 0
-c           LB(I2) = 12 + int(2 * RANART(NSEED))
+        ELSE IF (X1 .LE. XKY16) THEN
+           LB(I1) = 0
+           LB(I2) = 12 + int(2 * RANART(NSEED))
            E(I1) = AMETA
            E(I2) = AM1535
            GOTO 100
         ELSE
-clin-6/2013:
-           ic=17
-c           LB(I1) = 29
-c           LB(I2) = 1 + int(2 * RANART(NSEED))
+           LB(I1) = 29
+           LB(I2) = 1 + int(2 * RANART(NSEED))
            E(I1) = APHI
            E(I2) = AMN
           IBLOCK=222
@@ -17234,12 +16127,6 @@ c           LB(I2) = 1 + int(2 * RANART(NSEED))
         END IF
 
  100    CONTINUE
-clin-6/2013:
-c         if(IKMP .eq. -1) LB(I2) = -LB(I2)
-        call khypmb(ic,ianti,netq,lb1f,lb2f)
-        LB(I1)=lb1f
-        LB(I2)=lb2f
-c
          if(IKMP .eq. -1) LB(I2) = -LB(I2)
 
       EM1=E(I1)
@@ -17297,69 +16184,20 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-        COMMON/charge/netq,ianti
       SAVE   
+
         PX0=PX
         PY0=PY                                                          
         PZ0=PZ
         IBLOCK=71
         NTAG=0
-        if( (lb(i1).ge.14.and.lb(i1).le.17) .OR.
-     &       (lb(i2).ge.14.and.lb(i2).le.17) )then
-clin-6/2013: La/Si + N-bar --> Kbar + pi
-c           LB(I1)=21
-           if(netq.eq.-2) then
-              LB(I1)=21
-              LB(I2)=3
-           elseif(netq.eq.-1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=21
-                 LB(I2)=4
-              else
-                 LB(I1)=22
-                 LB(I2)=3
-              endif
-           elseif(netq.eq.0) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=21
-                 LB(I2)=5
-              else
-                 LB(I1)=22
-                 LB(I2)=4
-              endif
-           elseif(netq.eq.1) then
-              LB(I1)=22
-              LB(I2)=5
-           endif
-        else
-clin-6/2013 La/Si-bar + N --> K + pi:
-c           LB(I1)=23
-           if(netq.eq.2) then
-              LB(I1)=23
-              LB(I2)=5
-           elseif(netq.eq.1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=23
-                 LB(I2)=4
-              else
-                 LB(I1)=24
-                 LB(I2)=5
-              endif
-           elseif(netq.eq.0) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=23
-                 LB(I2)=3
-              else
-                 LB(I1)=24
-                 LB(I2)=4
-              endif
-           elseif(netq.eq.-1) then
-              LB(I1)=24
-              LB(I2)=3
-           endif
-        endif
-c        LB(I2)= 3 + int(3 * RANART(NSEED))
+       if( (lb(i1).ge.14.and.lb(i1).le.17) .OR.
+     &     (lb(i2).ge.14.and.lb(i2).le.17) )then
+        LB(I1)=21
+       else
+        LB(I1)=23
+       endif
+        LB(I2)= 3 + int(3 * RANART(NSEED))
         E(I1)=AKA
         E(I2)=0.138
         EM1=E(I1)
@@ -17404,10 +16242,8 @@ csp11/03/01 end
 *                      71
 **********************************
         PARAMETER (MAXSTR=150001,MAXR=1,AMN=0.939457,
-     1  AMP=0.93828,AP1=0.13496,AP2=0.13957,AMRHO=0.77,AMOMGA=0.782,
+     1  AMP=0.93828,AP1=0.13496,AP2=0.13957,AMRHO=0.769,AMOMGA=0.782,
      2  AM0=1.232,PI=3.1415926,CUTOFF=1.8966,AVMASS=0.9383)
-clin-6/2013:
-c     1  AMP=0.93828,AP1=0.13496,AP2=0.13957,AMRHO=0.769,AMOMGA=0.782,
         PARAMETER (AKA=0.498,AKS=0.895,ALA=1.1157,ASA=1.1974
      1 ,APHI=1.02)
         PARAMETER (AM1440 = 1.44, AM1535 = 1.535)
@@ -17422,31 +16258,16 @@ cc      SAVE /CC/
 cc      SAVE /EE/
         common/input1/ MASSPR,MASSTA,ISEED,IAVOID,DT
 cc      SAVE /input1/
-        COMMON/RNDF77/NSEED
+      COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-        COMMON/charge/netq,ianti
-        SAVE   
-clin-6/2013:
-        if(lb(i1).eq.21.or.lb(i2).eq.21
-     1       .or.lb(i1).eq.22.or.lb(i2).eq.22) then
-           netq0=-netq
-        else
-           netq0=netq
-        endif
-ctest on
-c        write(11,*) 'a: ',lb(i1),lb(i2),netq,netq0
-c
+      SAVE   
+
           emm1=0.
           emm2=0.
           lbp1=0
           lbp2=0
-          XKP0 = spika
-cma-ch-04/18 change for iblock=171: pi K -> K*:
-          chratio=6./4.
-          XKP0 = chratio*XKP0
-c
-          XKP1 = 0.
+           XKP0 = spika
+           XKP1 = 0.
            XKP2 = 0.
            XKP3 = 0.
            XKP4 = 0.
@@ -17457,136 +16278,82 @@ c
            XKP9 = 0.
            XKP10 = 0.
            sigm = 15.
-
-clin-6/2013:
-cczbyin-8/25/10 net charge of initial particles
-c           netq = LUCHGE(INVFLV(lb(i1)))/3+LUCHGE(INVFLV(lb(i2)))/3 
-cczbyin-8/25/10 end of net charge of initial particles
-
 c         if(lb(i1).eq.21.or.lb(i2).eq.21)sigm=10.
         pdd = (srt**2-(aka+ap1)**2)*(srt**2-(aka-ap1)**2)
 c
          if(srt .lt. (ala+amn))go to 70
-clin-4/2018 -> Lambda-bar N:
         XKP1 = sigm*(4./3.)*(srt**2-(ala+amn)**2)*
      &           (srt**2-(ala-amn)**2)/pdd
-cma-ch-04/18 change for iblock=71
-        chratio=6./4.
-        XKP1 = chratio*XKP1
-
-clin-4/2018 -> Lambda-bar Delta:
          if(srt .gt. (ala+am0))then
         XKP2 = sigm*(16./3.)*(srt**2-(ala+am0)**2)*
      &           (srt**2-(ala-am0)**2)/pdd
          endif
-
-clin-4/2018 -> Lambda-bar N*1440:
          if(srt .gt. (ala+am1440))then
         XKP3 = sigm*(4./3.)*(srt**2-(ala+am1440)**2)*
      &           (srt**2-(ala-am1440)**2)/pdd
-cma-ch-04/18 change for iblock=71
-        chratio=6./4.
-        XKP3 = chratio*XKP3
          endif
-
-clin-4/2018 -> Lambda-bar N*1535:
          if(srt .gt. (ala+am1535))then
         XKP4 = sigm*(4./3.)*(srt**2-(ala+am1535)**2)*
      &           (srt**2-(ala-am1535)**2)/pdd
-cma-ch-04/18 change for iblock=71
-        chratio=6./4.
-        XKP4 = chratio*XKP4
          endif
-
-clin-4/2018 -> Sigma-bar N:
+c
          if(srt .gt. (asa+amn))then
         XKP5 = sigm*4.*(srt**2-(asa+amn)**2)*
      &           (srt**2-(asa-amn)**2)/pdd
          endif
-
-clin-4/2018 -> Sigma-bar Delta:
          if(srt .gt. (asa+am0))then
         XKP6 = sigm*16.*(srt**2-(asa+am0)**2)*
      &           (srt**2-(asa-am0)**2)/pdd
          endif
-
-clin-4/2018 -> Sigma-bar N*1440:
          if(srt .gt. (asa+am1440))then
         XKP7 = sigm*4.*(srt**2-(asa+am1440)**2)*
      &           (srt**2-(asa-am1440)**2)/pdd
          endif
-
-clin-4/2018 -> Sigma-bar N*1535:
          if(srt .gt. (asa+am1535))then
         XKP8 = sigm*4.*(srt**2-(asa+am1535)**2)*
      &           (srt**2-(asa-am1535)**2)/pdd
          endif
-
 70     continue
-
-clin-4/2018 -> phi K:
           sig1 = 195.639
           sig2 = 372.378
        if(srt .gt. aphi+aka)then
         pff = sqrt((srt**2-(aphi+aka)**2)*(srt**2-(aphi-aka)**2))
-         XKP9 = sig1*pff/sqrt(pdd)*1./32./pi/srt**2
-cma-ch-04/18 change for iblock=124 and iblock=224
-        chratio=6./4.
-        XKP9 = chratio*XKP9
 
-clin-4/2018 -> phi K*:
+clin-9/2012: check argument in sqrt():
+        scheck=pdd
+        if(scheck.le.0) then
+           write(99,*) 'scheck40: ', scheck
+           stop
+        endif
+        
+         XKP9 = sig1*pff/sqrt(pdd)*1./32./pi/srt**2
         if(srt .gt. aphi+aks)then
         pff = sqrt((srt**2-(aphi+aks)**2)*(srt**2-(aphi-aks)**2))
-         XKP10 = sig2*pff/sqrt(pdd)*3./32./pi/srt**2
-cma-ch-04/18 change for iblock=226
-        chratio=6./4.
-        XKP10 = chratio*XKP10
 
+clin-9/2012: check argument in sqrt():
+        scheck=pdd
+        if(scheck.le.0) then
+           write(99,*) 'scheck41: ', scheck
+           stop
+        endif
+
+         XKP10 = sig2*pff/sqrt(pdd)*3./32./pi/srt**2
        endif
         endif
 
-clin-8/15/02 K pi -> K* (rho omega), iblock=88, from detailed balance, 
+clin-8/15/02 K pi -> K* (rho omega), from detailed balance, 
 c neglect rho and omega mass difference for now:
-        sigrks=0.
-clin-4/2018 -> K* rho:
+        sigpik=0.
         if(srt.gt.(amrho+aks)) then
-           sigrks=srhoks*9.
+           sigpik=srhoks*9.
      1          *(srt**2-(0.77-aks)**2)*(srt**2-(0.77+aks)**2)/4
      2          /srt**2/(px**2+py**2+pz**2)
-        endif
-c
-clin-4/2018 -> K* omega:
-        sigomks=0.
-        if((netq0.eq.1.or.netq0.eq.0).and.srt.gt.(amomga+aks)) then
-c     allowed charge channels:
-           sigomks=srhoks*3.
-     1          *(srt**2-(0.77-aks)**2)*(srt**2-(0.77+aks)**2)/4
-     2          /srt**2/(px**2+py**2+pz**2)
-           chratio=6./4.
-           sigomks=sigomks*chratio
+           if(srt.gt.(amomga+aks)) sigpik=sigpik*12./9.
         endif
 
-clin-6/2013 forbidden states of K*, Lbar (N,N*), phi K, phi K*:
-        if(netq0.eq.2.or.netq0.eq.-1) then
-           XKP0=0.
-           XKP1=0.
-           XKP3=0.
-           XKP4=0.
-           XKP9=0.
-           XKP10=0.
-        endif
-
-cma-ch-07/16: glma set forbidden states for iblock=71
-clin-4/26/2018:
-c        if(netq0.ne.0)XKP1=0.
 c
-c
-clin-4/2018:
-c         sigkp = XKP0 + XKP1 + XKP2 + XKP3 + XKP4
-c     &         + XKP5 + XKP6 + XKP7 + XKP8 + XKP9 + XKP10 +sigpik
          sigkp = XKP0 + XKP1 + XKP2 + XKP3 + XKP4
-     &       + XKP5 + XKP6 + XKP7 + XKP8 + XKP9 +XKP10+sigrks+sigomks
-c
+     &         + XKP5 + XKP6 + XKP7 + XKP8 + XKP9 + XKP10 +sigpik
            icase = 0 
          DSkn=SQRT(sigkp/PI/10.)
         dsknr=dskn+0.1
@@ -17606,198 +16373,59 @@ c
         XKP9 = XKP8 + XKP9
 
         XKP10 = XKP9 + XKP10
-clin-4/2018:
-        XKP11 = XKP10 + sigrks
 c
 c   !! K* formation
-cma-05/16         if(randu .le. XKP0)then
-         if(randu .lt. XKP0)then
+         if(randu .le. XKP0)then
            icase = 1
             return
          else
 * La/Si-bar + B formation
            icase = 2
-cma-05/16         if( randu .le. XKP1 )then
-         if( randu .lt. XKP1 )then
+         if( randu .le. XKP1 )then
              lbp1 = -14
-clin-6/2013:
-c             lbp2 = 1 + int(2*RANART(NSEED))
-             lbp2=2-netq0
+             lbp2 = 1 + int(2*RANART(NSEED))
              emm1 = ala
              emm2 = amn
              go to 60
-cma-05/16         elseif( randu .le. XKP2 )then
-         elseif( randu .lt. XKP2 )then
+         elseif( randu .le. XKP2 )then
              lbp1 = -14
-clin-6/2013:
-c             lbp2 = 6 + int(4*RANART(NSEED))
-             lbp2=7+netq0
+             lbp2 = 6 + int(4*RANART(NSEED))
              emm1 = ala
              emm2 = am0
              go to 60
-cma-05/16         elseif( randu .le. XKP3 )then
-         elseif( randu .lt. XKP3 )then
+         elseif( randu .le. XKP3 )then
              lbp1 = -14
-clin-6/2013:
-c             lbp2 = 10 + int(2*RANART(NSEED))
-             lbp2=10+netq0
+             lbp2 = 10 + int(2*RANART(NSEED))
              emm1 = ala
              emm2 = am1440
              go to 60
-cma-05/16         elseif( randu .le. XKP4 )then
-         elseif( randu .lt. XKP4 )then
+         elseif( randu .le. XKP4 )then
              lbp1 = -14
-clin-6/2013:
-c             lbp2 = 12 + int(2*RANART(NSEED))
-             lbp2=12+netq0
+             lbp2 = 12 + int(2*RANART(NSEED))
              emm1 = ala
              emm2 = am1535
              go to 60
-cma-05/16         elseif( randu .le. XKP5 )then
-         elseif( randu .lt. XKP5 )then
-clin-6/2013:
-c             lbp1 = -15 - int(3*RANART(NSEED))
-c             lbp2 = 1 + int(2*RANART(NSEED))
-            rd=RANART(NSEED)
-            if(netq0.eq.2) then
-               lbp1=-15
-               lbp2=1
-            elseif(netq0.eq.1) then
-               if(rd.le.0.5) then
-                  lbp1=-15
-                  lbp2=2
-               else
-                  lbp1=-16
-                  lbp2=1
-               endif
-            elseif(netq0.eq.0) then
-               if(rd.le.0.5) then
-                  lbp1=-16
-                  lbp2=2
-               else
-                  lbp1=-17
-                  lbp2=1
-               endif
-            elseif(netq0.eq.-1) then
-               lbp1=-17
-               lbp2=2
-            endif
-c
+         elseif( randu .le. XKP5 )then
+             lbp1 = -15 - int(3*RANART(NSEED))
+             lbp2 = 1 + int(2*RANART(NSEED))
              emm1 = asa
              emm2 = amn
              go to 60
-cma-05/16         elseif( randu .le. XKP6 )then
-         elseif( randu .lt. XKP6 )then
-clin-6/2013:
-c             lbp1 = -15 - int(3*RANART(NSEED))
-c             lbp2 = 6 + int(4*RANART(NSEED))
-            rd=RANART(NSEED)
-            if(netq0.eq.2) then
-               if(rd.le.0.5) then
-                  lbp1=-16
-                  lbp2=9
-               else
-                  lbp1=-15
-                  lbp2=8
-               endif
-            elseif(netq0.eq.1) then
-               if(rd.le.1./3.) then
-                  lbp1=-17
-                  lbp2=9
-               elseif(rd.le.2./3.) then
-                  lbp1=-16
-                  lbp2=8
-               else
-                  lbp1=-15
-                  lbp2=7
-               endif
-            elseif(netq0.eq.0) then
-               if(rd.le.1./3.) then
-                  lbp1=-17
-                  lbp2=8
-               elseif(rd.le.2./3.) then
-                  lbp1=-16
-                  lbp2=7
-               else
-                  lbp1=-15
-                  lbp2=6
-               endif
-            elseif(netq0.eq.-1) then
-cma-ch-07/16               if(rd.le.0.5) then
-cma-ch-07/16                  lbp1=-17
-cma-ch-07/16                  lbp2=7
-cma-ch-07/16               else
-cma-ch-07/16                  lbp1=-16
-cma-ch-07/16                  lbp2=8
-cma-ch-07/16               endif
-              lbp1=-17
-              lbp2=7
-            endif
-c
+         elseif( randu .le. XKP6 )then
+             lbp1 = -15 - int(3*RANART(NSEED))
+             lbp2 = 6 + int(4*RANART(NSEED))
              emm1 = asa
              emm2 = am0
              go to 60
           elseif( randu .lt. XKP7 )then
-clin-6/2013:
-c             lbp1 = -15 - int(3*RANART(NSEED))
-c             lbp2 = 10 + int(2*RANART(NSEED))
-            rd=RANART(NSEED)
-            if(netq0.eq.2) then
-               lbp1=-15
-               lbp2=11
-            elseif(netq0.eq.1) then
-               if(rd.le.0.5) then
-                  lbp1=-15
-                  lbp2=10
-               else
-                  lbp1=-16
-                  lbp2=11
-               endif
-            elseif(netq0.eq.0) then
-               if(rd.le.0.5) then
-                  lbp1=-16
-                  lbp2=10
-               else
-                  lbp1=-17
-                  lbp2=11
-               endif
-            elseif(netq0.eq.-1) then
-               lbp1=-17
-               lbp2=10
-            endif
-c
+             lbp1 = -15 - int(3*RANART(NSEED))
+             lbp2 = 10 + int(2*RANART(NSEED))
              emm1 = asa
              emm2 = am1440
              go to 60
           elseif( randu .lt. XKP8 )then
-            rd=RANART(NSEED)
-clin-6/2013:
-c             lbp1 = -15 - int(3*RANART(NSEED))
-c             lbp2 = 12 + int(2*RANART(NSEED))
-            if(netq0.eq.2) then
-               lbp1=-15
-               lbp2=13
-            elseif(netq0.eq.1) then
-               if(rd.le.0.5) then
-                  lbp1=-15
-                  lbp2=12
-               else
-                  lbp1=-16
-                  lbp2=13
-               endif
-            elseif(netq0.eq.0) then
-               if(rd.le.0.5) then
-                  lbp1=-16
-                  lbp2=12
-               else
-                  lbp1=-17
-                  lbp2=13
-               endif
-            elseif(netq0.eq.-1) then
-               lbp1=-17
-               lbp2=12
-            endif
-c
+             lbp1 = -15 - int(3*RANART(NSEED))
+             lbp2 = 12 + int(2*RANART(NSEED))
              emm1 = asa
              emm2 = am1535
              go to 60
@@ -17805,120 +16433,51 @@ c
 c       !! phi +K  formation (iblock=224)
             icase = 3
              lbp1 = 29
-clin-6/2013:
-c             lbp2 = 23
-             lbp2=24-netq0
+             lbp2 = 23
              emm1 = aphi
              emm2 = aka
-clin-6/2013:
-c           if(lb(i1).eq.21.or.lb(i2).eq.21)then
-           if(lb(i1).eq.21.or.lb(i2).eq.21
-     1       .or.lb(i1).eq.22.or.lb(i2).eq.22) then
+           if(lb(i1).eq.21.or.lb(i2).eq.21)then
 c         !! phi +K-bar  formation (iblock=124)
-clin-6/2013:
-c             lbp2 = 21
-             lbp2=lbp2-2
+             lbp2 = 21
              icase = -3
            endif
              go to 60
           elseif( randu .lt. XKP10 )then
 c       !! phi +K* formation (iblock=226)
-             icase = 4
+            icase = 4
              lbp1 = 29
-clin-6/2013:
-c             lbp2 = 30
-             lbp2=33-3*netq0
+             lbp2 = 30
              emm1 = aphi
              emm2 = aks
-c           if(lb(i1).eq.21.or.lb(i2).eq.21)then
-             if(lb(i1).eq.21.or.lb(i2).eq.21
-     1            .or.lb(i1).eq.22.or.lb(i2).eq.22) then
-clin-6/2013:
-c             lbp2 = -30
-                lbp2=-lbp2
-                icase = -4
-             endif
-             go to 60
-clin-4/2018 rho +K* formation (iblock=88):
-          elseif( randu .lt. XKP11 )then
-cczbyin-8/26/10 impose charge conservation
-cc            lbp1=25+int(3*RANART(NSEED))
-c            lbp1=26+netq-1
-c            lbp2=30
-            rd=RANART(NSEED)
-c       for K pi:
+           if(lb(i1).eq.21.or.lb(i2).eq.21)then
+             lbp2 = -30
+             icase = -4
+           endif
+           go to 60
+
+          else
+c       !! (rho,omega) +K* formation (iblock=88)
             icase=5
-            if(netq0.eq.2) then
-               lbp1=27
-               lbp2=30
-            elseif(netq0.eq.1) then
-               if(rd.le.1./2.) then
-                  lbp1=27
-                  lbp2=33
-               else
-                  lbp1=26
-                  lbp2=30
-               endif
-            elseif(netq0.eq.0) then
-               if(rd.le.1./2.) then
-                  lbp1=25
-                  lbp2=30
-               else
-                  lbp1=26
-                  lbp2=33
-               endif
-            elseif(netq0.eq.-1) then
-               lbp1=25
-               lbp2=33
-            endif
-c     for Kbar pi:
-            if(lb(i1).eq.21.or.lb(i2).eq.21
-     1           .or.lb(i1).eq.22.or.lb(i2).eq.22) then
-               lbp1=52-lbp1
-               lbp2=-lbp2
-               icase = -5
-            endif
-c
+            lbp1=25+int(3*RANART(NSEED))
+            lbp2=30
             emm1=amrho
             emm2=aks
-c            if(lb(i1).eq.21.or.lb(i2).eq.21)then
-c               lbp1=26+netq+1
-c               lbp2=-30
-c               if(lbp1.ne.28) lbp1=26*2-lbp1
-c               lbp2=-lbp2
-c               icase=-5
-c            endif
-czbyin-8/26/10 end of imposing charge conservation
-          else
-clin-4/2018 omega +K* formation (iblock=88)
-             rd=RANART(NSEED)
-c       for K pi:
-             icase=5
-             if(netq0.eq.1) then
-                lbp1=28
-                lbp2=30
-             elseif(netq0.eq.0) then
-                lbp1=28
-                lbp2=33
-             endif
-c     for Kbar pi:
-             if(lb(i1).eq.21.or.lb(i2).eq.21
-     1            .or.lb(i1).eq.22.or.lb(i2).eq.22) then
-                lbp2=-lbp2
-                icase = -5
-             endif
-            emm1=amomga
-            emm2=aks
-         endif
-      endif
+            if(srt.gt.(amomga+aks).and.RANART(NSEED).lt.0.25) then
+               lbp1=28
+               emm1=amomga
+            endif
+            if(lb(i1).eq.21.or.lb(i2).eq.21)then
+               lbp2=-30
+               icase=-5
+            endif
+
+          endif
+          endif
 c
-c60       if( icase.eq.2 .and. (lb(i1).eq.21.or.lb(i2).eq.21) )then
-clin-6/2013:
- 60   if( icase.eq.2 .and. (lb(i1).eq.21.or.lb(i2).eq.21
-     1     .or.lb(i1).eq.22.or.lb(i2).eq.22) )then
-         lbp1=-lbp1
-         lbp2=-lbp2
-      endif
+60       if( icase.eq.2 .and. (lb(i1).eq.21.or.lb(i2).eq.21) )then
+            lbp1 = -lbp1
+            lbp2 = -lbp2
+         endif
         PX0=PX
         PY0=PY
         PZ0=PZ
@@ -17978,17 +16537,10 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-        COMMON/charge/netq,ianti
       SAVE   
 
         lb1 = lb(i1) 
         lb2 = lb(i2) 
-clin-6/2013:
-cczbyin-8/24/10 initial total charge
-c        netq = LUCHGE(INVFLV(lb1))/3+LUCHGE(INVFLV(lb2))/3
-cczbyin-8/24/10 end of initial total charge
-
         icase = 0
 
 c        if(srt .lt. aphi+ap1)return
@@ -17999,20 +16551,11 @@ cc        if(srt .lt. aphi+ap1) then
            sig3 = 0.
         else
 c
-cma-ch-04/18         if((lb1.eq.23.and.lb2.eq.21).or.(lb2.eq.23.and.lb1.eq.21))then
-           if(((lb1.eq.23.or.lb1.eq.24).and.
-     &      (lb2.eq.21.or.lb2.eq.22))
-     &          .or.((lb2.eq.23.or.lb2.eq.24).and.
-     &      (lb1.eq.21.or.lb1.eq.22)))then
+         if((lb1.eq.23.and.lb2.eq.21).or.(lb2.eq.23.and.lb1.eq.21))then
             dnr =  4.
             ikk = 2
-cma-ch-04/18          elseif((lb1.eq.21.and.lb2.eq.30).or.(lb2.eq.21.and.lb1.eq.30)
-cma-ch-04/18     & .or.(lb1.eq.23.and.lb2.eq.-30).or.(lb2.eq.23.and.lb1.eq.-30))then
-        elseif(((lb1.eq.21.or.lb1.eq.22).and.(lb2.eq.30.or.lb2.eq.33))
-     &   .or.((lb2.eq.21.or.lb2.eq.22).and.(lb1.eq.30.or.lb1 .eq.33))
-     &   .or.((lb1.eq.23.or.lb1.eq.24).and.(lb2.eq.-30 .or.lb2 .eq.-33))
-     &   .or.((lb2.eq.23.or.lb2.eq.24)
-     &   .and.(lb1.eq.-30 .or.lb1 .eq.-33)))then
+          elseif((lb1.eq.21.and.lb2.eq.30).or.(lb2.eq.21.and.lb1.eq.30)
+     & .or.(lb1.eq.23.and.lb2.eq.-30).or.(lb2.eq.23.and.lb1.eq.-30))then
              dnr = 12.
              ikk = 1
           else
@@ -18028,7 +16571,6 @@ cma-ch-04/18     & .or.(lb1.eq.23.and.lb2.eq.-30).or.(lb2.eq.23.and.lb1.eq.-30))
           srr2 = aphi+aomega
           srr3 = aphi+arho
 c
-clin-ma-4/2018 -> phi pi:
           pii = (srt**2-(e(i1)+e(i2))**2)*(srt**2-(e(i1)-e(i2))**2)
           srrt = srt - amax1(srri,srr1)
 cc   to avoid divergent/negative values at small srrt:
@@ -18040,7 +16582,6 @@ c          if(srrt .lt. 0.3)then
          endif                 
           sig1=sig*(9./dnr)*(srt**2-(aphi+ap1)**2)*
      &           (srt**2-(aphi-ap1)**2)/pii
-clin-ma-4/2018 -> phi omega: 
           if(srt .gt. aphi+aomega)then
           srrt = srt - amax1(srri,srr2)
 cc         if(srrt .lt. 0.3)then
@@ -18051,16 +16592,7 @@ cc         if(srrt .lt. 0.3)then
          endif                 
           sig2=sig*(9./dnr)*(srt**2-(aphi+aomega)**2)*
      &           (srt**2-(aphi-aomega)**2)/pii
-cma-ch-04/18 change for iblock=222 K + K ->phi + omega
-clin-ma-4/2018 preferred way of writing chratio:
-          if(netq.eq.0) then
-             chratio=4./2.
-          else
-             chratio=0.
-          endif
-          sig2=sig2*chratio
            endif
-clin-ma-4/2018 -> phi rho: 
          if(srt .gt. aphi+arho)then
           srrt = srt - amax1(srri,srr3)
 cc         if(srrt .lt. 0.3)then
@@ -18080,21 +16612,11 @@ c         sig3 = amin1(20.,sig3)
         rrkk0=rrkk
         prkk0=prkk
         SIGM=0.
-cma-ch-04/18        if((lb1.eq.23.and.lb2.eq.21).or.(lb2.eq.23.and.lb1.eq.21))then
-           if(((lb1.eq.23.or.lb1.eq.24).and.
-     &      (lb2.eq.21.or.lb2.eq.22))
-     &          .or.((lb2.eq.23.or.lb2.eq.24).and.
-     &      (lb1.eq.21.or.lb1.eq.22)))then
+        if((lb1.eq.23.and.lb2.eq.21).or.(lb2.eq.23.and.lb1.eq.21))then
            CALL XKKANN(SRT, XSK1, XSK2, XSK3, XSK4, XSK5,
      &          XSK6, XSK7, XSK8, XSK9, XSK10, XSK11, SIGM, rrkk0)
-cma-ch-04/18        elseif((lb1.eq.21.and.lb2.eq.30).or.(lb2.eq.21.and.lb1.eq.30)
-cma-ch-04/18     & .or.(lb1.eq.23.and.lb2.eq.-30).or.(lb2.eq.23.and.lb1.eq.-30))then
-            elseif(((lb1.eq.21.or.lb1.eq.22)
-     & .and.(lb2.eq.30.or.lb2.eq.33))
-     & .or.((lb2.eq.21.or.lb2.eq.22).and.(lb1.eq.30.or.lb1.eq.33))
-     & .or.((lb1.eq.23.or.lb1.eq.24).and.(lb2.eq.-30 .or.lb2.eq.-33))
-     & .or.((lb2.eq.23.or.lb2.eq.24)
-     & .and.(lb1.eq.-30 .or.lb1.eq.-33)))then
+        elseif((lb1.eq.21.and.lb2.eq.30).or.(lb2.eq.21.and.lb1.eq.30)
+     & .or.(lb1.eq.23.and.lb2.eq.-30).or.(lb2.eq.23.and.lb1.eq.-30))then
            CALL XKKSAN(i1,i2,SRT,SIGKS1,SIGKS2,SIGKS3,SIGKS4,SIGM,prkk0)
         else
         endif
@@ -18104,80 +16626,36 @@ c         sigks = sig1 + sig2 + sig3
         sigks = sig1 + sig2 + sig3 + SIGM
         DSkn=SQRT(sigks/PI/10.)
         dsknr=dskn+0.1
-
         CALL DISTCE(I1,I2,dsknr,DSkn,DT,EC,SRT,IC,
      1  PX,PY,PZ)
         IF(IC.EQ.-1)return
         icase = 1
         ranx = RANART(NSEED) 
 
-ctest-cib
-c        write(98,*) lb1,lb2,srt,iblock,SIGM,
-c     1       SIGKS1, SIGKS2, SIGKS3, SIGKS4
-c     sig1,sig2,sig3,SIGM,sigks,iblock,
-c
         lbp1 = 29
         emm1 = aphi
-cma-05/16        if(ranx .le. sig1/sigks)then
-        if(ranx .lt. sig1/sigks)then 
-c           lbp2 = 3 + int(3*RANART(NSEED))
-czbyin-8/24/10 decide the charge of the final particle by considering the initial net charge
-           if(netq.eq.1) then
-              lbp2 = 5
-           else if(netq.eq.-1) then
-              lbp2 = 3
-           else
-              lbp2 = 4
-           endif
+        if(ranx .le. sig1/sigks)then 
+           lbp2 = 3 + int(3*RANART(NSEED))
            emm2 = ap1
-cma-05/16        elseif(ranx .le. (sig1+sig2)/sigks)then
-        elseif(ranx .lt. (sig1+sig2)/sigks)then
+        elseif(ranx .le. (sig1+sig2)/sigks)then
            lbp2 = 28
            emm2 = aomega
-           if(netq.eq.1) then
-cma-test to is temp, be correct in the new version
-cma-test              lp2 = 5
-              lbp2 = 5
-              emm2 = ap1
-           else if(netq.eq.-1) then
-cma-test              lp2 = 3
-              lbp2 = 3
-              emm2 = ap1
-           endif
-cma-05/16        elseif(ranx .le. (sig1+sig2+sig3)/sigks)then
-        elseif(ranx .lt. (sig1+sig2+sig3)/sigks)then
-c           lbp2 = 25 + int(3*RANART(NSEED))
-           if(netq.eq.1) then
-              lbp2 = 27
-           else if(netq.eq.-1)then
-              lbp2 = 25
-           else 
-              lbp2 = 26
-           endif
+        elseif(ranx .le. (sig1+sig2+sig3)/sigks)then
+           lbp2 = 25 + int(3*RANART(NSEED))
            emm2 = arho
-czbyin-8/24/10 end of decide the charge of the final particle by netq
         else
-cma-ch-04/18           if((lb1.eq.23.and.lb2.eq.21)
-cma-ch-04/18     &          .or.(lb2.eq.23.and.lb1.eq.21))then
-           if( ((lb1.eq.23.or.lb1.eq.24).and.(lb2.eq.21.or.lb2.eq.22))
-     &     .or.((lb2.eq.23.or.lb2.eq.24).and.(lb1.eq.21.or.lb1.eq.22)))
-     1          then
+           if((lb1.eq.23.and.lb2.eq.21)
+     &          .or.(lb2.eq.23.and.lb1.eq.21))then
               CALL crkkpi(I1,I2,XSK1, XSK2, XSK3, XSK4,
      &             XSK5, XSK6, XSK7, XSK8, XSK9, XSK10, XSK11, SIGM0,
      &             IBLOCK,lbp1,lbp2,emm1,emm2)
-cma-ch-04/18           elseif((lb1.eq.21.and.lb2.eq.30)
-cma-ch-04/18     &             .or.(lb2.eq.21.and.lb1.eq.30)
-cma-ch-04/18     &             .or.(lb1.eq.23.and.lb2.eq.-30)
-cma-ch-04/18     &             .or.(lb2.eq.23.and.lb1.eq.-30))then
-         elseif(((lb1.eq.21.or.lb1.eq.22).and.(lb2.eq.30.or.lb2.eq.33))
-     &      .or.((lb2.eq.21.or.lb2.eq.22).and.(lb1.eq.30.or.lb1.eq.33))
-     &   .or.((lb1.eq.23.or.lb1.eq.24).and.(lb2.eq.-30 .or.lb2.eq.-33))
-     &   .or.((lb2.eq.23.or.lb2.eq.24).and.(lb1.eq.-30 .or.lb1.eq.-33)))
-     1             then
+           elseif((lb1.eq.21.and.lb2.eq.30)
+     &             .or.(lb2.eq.21.and.lb1.eq.30)
+     &             .or.(lb1.eq.23.and.lb2.eq.-30)
+     &             .or.(lb2.eq.23.and.lb1.eq.-30))then
               CALL crkspi(I1,I2,SIGKS1, SIGKS2, SIGKS3, SIGKS4,
      &             SIGM0,IBLOCK,lbp1,lbp2,emm1,emm2)
            else
-              write(6,*) 'Unexpected hadrons in crkspi()',lb1,lb2
            endif
         endif
 *
@@ -18221,9 +16699,7 @@ csp11/21/01 end
 *           SRT      - SQRT OF S                                       *
 *           IBLOCK   - THE INFORMATION BACK                            *
 *                      222
-clin-5/2016: typo corrected:
-c*                      223 --> phi + pi(rho,omega)
-*                      111 --> phi + pi(rho,omega)
+*                      223 --> phi + pi(rho,omega)
 *                      224 --> phi + K <-> K + pi(rho,omega)
 *                      225 --> phi + K <-> K* + pi(rho,omega)
 *                      226 --> phi + K* <-> K + pi(rho,omega)
@@ -18247,160 +16723,107 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-        COMMON/charge/netq,ianti
       SAVE   
 
         lb1 = lb(i1) 
         lb2 = lb(i2) 
-clin-6/2013:
-cczbyin-8/25/10 net charge of initial particles
-c           netq = LUCHGE(INVFLV(lb(i1)))/3+LUCHGE(INVFLV(lb(i2)))/3 
-cczbyin-8/25/10 end of net charge of initial particles
-
         icase = 0
         sigela=10.
         sigkm=0.
-c     K(K*) + rho(omega) -> pi K*(K):
-clin-4/2018 i.e. K + rho(omega) -> pi K*  &  K* + rho(omega) -> pi K:
+c     K(K*) + rho(omega) -> pi K*(K)
         if((lb1.ge.25.and.lb1.le.28).or.(lb2.ge.25.and.lb2.le.28)) then
-           if(iabs(lb1).eq.30.or.iabs(lb2).eq.30
-     1          .or.iabs(lb1).eq.33.or.iabs(lb2).eq.33) then
-clin-ma-5/2016: changed below to above:
-c           if(iabs(lb1).eq.30.or.iabs(lb2).eq.30) then
-clin-ma-ch-5/2016: no need to modify:
+           if(iabs(lb1).eq.30.or.iabs(lb2).eq.30) then
               sigkm=srhoks
 clin-2/26/03 check whether (rho K) is above the (pi K*) thresh:
-clin-ma-5/2016:
-c           elseif((lb1.eq.23.or.lb1.eq.21.or.lb2.eq.23.or.lb2.eq.21)
-        elseif(((lb1.ge.21.and.lb1.le.24).or.(lb2.ge.21.and.lb2.le.24))
+           elseif((lb1.eq.23.or.lb1.eq.21.or.lb2.eq.23.or.lb2.eq.21)
      1             .and.srt.gt.(ap2+aks)) then
               sigkm=srhoks
            endif
         endif
-c
+
 c        if(srt .lt. aphi+aka)return
-clin-6/2013 netq of +2 or -2 are forbidden:
-c        if(srt .lt. (aphi+aka)) then
-clin-ma-ch-5/2016:
-c        if(srt.lt.(aphi+aka).or.netq.eq.2.or.netq.eq.-2) then
-        if(srt.lt.(aphi+aka).or.netq.eq.2.or.netq.eq.-2
-     1     .or.(lb1.eq.24.and.netq.eq.-1).or.(lb1.eq.33.and.netq.eq.-1)
-     2     .or.(lb2.eq.24.and.netq.eq.-1).or.(lb2.eq.33.and.netq.eq.-1)
-     3     .or.(lb1.eq.22.and.netq.eq.1).or.(lb1.eq.-33.and.netq.eq.1)
-     4     .or.(lb2.eq.22.and.netq.eq.1).or.(lb2.eq.-33.and.netq.eq.1)
-     5       ) then
-clin-ch-6/2016 revert to correct statements that set sig11 & sig22:
+        if(srt .lt. (aphi+aka)) then
            sig11=0.
            sig22=0.
-c
         else
-clin-ch-6/2016 channel 1: add neutral K*:
-c K*(-bar) +pi --> phi + (K,K*)(-bar)
-cc K*-bar +pi --> phi + (K,K*)-bar
-c         if( (iabs(lb1).eq.30.and.(lb2.ge.3.and.lb2.le.5)) .or.
-c     &       (iabs(lb2).eq.30.and.(lb1.ge.3.and.lb1.le.5)) )then
-           if( ((iabs(lb1).eq.30.or.iabs(lb1).eq.33)
-     1          .and.(lb2.ge.3.and.lb2.le.5)) .or.
-     &          ((iabs(lb2).eq.30.or.iabs(lb2).eq.33)
-     1          .and.(lb1.ge.3.and.lb1.le.5)) )then
+
+c K*-bar +pi --> phi + (K,K*)-bar
+         if( (iabs(lb1).eq.30.and.(lb2.ge.3.and.lb2.le.5)) .or.
+     &       (iabs(lb2).eq.30.and.(lb1.ge.3.and.lb1.le.5)) )then
               dnr =  18.
-clin-ma-ch-5/2016 adjust cross section for charge conservation reactions:
-c     note chratio=(# of allowed charge states)/(# of all charge states):
-              chratio=4./6.
-              dnr = dnr *chratio
-c
               ikkl = 0
-              IBLOCK=225
+              IBLOCK = 225
 c               sig1 = 15.0  
 c               sig2 = 30.0  
 clin-2/06/03 these large values reduces to ~10 mb for sig11 or sig22
 c     due to the factors of ~1/(32*pi*s)~1/200:
-               sig1 = 2047.042
+               sig1 = 2047.042  
                sig2 = 1496.692
-clin-ch-6/2016 channel 2: add neutral K:
-c K(-bar)+rho --> phi + (K,K*)(-bar)
-cc K(-bar)+rho --> phi + (K,K*)-bar
-c       elseif((lb1.eq.23.or.lb1.eq.21.and.(lb2.ge.25.and.lb2.le.27)).or.
-c     &      (lb2.eq.23.or.lb2.eq.21.and.(lb1.ge.25.and.lb1.le.27)) )then
-            elseif(((lb1.ge.21.and.lb1.le.24).and.
-     1              (lb2.ge.25.and.lb2.le.27)).or.
-     &              ((lb2.ge.21.and.lb2.le.24).and.
-     1              (lb1.ge.25.and.lb1.le.27)) )then
-               dnr =  18.
-clin-ma-ch-5/2016:
-               chratio=4./6.
-               dnr = dnr *chratio
-c     
-               ikkl = 1
-               IBLOCK=224
-               sig1 = 3.5  
-               sig2 = 9.0  
-clin-ch-6/2016 channel 3: add neutral K*:
+c K(-bar)+rho --> phi + (K,K*)-bar
+       elseif((lb1.eq.23.or.lb1.eq.21.and.(lb2.ge.25.and.lb2.le.27)).or.
+     &      (lb2.eq.23.or.lb2.eq.21.and.(lb1.ge.25.and.lb1.le.27)) )then
+              dnr =  18.
+              ikkl = 1
+              IBLOCK = 224
+c               sig1 = 3.5  
+c               sig2 = 9.0  
+               sig1 = 526.702
+               sig2 = 1313.960
 c K*(-bar) +rho
-c         elseif( (iabs(lb1).eq.30.and.(lb2.ge.25.and.lb2.le.27)) .or.
-c     &           (iabs(lb2).eq.30.and.(lb1.ge.25.and.lb1.le.27)) )then
-            elseif( ((iabs(lb1).eq.30.or.iabs(lb1).eq.33)
-     1              .and.(lb2.ge.25.and.lb2.le.27)) .or.
-     &              ((iabs(lb2).eq.30.or.iabs(lb2).eq.33)
-     1              .and.(lb1.ge.25.and.lb1.le.27)) )then
-               dnr =  54.
-clin-ma-ch-5/2016:
-               chratio=4./6.
-               dnr = dnr *chratio
-c     
-               ikkl = 0
-               IBLOCK=225
+         elseif( (iabs(lb1).eq.30.and.(lb2.ge.25.and.lb2.le.27)) .or.
+     &           (iabs(lb2).eq.30.and.(lb1.ge.25.and.lb1.le.27)) )then
+              dnr =  54.
+              ikkl = 0
+              IBLOCK = 225
 c               sig1 = 3.5  
 c               sig2 = 9.0  
                sig1 = 1371.257
                sig2 = 6999.840
-clin-ch-6/2016 channel 4: add neutral K:
 c K(-bar) + omega
-c         elseif( ((lb1.eq.23.or.lb1.eq.21) .and. lb2.eq.28).or.
-c     &           ((lb2.eq.23.or.lb2.eq.21) .and. lb1.eq.28) )then
-            elseif( ((lb1.ge.21.and.lb1.le.24) .and. lb2.eq.28).or.
-     &              ((lb2.ge.21.and.lb2.le.24) .and. lb1.eq.28) )then
-               dnr = 6.
-clin-ma-ch-5/2016: no need to modify:
-               ikkl = 1
-               IBLOCK=224
+         elseif( ((lb1.eq.23.or.lb1.eq.21) .and. lb2.eq.28).or.
+     &           ((lb2.eq.23.or.lb2.eq.21) .and. lb1.eq.28) )then
+              dnr = 6.
+              ikkl = 1
+              IBLOCK = 224
 c               sig1 = 3.5  
 c               sig2 = 6.5  
                sig1 = 355.429
                sig2 = 440.558
-clin-ch-6/2016 channel 5: add neutral K*:
 c K*(-bar) +omega
-c          else
-c            elseif((iabs(lb1).eq.30.and.lb2.eq.28).or.
-c     1              (iabs(lb2).eq.30.and.lb1.eq.28)) then
-            elseif(((iabs(lb1).eq.30.or.iabs(lb1).eq.33).and.lb2.eq.28)
-     1              .or.((iabs(lb2).eq.30.or.iabs(lb2).eq.33)
-     2              .and.lb1.eq.28)) then
-               dnr = 18.
-clin-ma-ch-5/2016: no need to modify:
-               ikkl = 0
-               IBLOCK=225
+          else
+              dnr = 18.
+              ikkl = 0
+              IBLOCK = 225
 c               sig1 = 3.5  
 c               sig2 = 15.0  
                sig1 = 482.292
                sig2 = 1698.903
-clin-ch-6/2016 write unexpected channels:
-            else
-               sig1 = 0.
-               sig2 = 0.
-               write(6,*) 'unexpected channels in crksph',lb1,lb2
-c
           endif
-clin-ch-6/2016 the following line is unnecessary:
-c            sig11 = 0.
+
+            sig11 = 0.
             sig22 = 0.
-c
 c         sig11=sig1*(6./dnr)*(srt**2-(aphi+aka)**2)*
 c    &           (srt**2-(aphi-aka)**2)/(srt**2-(e(i1)+e(i2))**2)/
 c    &           (srt**2-(e(i1)-e(i2))**2)
-        pii = sqrt((srt**2-(e(i1)+e(i2))**2)*(srt**2-(e(i1)-e(i2))**2))
-        pff = sqrt((srt**2-(aphi+aka)**2)*(srt**2-(aphi-aka)**2))
+
+clin-9/2012: check argument in sqrt():
+            scheck=(srt**2-(e(i1)+e(i2))**2)*(srt**2-(e(i1)-e(i2))**2)
+            if(scheck.le.0) then
+               write(99,*) 'scheck42: ', scheck
+               stop
+            endif
+            pii=sqrt(scheck)
+c        pii = sqrt((srt**2-(e(i1)+e(i2))**2)*(srt**2-(e(i1)-e(i2))**2))
+
+clin-9/2012: check argument in sqrt():
+            scheck=(srt**2-(aphi+aka)**2)*(srt**2-(aphi-aka)**2)
+            if(scheck.lt.0) then
+               write(99,*) 'scheck43: ', scheck
+               scheck=0.
+            endif
+        pff = sqrt(scheck)
+c        pff = sqrt((srt**2-(aphi+aka)**2)*(srt**2-(aphi-aka)**2))
+
           sig11 = sig1*pff/pii*6./dnr/32./pi/srt**2
 c
           if(srt .gt. aphi+aks)then
@@ -18426,308 +16849,50 @@ c
         icase = 1
         ranx = RANART(NSEED) 
 
-cma-05/16         if(ranx .le. (sigela/sigks))then
-         if(ranx .lt. (sigela/sigks))then 
+         if(ranx .le. (sigela/sigks))then 
             lbp1=lb1
             emm1=e(i1)
             lbp2=lb2
             emm2=e(i2)
             iblock=111
-cma-05/16         elseif(ranx .le. ((sigela+sigkm)/sigks))then
-         elseif(ranx .lt. ((sigela+sigkm)/sigks))then
-czbyin-8/26/10
-c            lbp1=3+int(3*RANART(NSEED))
-czbyin-8/26/10
+         elseif(ranx .le. ((sigela+sigkm)/sigks))then 
+            lbp1=3+int(3*RANART(NSEED))
             emm1=0.14
-clin-6/2013 K/K* M -> pi K/K*:
             if(lb1.eq.23.or.lb2.eq.23) then
-
-czbyin-8/26/10 determine the charge by imposing charge conservation
-clin-6/2013 K+ M -> pi K*, netq=2,1,0:
-c               lbp1=4+netq-1
-c               if(lbp1.lt.3.or.lbp1.gt.5) write(6,*) 'wrong5'
-c               lbp2=30
-               if(netq.eq.2) then
-                  lbp1=5
-                  lbp2=30
-               elseif(netq.eq.1) then
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=4
-                     lbp2=30
-                  else
-                     lbp1=5
-                     lbp2=33
-                  endif
-               else
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=3
-                     lbp2=30
-                  else
-                     lbp1=4
-                     lbp2=33
-                  endif
-               endif
+               lbp2=30
                emm2=aks
             elseif(lb1.eq.21.or.lb2.eq.21) then
-
-
-clin-6/2013 K- M -> pi K*, netq=0,-1,-2:
-c               lbp1=4+netq+1
-c               lbp2=-30
-               if(netq.eq.-2) then
-                  lbp1=3
-                  lbp2=-30
-               elseif(netq.eq.-1) then
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=4
-                     lbp2=-30
-                  else
-                     lbp1=3
-                     lbp2=-33
-                  endif
-               else
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=5
-                     lbp2=-30
-                  else
-                     lbp1=4
-                     lbp2=-33
-                  endif
-               endif
+               lbp2=-30
                emm2=aks
             elseif(lb1.eq.30.or.lb2.eq.30) then
-
-clin-6/2013 K*+ M -> pi K, netq=2,1,0:
-c               lbp1=4+netq-1
-c               lbp2=23
-               if(netq.eq.2) then
-                  lbp1=5
-                  lbp2=23
-               elseif(netq.eq.1) then
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=4
-                     lbp2=23
-                  else
-                     lbp1=5
-                     lbp2=24
-                  endif
-               else
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=3
-                     lbp2=23
-                  else
-                     lbp1=4
-                     lbp2=24
-                  endif
-               endif
+               lbp2=23
                emm2=aka
-clin-ch-6/2016:
-            elseif(lb1.eq.-30.or.lb2.eq.-30) then
-
-               if(netq.eq.-2) then
-                  lbp1=3
-                  lbp2=21
-               elseif(netq.eq.-1) then
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=4
-                     lbp2=21
-                  else
-                     lbp1=3
-                     lbp2=22
-                  endif
-               else
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=5
-                     lbp2=21
-                  else
-                     lbp1=4
-                     lbp2=22
-                  endif
-               endif
+            else
+               lbp2=21
                emm2=aka
-clin-ma-5/2016:
-            elseif(lb1.eq.24.or.lb2.eq.24) then
-
-               if(netq.eq.-1) then
-                  lbp1=3
-                  lbp2=33
-               elseif(netq.eq.0) then
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=4
-                     lbp2=33
-                  else
-                     lbp1=3
-                     lbp2=30
-                  endif
-               else
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=5
-clin-ch-6/2016:
-c                     lbp2=30
-                     lbp2=33
-                  else
-                     lbp1=4
-clin-ch-6/2016:
-c                     lbp2=33
-                     lbp2=30
-                  endif
-               endif
-               emm2=aks
-            elseif(lb1.eq.22.or.lb2.eq.22) then
-
-               if(netq.eq.1) then
-                  lbp1=5
-                  lbp2=-33
-               elseif(netq.eq.0) then
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=4
-                     lbp2=-33
-                  else
-                     lbp1=5
-                     lbp2=-30
-                  endif
-               else
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=3
-clin-ch-6/2016:
-c                     lbp2=-30
-                     lbp2=-33
-                  else
-                     lbp1=4
-clin-ch-6/2016:
-c                     lbp2=-33
-                     lbp2=-30
-                  endif
-               endif
-               emm2=aks
-            elseif(lb1.eq.33.or.lb2.eq.33) then
-
-               if(netq.eq.-1) then
-                  lbp1=3
-                  lbp2=24
-               elseif(netq.eq.0) then
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=4
-                     lbp2=24
-                  else
-                     lbp1=3
-                     lbp2=23
-                  endif
-               else
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=5
-clin-ch-6/2016:
-c                     lbp2=23
-                     lbp2=24
-                  else
-                     lbp1=4
-clin-ch-6/2016:
-c                     lbp2=24
-                     lbp2=23
-                  endif
-               endif
-               emm2=aka
-            elseif(lb1.eq.-33.or.lb2.eq.-33) then
-
-               if(netq.eq.1) then
-                  lbp1=5
-                  lbp2=22
-               elseif(netq.eq.0) then
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=4
-                     lbp2=22
-                  else
-                     lbp1=5
-                     lbp2=21
-                  endif
-               else
-                  if(RANART(NSEED).ge.0.5)then
-                     lbp1=3
-clin-ch-6/2016:
-c                     lbp2=21
-                     lbp2=22
-                  else
-                     lbp1=4
-clin-ch-6/2016:
-c                     lbp2=22
-                     lbp2=21
-                  endif
-               endif
-               emm2=aka
-c
             endif
             iblock=112
-czbyin-8/26/10 end of determine the charge by imposing charge conservation
-cma-05/16         elseif(ranx .le. ((sigela+sigkm+sig11)/sigks))then
-         elseif(ranx .lt. ((sigela+sigkm+sig11)/sigks))then
-czbyin-8/26/10 charge violation process is forbiden, but should be replaced by other processes!
-clin-6/2013:
-c               lbp2 = 23
+         elseif(ranx .le. ((sigela+sigkm+sig11)/sigks))then 
+            lbp2 = 23
             emm2 = aka
             ikkg = 1
-clin-ch-6/2016:
-c            if(lb1.eq.23.or.lb2.eq.23.or.lb1.eq.30.or.lb2.eq.30) then
-            if(lb1.eq.23.or.lb2.eq.23.or.lb1.eq.24.or.lb2.eq.24
-     1      .or.lb1.eq.30.or.lb2.eq.30.or.lb1.eq.33.or.lb2.eq.33) then
-clin-6/2013 K+/K*+ M -> phi K, netq=2,1,0 but 2 is forbidden:
-               if(netq.eq.1) then
-                  lbp2 = 23
-               elseif(netq.eq.0) then
-                  lbp2 = 24
-               elseif(netq.eq.2) then
-                  write(6,*) 'netq forbidden 1: ',netq
-               endif
-clin-ch-6/2016:
-c        elseif(lb1.eq.21.or.lb2.eq.21.or.lb1.eq.-30.or.lb2.eq.-30) then
-            elseif(lb1.eq.21.or.lb2.eq.21.or.lb1.eq.22.or.lb2.eq.22.or.
-     1        lb1.eq.-30.or.lb2.eq.-30.or.lb1.eq.-33.or.lb2.eq.-33) then
-clin-6/2013 K-/K*- M -> phi K, netq=0,-1,-2 but -2 is forbidden:
-               if(netq.eq.-1) then
-                  lbp2 = 21
-               elseif(netq.eq.0) then
-                  lbp2 = 22
-               elseif(netq.eq.-2) then
-                  write(6,*) 'netq forbidden 2: ',netq
-               endif
+            if(lb1.eq.21.or.lb2.eq.21.or.lb1.eq.-30.or.lb2.eq.-30)then
+               lbp2=21
                iblock=iblock-100
             endif
             lbp1 = 29
             emm1 = aphi
          else
-clin-6/2013 K/K* M -> phi K*, netq=1,0,-1:
-c            lbp2 = 30
+            lbp2 = 30
             emm2 = aks
             ikkg = 0
-            IBLOCK=IBLOCK+2 
-clin-ch-6/2016:
-c            if(lb1.eq.23.or.lb2.eq.23.or.lb1.eq.30.or.lb2.eq.30) then
-            if(lb1.eq.23.or.lb2.eq.23.or.lb1.eq.24.or.lb2.eq.24
-     1      .or.lb1.eq.30.or.lb2.eq.30.or.lb1.eq.33.or.lb2.eq.33) then
-clin-6/2013 K+/K*+ M -> phi K*, netq=2,1,0 but 2 is forbidden:
-               if(netq.eq.1) then
-                  lbp2 = 30
-               elseif(netq.eq.0) then
-                  lbp2 = 33
-               elseif(netq.eq.2) then
-                  write(6,*) 'netq forbidden 3: ',netq
-               endif
-clin-ch-6/2016:
-c        elseif(lb1.eq.21.or.lb2.eq.21.or.lb1.eq.-30.or.lb2.eq.-30) then
-            elseif(lb1.eq.21.or.lb2.eq.21.or.lb1.eq.22.or.lb2.eq.22.or.
-     1        lb1.eq.-30.or.lb2.eq.-30.or.lb1.eq.-33.or.lb2.eq.-33) then
-clin-6/2013 K-/K*- M -> phi K*, netq=0,-1,-2 but -2 is forbidden:
-               if(netq.eq.-1) then
-                  lbp2 = -30
-               elseif(netq.eq.0) then
-                  lbp2 = -33
-               elseif(netq.eq.-2) then
-                  write(6,*) 'netq forbidden 4: ',netq
-               endif
+            IBLOCK=IBLOCK+2
+            if(lb1.eq.21.or.lb2.eq.21.or.lb1.eq.-30.or.lb2.eq.-30)then
+               lbp2=-30
                iblock=iblock-100
             endif
             lbp1 = 29
             emm1 = aphi
-czbyin-8/26/10 end charge violation process is forbiden, but should be replaced by other processes!
          endif
 *
         PX0=PX
@@ -18815,7 +16980,16 @@ cc      SAVE /RNDF77/
        bx=-pkx/eln
        by=-pky/eln
        bz=-pkz/eln
-       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
+clin-9/2012: check argument in sqrt():
+       scheck=1.-bx**2-by**2-bz**2
+       if(scheck.le.0) then
+          write(99,*) 'scheck44: ', scheck
+          stop
+       endif
+       ga=1./sqrt(scheck)
+c       ga=1./sqrt(1.-bx**2-by**2-bz**2)
+
         elnc=eln/ga
        pn2=((elnc**2+ana**2-ala**2)/(2.*elnc))**2-ana**2
        if(pn2.le.0.)pn2=1.e-09
@@ -18893,7 +17067,6 @@ c      ekin = 2.*pmass*((srt/(2.*pmass))**2 - 1.)
  1001 continue
 10       PIPIK=PIPIK/2.
        continue
-
       return
         END
 **********************************
@@ -19310,19 +17483,6 @@ cc      SAVE /EE/
        if((lb2.ge.6.and.lb2.le.9).and.
      &    (lb1.gt.10.and.lb1.le.13))factor=1/2.
        reab2d=factor*pin2/pout2*xpro
-
-cma-ch-04/18 change for iblock=55 [no need to change for its inverse channel(iblock=43)]
-       if(((lb1.ge.10.and.lb1.le.13).and.(lb2.ge.6.and.lb2.le.9))
-     & .or.((lb1.ge.6.and.lb1.le.9).and.
-     & (lb2.ge.10.and.lb2.le.13)))then
-        chratio=8./6.
-        reab2d=reab2d*chratio
-       endif
-       if((lb1.ge.6.and.lb1.le.9).and.(lb2.ge.6.and.lb2.le.9))then
-        chratio=10./6.
-        reab2d=reab2d*chratio
-       endif
-
        return
        end
 ***************************************
@@ -19345,7 +17505,16 @@ cma-ch-04/18 change for iblock=55 [no need to change for its inverse channel(ibl
       ELSE
         T2=ATAN2(PY0,PX0)
       END IF
-      S2  =  SQRT( 1.0 - C2**2 )
+
+clin-9/2012: check argument in sqrt():
+      scheck=1.0 - C2**2
+      if(scheck.lt.0) then
+         write(99,*) 'scheck45: ', scheck
+         scheck=0.
+      endif
+      S2=sqrt(scheck)
+c      S2  =  SQRT( 1.0 - C2**2 )
+
       CT2  = COS(T2)
       ST2  = SIN(T2)
 * the momentum, polar and azimuthal angles of the momentum to be rotated
@@ -19357,7 +17526,16 @@ cma-ch-04/18 change for iblock=55 [no need to change for its inverse channel(ibl
       ELSE
       T1=ATAN2(PY,PX)
       ENDIF
-      S1   = SQRT( 1.0 - C1**2 )
+
+clin-9/2012: check argument in sqrt():
+      scheck=1.0 - C1**2
+      if(scheck.lt.0) then
+         write(99,*) 'scheck46: ', scheck
+         scheck=0.
+      endif
+      S1=sqrt(scheck)
+c      S1   = SQRT( 1.0 - C1**2 )
+
       CT1  = COS(T1)
       ST1  = SIN(T1)
       SS   = C2 * S1 * CT1  +  S2 * C1
@@ -19604,8 +17782,6 @@ cc      SAVE /PC/
 cc      SAVE /PD/
         common/input1/ MASSPR,MASSTA,ISEED,IAVOID,DT
 cc      SAVE /input1/
-clin-6/2013:
-        COMMON/charge/netq,ianti
       SAVE   
 
 *-----------------------------------------------------------------------
@@ -19658,14 +17834,7 @@ c      !! phi production
        xsk5=0
        t1nlk=ana+al+akp
        if(srt.le.t1nlk)go to 222
-clin-6/2013:
-c       XSK1=1.5*PPLPK(SRT)
-       if((ianti.eq.0.and.(netq.gt.2.or.netq.lt.0)).or.
-     1      (ianti.eq.1.and.(netq.gt.0.or.netq.lt.-2))) then
-          XSK1=0.
-       else
-          XSK1=1.5*PPLPK(SRT)
-       endif
+       XSK1=1.5*PPLPK(SRT)
 * for DLK channel
        t1dlk=ada+al+akp
        t2dlk=ada+al-akp
@@ -19908,8 +18077,6 @@ cc      SAVE /PC/
 cc      SAVE /PD/
         common/input1/ MASSPR,MASSTA,ISEED,IAVOID,DT
 cc      SAVE /input1/
-clin-6/2013:
-        COMMON/charge/netq,ianti
       SAVE   
 *-----------------------------------------------------------------------
        XINEL=0
@@ -19953,14 +18120,7 @@ c
        xsk4=0
        t1nlk=ana+al+akp
        if(srt.le.t1nlk)go to 222
-clin-6/2013:
-c       XSK1=1.5*PPLPK(SRT)
-       if((ianti.eq.0.and.(netq.gt.2.or.netq.lt.0)).or.
-     1      (ianti.eq.1.and.(netq.gt.0.or.netq.lt.-2))) then
-          XSK1=0.
-       else
-          XSK1=1.5*PPLPK(SRT)
-       endif
+       XSK1=1.5*PPLPK(SRT)
 * for DLK channel
        t1dlk=ada+al+akp
        t2dlk=ada+al-akp
@@ -19968,28 +18128,14 @@ c       XSK1=1.5*PPLPK(SRT)
        es=srt
        pmdlk2=(es**2-t1dlk**2)*(es**2-t2dlk**2)/(4.*es**2)
        pmdlk=sqrt(pmdlk2)
-clin-6/2013:
-c       XSK3=1.5*PPLPK(srt)
-       if((ianti.eq.0.and.(netq.gt.3.or.netq.lt.-1)).or.
-     1      (ianti.eq.1.and.(netq.gt.1.or.netq.lt.-3))) then
-          XSK3=0.
-       else
-          XSK3=1.5*PPLPK(srt)
-       endif
+       XSK3=1.5*PPLPK(srt)
 * for NSK channel
        t1nsk=ana+as+akp
        t2nsk=ana+as-akp
        if(srt.le.t1nsk)go to 222
        pmnsk2=(es**2-t1nsk**2)*(es**2-t2nsk**2)/(4.*es**2)
        pmnsk=sqrt(pmnsk2)
-clin-6/2013:
-c       XSK2=1.5*(PPK1(srt)+PPK0(srt))
-       if((ianti.eq.0.and.(netq.gt.3.or.netq.lt.-1)).or.
-     1      (ianti.eq.1.and.(netq.gt.1.or.netq.lt.-3))) then
-          XSK2=0.
-       else
-          XSK2=1.5*(PPK1(srt)+PPK0(srt))
-       endif
+       XSK2=1.5*(PPK1(srt)+PPK0(srt))
 * for DSK channel
        t1DSk=aDa+aS+akp
        t2DSk=aDa+aS-akp
@@ -20695,9 +18841,7 @@ cbz3/10/99
 c       if(lb(i).ge.6.and.lb(i).le.15)go to 200
        if(lb(i).ge.6.and.lb(i).le.17)go to 200
 cbz3/10/99 end
-cma-ch-05/16       if(lb(i).eq.23)go to 400
-       if(lb(i).eq.23 .or.lb(i).eq.24)go to 400
-
+       if(lb(i).eq.23)go to 400
        go to 20
 * calculate rapidity and transverse momentum distribution for pions
 50       npion=npion+1
@@ -20800,9 +18944,7 @@ cbali2/6/99
 *          model by using of the rejection method.  
 cbz2/25/99
 c      real*4 function pbarfs(srt,npion,iseed)
-clin-4/2018-new xcorr is correction factor on cross section to MM:
-c      subroutine pbarfs(srt,npion,iseed)
-      subroutine pbarfs(srt,npion,iseed,lb1,lb2,iflag)
+      subroutine pbarfs(srt,npion,iseed)
 cbz2/25/99end
 * Quantities: 
 *  srt: DSQRT(s) in GeV                                                    *
@@ -20813,16 +18955,10 @@ cbz2/25/99end
 *
 ******************************************
        parameter (pimass=0.140,pi=3.1415926) 
-       Dimension factor(6),pnpi(6),chratio(6) 
+       Dimension factor(6),pnpi(6) 
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
-clin-4/2018-new:
-      COMMON/bbmm/xcorr,f4piom,f4rr
       SAVE   
-clin-4/2018-new:
-      if(iflag.eq.0) then
 C the factorial coefficients in the pion no. distribution 
 * from n=2 to 6 calculated use the formula in the reference
        factor(2)=1.
@@ -20831,170 +18967,25 @@ C the factorial coefficients in the pion no. distribution
        factor(5)=3.58e-05
        factor(6)=1.93e-07
        ene=(srt/pimass)**3/(6.*pi**2)
-clin-4/2018-new:
-cc the relative probability from n=2 to 6
-c       do 1001 n=2,6 
-c          pnpi(n)=ene**n*factor(n)
-c 1001  continue
-clin-cma-4/2018:
-       do 100 n=2,6 
-          if(n.eq.2.or.n.eq.3) then
-c     for Delta+Delta-bar initial states:
-             if((lb1.ge.6.and.lb1.le.9.and.lb2.ge.-9.and.lb2.le.-6).or.
-     1            (lb2.ge.6.and.lb2.le.9.and.lb1.ge.-9.and.lb1.le.-6))
-     2            then
-c     Forbidden 2 initial charge states:
-                if(netq.eq.3.or.netq.eq.-3) then 
-                   chratio(n)=0.
-c     Increase cross section of allowed 14 initial charge states
-c     so that isospin-averaged cross section remains as xppbar(srt):
-                else
-                   chratio(n)=16./14.
-                endif
-             else
-c     No change for all other B Bbar initial states:
-                chratio(n)=1.
-             endif
-          elseif(n.eq.4) then
-c     for Delta+Delta-bar initial states:
-             if((lb1.ge.6.and.lb1.le.9.and.lb2.ge.-9.and.lb2.le.-6).or.
-     1            (lb2.ge.6.and.lb2.le.9.and.lb1.ge.-9.and.lb1.le.-6)) 
-     2            then
-c     Assumed same isospin-averaged cross section to rho rho and pi omega:
-                if(netq.ge.-2.and.netq.le.2) then
-                   f4rr=16./14.
-                else
-                   f4rr=0.
-                endif
-                if(netq.ge.-1.and.netq.le.1) then
-                   f4piom=16./10.
-                else
-                   f4piom=0.
-                endif
-c     for N+Delta-bar or N*+Delta-bar or Nbar+Delta or N*+Delta initial states:
-             elseif( (lb1.ge.6.and.lb1.le.9.and.
-     1       ((lb2.ge.-13.and.lb2.le.-10).or.lb2.eq.-2.or.lb2.eq.-1))
-     2     .or.(lb2.ge.6.and.lb2.le.9.and.
-     3       ((lb1.ge.-13.and.lb1.le.-10).or.lb1.eq.-2.or.lb1.eq.-1)) ) 
-     4               then
-                f4rr=1.
-                if(netq.ge.-1.and.netq.le.1) then
-                   f4piom=8./6.
-                else
-                   f4piom=0.
-                endif
-             else
-c     No change for all other B Bbar initial states:
-                f4rr=1.
-                f4piom=1.
-             endif
-             f4rr=factor(n)/2.*f4rr
-             f4piom=factor(n)/2.*f4piom
-          elseif(n.eq.5) then
-c     for Delta+Delta-bar initial states:
-             if((lb1.ge.6.and.lb1.le.9.and.lb2.ge.-9.and.lb2.le.-6).or.
-     1            (lb2.ge.6.and.lb2.le.9.and.lb1.ge.-9.and.lb1.le.-6)) 
-     2            then
-                if(netq.ge.-1.and.netq.le.1) then
-                   chratio(n)=16./10.
-                else
-                   chratio(n)=0.
-                endif
-c     for (N or N*)+Delta-bar or (Nbar or N*bar)+Delta initial states:
-             elseif( (lb1.ge.6.and.lb1.le.9.and.
-     1       ((lb2.ge.-13.and.lb2.le.-10).or.lb2.eq.-2.or.lb2.eq.-1))
-     2     .or.(lb2.ge.6.and.lb2.le.9.and.
-     3       ((lb1.ge.-13.and.lb1.le.-10).or.lb1.eq.-2.or.lb1.eq.-1)) ) 
-     4               then
-                if(netq.ge.-1.and.netq.le.1) then
-                   chratio(n)=8./6.
-                else
-                   chratio(n)=0.
-                endif
-             else
-c     No change for all other B Bbar initial states:
-                chratio(n)=1.
-             endif
-          elseif(n.eq.6) then
-             if(netq.ne.0) then
-                chratio(n)=0.
-c     for Delta+Delta-bar initial states:
-             elseif(iabs(lb1).ge.6.and.iabs(lb1).le.9.and.lb2.eq.-lb1) 
-     1               then
-                chratio(n)=16./4.
-c     for N+Delta-bar or N*+Delta-bar or Nbar+Delta or N*+Delta initial states:
-             elseif( (lb1.ge.6.and.lb1.le.9.and.
-     1       ((lb2.ge.-13.and.lb2.le.-10).or.lb2.eq.-2.or.lb2.eq.-1))
-     2     .or.(lb2.ge.6.and.lb2.le.9.and.
-     3       ((lb1.ge.-13.and.lb1.le.-10).or.lb1.eq.-2.or.lb1.eq.-1)) ) 
-     4               then
-                chratio(n)=8./2.
-c     for N+N-bar or N*+N-bar or Nbar+N or N*-bar+N initial states:
-             elseif((((lb1.ge.10.and.lb1.le.13).or.lb1.eq.1.or.lb1.eq.2)
-     1    .and.((lb2.ge.-13.and.lb2.le.-10).or.lb2.eq.-2.or.lb2.eq.-1))
-     2    .or.(((lb2.ge.10.and.lb2.le.13).or.lb2.eq.1.or.lb2.eq.2)
-     3    .and.((lb1.ge.-13.and.lb1.le.-10).or.lb1.eq.-2.or.lb1.eq.-1))) 
-     4               then
-                chratio(n)=4./2.
-             endif
-          endif
- 100  continue
 c the relative probability from n=2 to 6
-      pnpisum=0.
-       do n=2,6
-          pnpisum=pnpisum+ene**n*factor(n)
-       enddo
        do 1001 n=2,6 
-          if(n.ne.4) then
-             pnpi(n)=ene**n*factor(n)*chratio(n)/pnpisum
-          else
-c     Total fraction of B Bbar -> 4 pions, with relative ratios
-c     to rho rho or pi omega given by f4rr & f4piom:
-             pnpi(n)=ene**n*(f4rr+f4piom)/pnpisum
-          endif
- 1001  continue
-c     Correction factor on total cross section to MM (npion=2 to 6)
-c     after considering charge conservation for individual channels:
-       xcorr=0.
-       do n=2,6
-          xcorr=xcorr+pnpi(n)
-       enddo
-c
-clin-4/2018-new:
-      elseif(iflag.eq.1) then
+           pnpi(n)=ene**n*factor(n)
+ 1001   continue
 c find the maximum of the probabilities, I checked a 
 c Fortan manual: max() returns the maximum value of 
 c the same type as in the argument list
-clin-6/2013 take care of forbidden charge states:
-c       pmax=max(pnpi(2),pnpi(3),pnpi(4),pnpi(5),pnpi(6))
-       if(netq.eq.-2.or.netq.eq.2) then
-          nmax=4
-          pmax=max(pnpi(2),pnpi(3),pnpi(4))
-       elseif(netq.eq.-1.or.netq.eq.1) then
-          nmax=5
-          pmax=max(pnpi(2),pnpi(3),pnpi(4),pnpi(5))
-       elseif(netq.eq.0) then
-          nmax=6
-          pmax=max(pnpi(2),pnpi(3),pnpi(4),pnpi(5),pnpi(6))
-       endif
-clin-6/2013 randomly generate n between 2 and nmax
-cc randomly generate n between 2 and 6
+       pmax=max(pnpi(2),pnpi(3),pnpi(4),pnpi(5),pnpi(6))
+c randomly generate n between 2 and 6
        ntry=0
-c 10    npion=2+int(5*RANART(NSEED))
- 10    npion=2+int((nmax-1)*RANART(NSEED))
-clin-6/2013:
+ 10    npion=2+int(5*RANART(NSEED))
 clin-4/2008 check bounds:
-c       if(npion.gt.6) goto 10
-       if(npion.gt.nmax) goto 10
+       if(npion.gt.6) goto 10
        thisp=pnpi(npion)/pmax  
        ntry=ntry+1 
 c decide whether to take this npion according to the distribution
 c using rejection method.
        if((thisp.lt.RANART(NSEED)).and.(ntry.le.20)) go to 10
 c now take the last generated npion and return
-clin-4/2018-new:
-       endif
-c
        return
        END
 **********************************
@@ -21060,12 +19051,10 @@ cc      SAVE /EE/
      &                     RHOP(-MAXX:MAXX,-MAXX:MAXX,-MAXZ:MAXZ),
      &                     RHON(-MAXX:MAXX,-MAXX:MAXX,-MAXZ:MAXZ)
 cc      SAVE /DD/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
         S = SRT ** 2
-        SIGK = 1.E-08
+       SIGK = 1.E-08
         XSK1 = 0.0
         XSK2 = 0.0
         XSK3 = 0.0
@@ -21084,14 +19073,13 @@ c.....take into account both K+ and K0
         PI2 = S * (S - 4.0 * AKA ** 2)
          if(PI2 .le. 0.0)return
 
-clin-4/2018 K Kbar -> pi pi:
         XM1 = PIMASS
         XM2 = PIMASS
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
            XSK1 = 9.0 / 4.0 * PF2 / PI2 * XPION0
         END IF
-clin-4/2018 K Kbar -> pi eta:
+
 clin-8/28/00 (pi eta) eta -> K+K- is assumed the same as pi pi -> K+K-:
         XM1 = PIMASS
         XM2 = ETAM
@@ -21099,7 +19087,7 @@ clin-8/28/00 (pi eta) eta -> K+K- is assumed the same as pi pi -> K+K-:
         IF (PF2 .GT. 0.0) THEN
            XSK4 = 3.0 / 4.0 * PF2 / PI2 * XPION0
         END IF
-clin-4/2018 K Kbar -> eta eta:
+
         XM1 = ETAM
         XM2 = ETAM
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
@@ -21108,21 +19096,43 @@ clin-4/2018 K Kbar -> eta eta:
         END IF
 
         XPION0 = rrkk
-clin-4/2018 K Kbar -> rho rho:
+
+clin-11/07/00: (pi eta) (rho omega) -> K* Kbar (or K*bar K) instead to K Kbar:
+c        XM1 = PIMASS
+c        XM2 = RHOM
+c        PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
+c        IF (PF2 .GT. 0.0) THEN
+c           XSK2 = 27.0 / 4.0 * PF2 / PI2 * XPION0
+c        END IF
+
+c        XM1 = PIMASS
+c        XM2 = OMEGAM
+c        PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
+c        IF (PF2 .GT. 0.0) THEN
+c           XSK3 = 9.0 / 4.0 * PF2 / PI2 * XPION0
+c        END IF
+
         XM1 = RHOM
         XM2 = RHOM
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
            XSK5 = 81.0 / 4.0 * PF2 / PI2 * XPION0
         END IF
-clin-4/2018 K Kbar -> rho omega:
+
         XM1 = RHOM
         XM2 = OMEGAM
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
            XSK6 = 27.0 / 4.0 * PF2 / PI2 * XPION0
         END IF
-clin-4/2018 K Kbar -> omega omega:
+
+c        XM1 = RHOM
+c        XM2 = ETAM
+c        PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
+c        IF (PF2 .GT. 0.0) THEN
+c           XSK7 = 9.0 / 4.0 * PF2 / PI2 * XPION0
+c        END IF
+
         XM1 = OMEGAM
         XM2 = OMEGAM
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
@@ -21139,24 +19149,18 @@ c        END IF
 
 c* K+ + K- --> phi
           fwdp = 1.68*(aphi**2-4.*aka**2)**1.5/6./aphi/aphi     
-          pkaon=0.5*sqrt(srt**2-4.0*aka**2)
+
+clin-9/2012: check argument in sqrt():
+          scheck=srt**2-4.0*aka**2
+          if(scheck.le.0) then
+             write(99,*) 'scheck47: ', scheck
+             stop
+          endif
+          pkaon=0.5*sqrt(scheck)
+c          pkaon=0.5*sqrt(srt**2-4.0*aka**2)
+
           XSK11 = 30.*3.14159*0.1973**2*(aphi*fwdp)**2/
      &             ((srt**2-aphi**2)**2+(aphi*fwdp)**2)/pkaon**2
-c
-clin-6/2013:
-          if(netq.ne.0) then
-             XSK8=0.
-             XSK10=0.
-             XSK11=0.
-clin-cma-ch-04/18 Adjust cross section of allowed charge channels:
-clin-cma-ch-04/18 change for iblock=1907
-          else
-             chratio=4./2.
-             XSK8=XSK8*chratio
-             XSK10=XSK10*chratio
-             XSK11=XSK11*chratio
-c
-          endif
 c
         SIGK = XSK1 + XSK2 + XSK3 + XSK4 + XSK5 + 
      &     XSK6 + XSK7 + XSK8 + XSK9 + XSK10 + XSK11
@@ -21175,8 +19179,6 @@ c
      1  AMP=0.93828,AP1=0.13496,AP2=0.13957,AM0=1.232,PI=3.1415926)
           PARAMETER (AKA=0.498, ALA = 1.1157, PIMASS=0.140, APHI=1.02)
         parameter (arho=0.77)
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
        SIGP = 1.E-08
@@ -21252,10 +19254,8 @@ c
 *             iblock   - 223  others
 **********************************
         PARAMETER (MAXSTR=150001,MAXR=1,AMN=0.939457,
-     1  AMP=0.93828,AP1=0.13496,AMRHO=0.77,AMOMGA=0.782,
+     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,
      2  AP2=0.13957,AM0=1.232,PI=3.1415926,CUTOFF=1.8966,AVMASS=0.9383)
-clin-6/2013:
-c     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,
         PARAMETER      (AKA=0.498,ALA=1.1157,ASA=1.1974,ARHO=0.77)
         parameter     (MX=4,MY=4,MZ=8,MPX=4,MPY=4,mpz=10,mpzp=10)
         COMMON /AA/ R(3,MAXSTR)
@@ -21270,16 +19270,8 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
-clin-6/2013:
-       if(ianti.eq.1) then
-          netq0=-netq
-       else
-          netq0=netq
-       endif
-c     
+c
        PX0=PX
        PY0=PY
        PZ0=PZ
@@ -21292,197 +19284,41 @@ c
         XSK5 = XSK4 + XSK5
 c
 c  !! elastic scatt.
-cma-05/16        IF (X1 .LE. XSK1) THEN
-        IF (X1 .LT. XSK1) THEN
+        IF (X1 .LE. XSK1) THEN
            iblock=20
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK2) THEN
-        ELSE IF (X1 .LT. XSK2) THEN
-clin-6/2013:
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-c           LB(I2) = 1 + int(2 * RANART(NSEED))
-           if(netq0.eq.-1) then
-              LB(I1)=3
-              LB(I2)=2
-           elseif(netq0.eq.0) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=4
-                 LB(I2)=2
-              else
-                 LB(I1)=3
-                 LB(I2)=1
-              endif
-           elseif(netq0.eq.1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=4
-                 LB(I2)=1
-              else
-                 LB(I1)=5
-                 LB(I2)=2
-              endif
-           elseif(netq0.eq.2) then
-              LB(I1)=5
-              LB(I2)=1
-           endif
-c
+        ELSE IF (X1 .LE. XSK2) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = 1 + int(2 * RANART(NSEED))
            E(I1) = AP1
            E(I2) = AMN
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK3) THEN
-        ELSE IF (X1 .LT. XSK3) THEN
-clin-6/2013:
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-c           LB(I2) = 6 + int(4 * RANART(NSEED))
-           if(netq0.eq.-1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=3
-                 LB(I2)=7
-              else
-                 LB(I1)=4
-                 LB(I2)=6
-              endif
-           elseif(netq0.eq.0) then
-              rd=RANART(NSEED)
-              if(rd.le.1./3.) then
-                 LB(I1)=3
-                 LB(I2)=8
-              elseif(rd.le.1./3.) then
-                 LB(I1)=4
-                 LB(I2)=7
-              else
-                 LB(I1)=5
-                 LB(I2)=6
-              endif
-           elseif(netq0.eq.1) then
-              rd=RANART(NSEED)
-              if(rd.le.1./3.) then
-                 LB(I1)=3
-                 LB(I2)=9
-              elseif(rd.le.1./3.) then
-                 LB(I1)=4
-                 LB(I2)=8
-              else
-                 LB(I1)=5
-                 LB(I2)=7
-              endif
-           elseif(netq0.eq.2) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=4
-                 LB(I2)=9
-              else
-                 LB(I1)=5
-                 LB(I2)=8
-              endif
-           endif
-c
+        ELSE IF (X1 .LE. XSK3) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = 6 + int(4 * RANART(NSEED))
            E(I1) = AP1
            E(I2) = AM0
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK4) THEN
-        ELSE IF (X1 .LT. XSK4) THEN
-clin-6/2013:
-c           LB(I1) = 25 + int(3 * RANART(NSEED))
-c           LB(I2) = 1 + int(2 * RANART(NSEED))
-           if(netq0.eq.-1) then
-              LB(I1)=25
-              LB(I2)=2
-           elseif(netq0.eq.0) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=26
-                 LB(I2)=2
-              else
-                 LB(I1)=25
-                 LB(I2)=1
-              endif
-           elseif(netq0.eq.1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=26
-                 LB(I2)=1
-              else
-                 LB(I1)=27
-                 LB(I2)=2
-              endif
-           elseif(netq0.eq.2) then
-              LB(I1)=27
-              LB(I2)=1
-           endif
-c
+        ELSE IF (X1 .LE. XSK4) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
+           LB(I2) = 1 + int(2 * RANART(NSEED))
            E(I1) = ARHO
            E(I2) = AMN
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK5) THEN
-        ELSE IF (X1 .LT. XSK5) THEN
-clin-6/2013:
-c           LB(I1) = 25 + int(3 * RANART(NSEED))
-c           LB(I2) = 6 + int(4 * RANART(NSEED))
-           if(netq0.eq.-1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=25
-                 LB(I2)=7
-              else
-                 LB(I1)=26
-                 LB(I2)=6
-              endif
-           elseif(netq0.eq.0) then
-              rd=RANART(NSEED)
-              if(rd.le.1./3.) then
-                 LB(I1)=25
-                 LB(I2)=8
-              elseif(rd.le.1./3.) then
-                 LB(I1)=26
-                 LB(I2)=7
-              else
-                 LB(I1)=27
-                 LB(I2)=6
-              endif
-           elseif(netq0.eq.1) then
-              rd=RANART(NSEED)
-              if(rd.le.1./3.) then
-                 LB(I1)=25
-                 LB(I2)=9
-              elseif(rd.le.1./3.) then
-                 LB(I1)=26
-                 LB(I2)=8
-              else
-                 LB(I1)=27
-                 LB(I2)=7
-              endif
-           elseif(netq0.eq.2) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=26
-                 LB(I2)=9
-              else
-                 LB(I1)=27
-                 LB(I2)=8
-              endif
-           endif
-c
+        ELSE IF (X1 .LE. XSK5) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
+           LB(I2) = 6 + int(4 * RANART(NSEED))
            E(I1) = ARHO
            E(I2) = AM0
            GOTO 100
         ELSE 
-clin-6/2013:
-c           LB(I1) = 23
-           LB(I1)=24-netq0
-c
+           LB(I1) = 23
            LB(I2) = 14
            E(I1) = AKA
            E(I2) = ALA
           IBLOCK=221
          ENDIF
  100    CONTINUE
-clin-6/2013:
-        if(ianti.eq.1.and.iblock.ne.20) then
-           if(LB(I1).eq.23.or.LB(I1).eq.24) then
-              LB(I1)=LB(I1)-2
-           elseif(LB(I1).ge.3.and.LB(I1).le.5) then
-              LB(I1)=8-LB(I1)
-           elseif(LB(I1).ge.25.and.LB(I1).le.27) then
-              LB(I1)=52-LB(I1)
-           endif
-           LB(I2)=-LB(I2)
-        endif
-c
       EM1=E(I1)
       EM2=E(I2)
 *-----------------------------------------------------------------------
@@ -21522,174 +19358,127 @@ c
      1  AMP=0.93828,AP1=0.13496,AP2=0.13957,AM0=1.232,PI=3.1415926)
           PARAMETER (AKA=0.498, ALA = 1.1157, PIMASS=0.140, APHI=1.02)
         parameter (arho=0.77)
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
        Xphi = 0.0
        xphin = 0.0
        xphid = 0.0
-clin-6/2013:
-       if((ianti.eq.0.and.(netq.gt.2.or.netq.lt.-1)).or.
-     1      (ianti.eq.1.and.(netq.gt.1.or.netq.lt.-2))) return
 c
        if( (lb1.ge.3.and.lb1.le.5) .or.
-     &      (lb2.ge.3.and.lb2.le.5) )then
+     &     (lb2.ge.3.and.lb2.le.5) )then
 c
-          if( (iabs(lb1).ge.1.and.iabs(lb1).le.2) .or.
-     &         (iabs(lb2).ge.1.and.iabs(lb2).le.2) )then
+       if( (iabs(lb1).ge.1.and.iabs(lb1).le.2) .or.
+     &     (iabs(lb2).ge.1.and.iabs(lb2).le.2) )then
 c* phi + N <- pi + N
-clin-6/2013:
-c             IF (srt  .GT. (aphi+amn)) THEN
-             IF (srt.GT.(aphi+amn)
-     1            .and.((ianti.eq.0.and.(netq.eq.0.or.netq.eq.1))
-     2            .or.(ianti.eq.1.and.(netq.eq.0.or.netq.eq.-1)))) THEN
-                srrt = srt - (aphi+amn)
-                sig = 0.0235*srrt**(-0.519) 
-                xphin=sig*1.*(srt**2-(aphi+amn)**2)*
-     &               (srt**2-(aphi-amn)**2)/(srt**2-(em1+em2)**2)/
-     &               (srt**2-(em1-em2)**2)
-clin-cma-4/2018:
-                chratio=6./4.
-                xphin=xphin*chratio
-c
-             END IF
+        IF (srt  .GT. (aphi+amn)) THEN
+             srrt = srt - (aphi+amn)
+             sig = 0.0235*srrt**(-0.519) 
+          xphin=sig*1.*(srt**2-(aphi+amn)**2)*
+     &           (srt**2-(aphi-amn)**2)/(srt**2-(em1+em2)**2)/
+     &           (srt**2-(em1-em2)**2)
+        END IF
 c* phi + D <- pi + N
-             IF (srt  .GT. (aphi+am0)) THEN
-                srrt = srt - (aphi+am0)
-                sig = 0.0235*srrt**(-0.519) 
-                xphid=sig*4.*(srt**2-(aphi+am0)**2)*
-     &               (srt**2-(aphi-am0)**2)/(srt**2-(em1+em2)**2)/
-     &               (srt**2-(em1-em2)**2)
-             END IF
-          else
+        IF (srt  .GT. (aphi+am0)) THEN
+             srrt = srt - (aphi+am0)
+             sig = 0.0235*srrt**(-0.519) 
+          xphid=sig*4.*(srt**2-(aphi+am0)**2)*
+     &           (srt**2-(aphi-am0)**2)/(srt**2-(em1+em2)**2)/
+     &           (srt**2-(em1-em2)**2)
+        END IF
+       else
 c* phi + N <- pi + D
-clin-6/2013:
-c             IF (srt  .GT. (aphi+amn)) THEN
-             IF (srt.GT.(aphi+amn)
-     1            .and.((ianti.eq.0.and.(netq.eq.0.or.netq.eq.1))
-     2            .or.(ianti.eq.1.and.(netq.eq.0.or.netq.eq.-1)))) THEN
-                srrt = srt - (aphi+amn)
-                if(srrt .lt. 0.7)then
-                   sig = 0.0119*srrt**(-0.534)
-                else
-                   sig = 0.0130*srrt**(-0.304)
-                endif      
-                xphin=sig*(1./4.)*(srt**2-(aphi+amn)**2)*
-     &               (srt**2-(aphi-amn)**2)/(srt**2-(em1+em2)**2)/
-     &               (srt**2-(em1-em2)**2)
-clin-cma-4/2018:
-                chratio=12./6.
-                xphin=xphin*chratio
-c
-             END IF
+        IF (srt  .GT. (aphi+amn)) THEN
+             srrt = srt - (aphi+amn)
+            if(srrt .lt. 0.7)then
+             sig = 0.0119*srrt**(-0.534)
+            else
+             sig = 0.0130*srrt**(-0.304)
+            endif      
+          xphin=sig*(1./4.)*(srt**2-(aphi+amn)**2)*
+     &           (srt**2-(aphi-amn)**2)/(srt**2-(em1+em2)**2)/
+     &           (srt**2-(em1-em2)**2)
+        END IF
 c* phi + D <- pi + D
-             IF (srt  .GT. (aphi+am0)) THEN
-                srrt = srt - (aphi+am0)
-                if(srrt .lt. 0.7)then
-                   sig = 0.0119*srrt**(-0.534)
-                else
-                   sig = 0.0130*srrt**(-0.304)
-                endif      
-                xphid=sig*1.*(srt**2-(aphi+am0)**2)*
-     &               (srt**2-(aphi-am0)**2)/(srt**2-(em1+em2)**2)/
-     &               (srt**2-(em1-em2)**2)
-cma-ch-04/18  change for iblock=222 for pi + Delta -> phi + Delta
-                chratio=12./10.
-                xphid=xphid*chratio
-             END IF
-          endif
+        IF (srt  .GT. (aphi+am0)) THEN
+             srrt = srt - (aphi+am0)
+             if(srrt .lt. 0.7)then
+             sig = 0.0119*srrt**(-0.534)
+            else
+             sig = 0.0130*srrt**(-0.304)
+            endif      
+          xphid=sig*1.*(srt**2-(aphi+am0)**2)*
+     &           (srt**2-(aphi-am0)**2)/(srt**2-(em1+em2)**2)/
+     &           (srt**2-(em1-em2)**2)
+        END IF
+       endif
 c
 c
 C** for rho + N(D) colln
 c
        else
 c
-          if( (iabs(lb1).ge.1.and.iabs(lb1).le.2) .or.
-     &         (iabs(lb2).ge.1.and.iabs(lb2).le.2) )then
+       if( (iabs(lb1).ge.1.and.iabs(lb1).le.2) .or.
+     &     (iabs(lb2).ge.1.and.iabs(lb2).le.2) )then
 c
 c* phi + N <- rho + N
-clin-6/2013:
-c        IF (srt  .GT. (aphi+amn)) THEN
-             IF (srt.GT.(aphi+amn)
-     1            .and.((ianti.eq.0.and.(netq.eq.0.or.netq.eq.1))
-     2            .or.(ianti.eq.1.and.(netq.eq.0.or.netq.eq.-1)))) THEN
-                srrt = srt - (aphi+amn)
-                if(srrt .lt. 0.7)then
-                   sig = 0.0166*srrt**(-0.786)
-                else
-                   sig = 0.0189*srrt**(-0.277)
-                endif
-                xphin=sig*(1./3.)*(srt**2-(aphi+amn)**2)*
-     &               (srt**2-(aphi-amn)**2)/(srt**2-(em1+em2)**2)/
-     &               (srt**2-(em1-em2)**2)
-clin-cma-4/2018:
-                chratio=6./4.
-                xphin=xphin*chratio
-c
-             END IF
+        IF (srt  .GT. (aphi+amn)) THEN
+             srrt = srt - (aphi+amn)
+           if(srrt .lt. 0.7)then
+             sig = 0.0166*srrt**(-0.786)
+            else
+             sig = 0.0189*srrt**(-0.277)
+            endif
+          xphin=sig*(1./3.)*(srt**2-(aphi+amn)**2)*
+     &           (srt**2-(aphi-amn)**2)/(srt**2-(em1+em2)**2)/
+     &           (srt**2-(em1-em2)**2)
+        END IF
 c* phi + D <- rho + N
-             IF (srt  .GT. (aphi+am0)) THEN
-                srrt = srt - (aphi+am0)
-                if(srrt .lt. 0.7)then
-                   sig = 0.0166*srrt**(-0.786)
-                else
-                   sig = 0.0189*srrt**(-0.277)
-                endif
-                xphid=sig*(4./3.)*(srt**2-(aphi+am0)**2)*
-     &               (srt**2-(aphi-am0)**2)/(srt**2-(em1+em2)**2)/
-     &               (srt**2-(em1-em2)**2)
-             END IF
-          else
+        IF (srt  .GT. (aphi+am0)) THEN
+             srrt = srt - (aphi+am0)
+           if(srrt .lt. 0.7)then
+             sig = 0.0166*srrt**(-0.786)
+            else
+             sig = 0.0189*srrt**(-0.277)
+            endif
+          xphid=sig*(4./3.)*(srt**2-(aphi+am0)**2)*
+     &           (srt**2-(aphi-am0)**2)/(srt**2-(em1+em2)**2)/
+     &           (srt**2-(em1-em2)**2)
+        END IF
+       else
 c* phi + N <- rho + D  (same as pi+D->phi+N)
-clin-6/2013:
-c        IF (srt  .GT. (aphi+amn)) THEN
-             IF (srt.GT.(aphi+amn)
-     1            .and.((ianti.eq.0.and.(netq.eq.0.or.netq.eq.1))
-     2            .or.(ianti.eq.1.and.(netq.eq.0.or.netq.eq.-1)))) THEN
-                srrt = srt - (aphi+amn)
-                if(srrt .lt. 0.7)then
-                   sig = 0.0119*srrt**(-0.534)
-                else
-                   sig = 0.0130*srrt**(-0.304)
-                endif      
-                xphin=sig*(1./12.)*(srt**2-(aphi+amn)**2)*
-     &               (srt**2-(aphi-amn)**2)/(srt**2-(em1+em2)**2)/
-     &               (srt**2-(em1-em2)**2)
-clin-cma-4/2018:
-                chratio=12./6.
-                xphin=xphin*chratio
-c
-             END IF
+        IF (srt  .GT. (aphi+amn)) THEN
+             srrt = srt - (aphi+amn)
+            if(srrt .lt. 0.7)then
+             sig = 0.0119*srrt**(-0.534)
+            else
+             sig = 0.0130*srrt**(-0.304)
+            endif      
+          xphin=sig*(1./12.)*(srt**2-(aphi+amn)**2)*
+     &           (srt**2-(aphi-amn)**2)/(srt**2-(em1+em2)**2)/
+     &           (srt**2-(em1-em2)**2)
+        END IF
 c* phi + D <- rho + D  (same as pi+D->phi+D)
-             IF (srt  .GT. (aphi+am0)) THEN
-                srrt = srt - (aphi+am0)
-                if(srrt .lt. 0.7)then
-                   sig = 0.0119*srrt**(-0.534)
-                else
-                   sig = 0.0130*srrt**(-0.304)
-                endif      
-                xphid=sig*(1./3.)*(srt**2-(aphi+am0)**2)*
-     &               (srt**2-(aphi-am0)**2)/(srt**2-(em1+em2)**2)/
-     &               (srt**2-(em1-em2)**2)
-cma-ch-04/18  change for iblock=222 for rho + Delta -> phi + Delta
-                chratio=12./10.
-                xphid=xphid*chratio
-             END IF
-          endif
-       END IF
+        IF (srt  .GT. (aphi+am0)) THEN
+             srrt = srt - (aphi+am0)
+             if(srrt .lt. 0.7)then
+             sig = 0.0119*srrt**(-0.534)
+            else
+             sig = 0.0130*srrt**(-0.304)
+            endif      
+          xphid=sig*(1./3.)*(srt**2-(aphi+am0)**2)*
+     &           (srt**2-(aphi-am0)**2)/(srt**2-(em1+em2)**2)/
+     &           (srt**2-(em1-em2)**2)
+        END IF
+       endif
+        END IF
 c   !! in fm^2
-       xphin = xphin/10.
-clin-6/2013:
-       if((ianti.eq.0.and.(netq.gt.1.or.netq.lt.0)).or.
-     1      (ianti.eq.1.and.(netq.gt.0.or.netq.lt.-1))) xphin=0.
-c
+         xphin = xphin/10.
 c   !! in fm^2
-       xphid = xphid/10.
-       Xphi = xphin + xphid
-       
+         xphid = xphid/10.
+         Xphi = xphin + xphid
+
        RETURN
-       END
+        END
 c
 *****************************
 * purpose: Xsection for phi +M to K+K etc
@@ -21743,11 +19532,17 @@ c
 c   !! mb, elastic
          XSK1 = 5.0
          
-           pii = sqrt((S-(em1+em2)**2)*(S-(em1-em2)**2))
+clin-9/2012: check argument in sqrt():
+         scheck=(S-(em1+em2)**2)*(S-(em1-em2)**2)
+         if(scheck.le.0) then
+            write(99,*) 'scheck48: ', scheck
+            stop
+         endif
+         pii=sqrt(scheck)
+c           pii = sqrt((S-(em1+em2)**2)*(S-(em1-em2)**2))
+
 * phi + K(-bar) channel
-clin-6/2013b include K0 and K0bar:
-c       if( lb1.eq.23.or.lb2.eq.23 .or. lb1.eq.21.or.lb2.eq.21 )then
-       if((lb1.ge.21.and.lb1.le.24).or.(lb2.ge.21.and.lb2.le.24)) then
+       if( lb1.eq.23.or.lb2.eq.23 .or. lb1.eq.21.or.lb2.eq.21 )then
           if(srt .gt. (ap1+akap))then
 c             XSK2 = 2.5  
            pff = sqrt((S-(ap1+akap)**2)*(S-(ap1-akap)**2))
@@ -21779,10 +19574,7 @@ c            XSK7 = 3.5
            XSK7 = 482.292*pff/pii/32./pi/S 
           endif
 c
-clin-7/2013 include K*0 and K0*bar:
-c       elseif( iabs(lb1).eq.30.or.iabs(lb2).eq.30 )then
-       elseif(iabs(lb1).eq.30.or.iabs(lb2).eq.30
-     1         .or.iabs(lb1).eq.33.or.iabs(lb2).eq.33)then
+       elseif( iabs(lb1).eq.30.or.iabs(lb2).eq.30 )then
 * phi + K*(-bar) channel
 c
           if(srt .gt. (ap1+akap))then
@@ -21896,340 +19688,142 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
-clin-6/2013:
-      if((lb(i1).lt.0.and.lb(i1).ne.-30.and.lb(i1).ne.-33).or.
-     1     (lb(i2).lt.0.and.lb(i2).ne.-30.and.lb(i2).ne.-33)) 
-     2     ianti=1
-
-       if(ianti.eq.1) then
-          netq0=-netq
-       else
-          netq0=netq
-       endif
-c     
+c
        PX0=PX
        PY0=PY
        PZ0=PZ
-       LB1 = LB(i1)
-       LB2 = LB(i2)
-clin-6/2013:
-cczbyin-8/25/10 net charge of initial particles
-c       netq = LUCHGE(INVFLV(lb(i1)))/3+LUCHGE(INVFLV(lb(i2)))/3 
-cczbyin-8/25/10 end of net charge of initial particles
+         LB1 = LB(i1)
+         LB2 = LB(i2)
 
-       X1 = RANART(NSEED) * SIGPHI
-       XSK2 = XSK1 + XSK2
-       XSK3 = XSK2 + XSK3
-       XSK4 = XSK3 + XSK4
-       XSK5 = XSK4 + XSK5
-       XSK6 = XSK5 + XSK6
-cma-05/16       IF (X1 .LE. XSK1) THEN
-       IF (X1 .LT. XSK1) THEN
-c     !! elastic scatt
-          IBLOCK=20
-          GOTO 100
-       ELSE
+        X1 = RANART(NSEED) * SIGPHI
+        XSK2 = XSK1 + XSK2
+        XSK3 = XSK2 + XSK3
+        XSK4 = XSK3 + XSK4
+        XSK5 = XSK4 + XSK5
+        XSK6 = XSK5 + XSK6
+        IF (X1 .LE. XSK1) THEN
+c        !! elastic scatt
+           IBLOCK=20
+           GOTO 100
+        ELSE
 c
 *phi + (K,K*)-bar
-clin-7/2013:
-c       if( lb1.eq.23.or.lb1.eq.21.or.iabs(lb1).eq.30 .OR.
-c     &     lb2.eq.23.or.lb2.eq.21.or.iabs(lb2).eq.30 )then
-          if((lb1.ge.21.and.lb1.le.24).or.(lb2.ge.21.and.lb2.le.24)
-     1         .or.iabs(lb1).eq.30.or.iabs(lb2).eq.30
-     2         .or.iabs(lb1).eq.33.or.iabs(lb2).eq.33) then
-             if((lb1.ge.21.and.lb1.le.22).or.(lb2.ge.21.and.lb2.le.22)
-     1            .or.lb1.lt.0.or.lb2.lt.0) then
-                ianti=1
-                netq0=-netq
-             else
-                ianti=0
-                netq0=netq
-             endif
-cma-ch-04/18-recover iblock #
-             if((lb1.eq.23.or.lb1.eq.24).or.
-     &      (lb2.eq.23.or.lb2.eq.24))then
+       if( lb1.eq.23.or.lb1.eq.21.or.iabs(lb1).eq.30 .OR.
+     &     lb2.eq.23.or.lb2.eq.21.or.iabs(lb2).eq.30 )then
+c
+             if(lb1.eq.23.or.lb2.eq.23)then
+               IKKL=1
                IBLOCK=224
-
-              elseif((lb1.eq.30.or.lb1.eq.33).or.
-     &      (lb2.eq.30.or.lb2.eq.33))then
+               iad1 = 23
+               iad2 = 30
+              elseif(lb1.eq.30.or.lb2.eq.30)then
+               IKKL=0
                IBLOCK=226
-
-             elseif((lb1.eq.21.or.lb1.eq.22).or.
-     &      (lb2.eq.21.or.lb2.eq.22))then
+               iad1 = 23
+               iad2 = 30
+             elseif(lb1.eq.21.or.lb2.eq.21)then
+               IKKL=1
                IBLOCK=124
+               iad1 = 21
+               iad2 = -30
 c         !! -30
              else
+               IKKL=0
                IBLOCK=126
+               iad1 = 21
+               iad2 = -30
               endif
-cma-ch-04/18-recover iblock #-end
-
-c          if(lb1.eq.23.or.lb2.eq.23)then
-c             IKKL=1
-c             IBLOCK=224
-clin-6/2013 phi K+ -> K+ pi or K0 pi or K*+ pi or K*0 pi:
-cc             iad1 = 23
-cc             iad2 = 30
-c             iad1 = 23+int(2*RANART(NSEED))
-c             iad2 = 3*(10+int(2*RANART(NSEED)))
-c          elseif(lb1.eq.30.or.lb2.eq.30)then
-c             IKKL=0
-c             IBLOCK=226
-cc             iad1 = 23
-cc             iad2 = 30
-c             iad1 = 23+int(2*RANART(NSEED))
-c             iad2 = 3*(10+int(2*RANART(NSEED)))
-c          elseif(lb1.eq.21.or.lb2.eq.21)then
-c             IKKL=1
-c             IBLOCK=124
-cc             iad1 = 21
-cc             iad2 = -30
-c             iad1 = 21+int(2*RANART(NSEED))
-c             iad2 = -3*(10+int(2*RANART(NSEED)))
-cc     !! -30
-cclin          else
-c          elseif(lb1.eq.-30.or.lb2.eq.-30)then
-c     1            then
-c             IKKL=0
-c             IBLOCK=126
-cc             iad1 = 21
-cc             iad2 = -30
-c             iad1 = 21+int(2*RANART(NSEED))
-c             iad2 = -3*(10+int(2*RANART(NSEED)))
-c          endif
-cma-05/16          IF (X1 .LE. XSK2) THEN
-          IF (X1 .LT. XSK2) THEN
-czbyin-8/26/10 impose charge conservation
-c             LB(I1) = 3 + int(3 * RANART(NSEED))
-clin-6/2013 corrections:
-cc             LB(I1)= 4+netq-LUCHGE(INVFLV(iad1))
-c             LB(I1)= 4+netq-LUCHGE(INVFLV(iad1))/3
-c             LB(I2) = iad1
-             if(RANART(NSEED).le.0.5) then
-                LB(I1)=3+netq0
-                LB(I2)=23
-             else
-                LB(I1)=4+netq0
-                LB(I2)=24
-             endif
-c
-             E(I1) = AP1
-             E(I2) = AKA
-             IKKG = 1
-             GOTO 100
-cma-05/16          ELSE IF (X1 .LE. XSK3) THEN
-          ELSE IF (X1 .LT. XSK3) THEN
-c             LB(I1) = 25 + int(3 * RANART(NSEED))
-clin-6/2013 corrections:
-cc             LB(I1)= 26+netq-LUCHGE(INVFLV(iad1))
-c             LB(I1)= 26+netq-LUCHGE(INVFLV(iad1))/3
-c             if(lb(i1).lt.25.or.lb(i1).gt.27) write(6,*) 'wrong2'
-c             LB(I2) = iad1
-             if(RANART(NSEED).le.0.5) then
-                LB(I1)=25+netq0
-                LB(I2)=23
-             else
-                LB(I1)=26+netq0
-                LB(I2)=24
-             endif
-c
-             E(I1) = ARHO
-             E(I2) = AKA
-             IKKG = 1
-             GOTO 100
-clin-6/2013 ctest on phi K/K* -> omega K:
-c          ELSE IF (X1 .LE. XSK4).and.netq.eq.LUCHGE(INVFLV(iad1))) THEN
-cma-05/16          ELSE IF (X1 .LE. XSK4) THEN
-          ELSE IF (X1 .LT. XSK4) THEN
-             LB(I1) = 28
-clin-6/2013     modify later for the forbidden case:
-c             LB(I2) = iad1
-             LB(I2)=24-netq0
-c
-             E(I1) = AOMEGA
-             E(I2) = AKA
-             IKKG = 1
-             GOTO 100
-cma-05/16          ELSE IF (X1 .LE. XSK5) THEN
-          ELSE IF (X1 .LT. XSK5) THEN
-c             LB(I1) = 3 + int(3 * RANART(NSEED))
-clin-6/2013 corrections:
-cc             LB(I1)= 4+netq-LUCHGE(INVFLV(iad2))
-c             LB(I1)= 4+netq-LUCHGE(INVFLV(iad2))/3
-c             LB(I2) = iad2
-             if(RANART(NSEED).le.0.5) then
-                LB(I1)=3+netq0
-                LB(I2)=30
-             else
-                LB(I1)=4+netq0
-                LB(I2)=33
-             endif
-c
-             E(I1) = AP1
-             E(I2) = AKS
-             IKKG = 0
-             IBLOCK=IBLOCK+1
-             GOTO 100
-cma-05/16          ELSE IF (X1 .LE. XSK6) THEN
-          ELSE IF (X1 .LT. XSK6) THEN
-c             LB(I1) = 25 + int(3 * RANART(NSEED))
-clin-6/2013 ctest on:
-cc             LB(I1)= 26+netq-LUCHGE(INVFLV(iad2))
-c             LB(I1)= 26+netq-LUCHGE(INVFLV(iad2))/3
-c             LB(I2) = iad2
-             if(RANART(NSEED).le.0.5) then
-                LB(I1)=25+netq0
-                LB(I2)=30
-             else
-                LB(I1)=26+netq0
-                LB(I2)=33
-             endif
-c
-             E(I1) = ARHO
-             E(I2) = AKS
-             IKKG = 0
-             IBLOCK=IBLOCK+1
-             GOTO 100
-clin-6/2013 ctest on:
-c          ELSE if(netq.eq.LUCHGE(INVFLV(iad2))) then 
-          ELSE 
-clin-6/2013 ctest on phi K/K* -> omega K*:
-             LB(I1) = 28
-clin-6/2013     modify later for the forbidden case:
-c             LB(I2) = iad2
-             LB(I2)=33-3*netq0
-c
-             E(I1) = AOMEGA
-             E(I2) = AKS
-             IKKG = 0
-             IBLOCK=IBLOCK+1
-             GOTO 100
-          ENDIF
-czbyin-8/26/10 end of imposing charge conservation
+         IF (X1 .LE. XSK2) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = iad1
+           E(I1) = AP1
+           E(I2) = AKA
+           IKKG = 1
+           GOTO 100
+        ELSE IF (X1 .LE. XSK3) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
+           LB(I2) = iad1
+           E(I1) = ARHO
+           E(I2) = AKA
+           IKKG = 1
+           GOTO 100
+        ELSE IF (X1 .LE. XSK4) THEN
+           LB(I1) = 28
+           LB(I2) = iad1
+           E(I1) = AOMEGA
+           E(I2) = AKA
+           IKKG = 1
+           GOTO 100
+        ELSE IF (X1 .LE. XSK5) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = iad2
+           E(I1) = AP1
+           E(I2) = AKS
+           IKKG = 0
+           IBLOCK=IBLOCK+1
+           GOTO 100
+        ELSE IF (X1 .LE. XSK6) THEN
+           LB(I1) = 25 + int(3 * RANART(NSEED))
+           LB(I2) = iad2
+           E(I1) = ARHO
+           E(I2) = AKS
+           IKKG = 0
+           IBLOCK=IBLOCK+1
+           GOTO 100
+        ELSE 
+           LB(I1) = 28
+           LB(I2) = iad2
+           E(I1) = AOMEGA
+           E(I2) = AKS
+           IKKG = 0
+           IBLOCK=IBLOCK+1
+           GOTO 100
+         ENDIF
        else
 c      !! phi destruction via (pi,rho,omega)
           IBLOCK=223
 *phi + pi(rho,omega)
-cma-05/16         IF (X1 .LE. XSK2) THEN
-         IF (X1 .LT. XSK2) THEN
-clin-6/2013:
-c           LB(I1) = 23
-c           LB(I2) = 21
-           if(netq.eq.1) then
-              LB(I1) = 23
-              LB(I2) = 22
-           elseif(netq.eq.0) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1) = 23
-                 LB(I2) = 21
-              else
-                 LB(I1) = 24
-                 LB(I2) = 22
-              endif
-           else
-              LB(I1) = 24
-              LB(I2) = 21
-           endif
+         IF (X1 .LE. XSK2) THEN
+           LB(I1) = 23
+           LB(I2) = 21
            E(I1) = AKA
            E(I2) = AKA
            IKKG = 2
            IKKL = 0
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK3) THEN
-        ELSE IF (X1 .LT. XSK3) THEN
-clin-6/2013:
-c           LB(I1) = 23
-cc           LB(I2) = 30                                                         
-c           LB(I2) = -30
-cclin-2/10/03 currently take XSK3 to be the sum of KK*bar & KbarK*:              
-c           if(RANART(NSEED).le.0.5) then
-c              LB(I1) = 21
-c              LB(I2) = 30
-c           endif
-           if(netq.eq.1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1) = 23
-                 LB(I2) = -33
-              else
-                 LB(I1) = 22
-                 LB(I2) = 30
-              endif
-           elseif(netq.eq.0) then
-              int01=0
-              if(RANART(NSEED).le.0.5) int01=1
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1) = 21+int01
-                 LB(I2) = 30+3*int01
-              else
-                 LB(I1) = 23+int01
-                 LB(I2) = -30-3*int01
-              endif
-           else
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1) = 24
-                 LB(I2) = -30
-              else
-                 LB(I1) = 21
-                 LB(I2) = 33
-              endif
+        ELSE IF (X1 .LE. XSK3) THEN
+           LB(I1) = 23
+c           LB(I2) = 30
+           LB(I2) = -30
+clin-2/10/03 currently take XSK3 to be the sum of KK*bar & KbarK*:
+           if(RANART(NSEED).le.0.5) then
+              LB(I1) = 21
+              LB(I2) = 30
            endif
+              
            E(I1) = AKA
            E(I2) = AKS
            IKKG = 1
            IKKL = 0
            GOTO 100
-cma-05/16        ELSE IF (X1 .LE. XSK4) THEN
-        ELSE IF (X1 .LT. XSK4) THEN
-clin-6/2013:
-c           LB(I1) = 30
-cc           LB(I2) = 30                                                         
-c           LB(I2) = -30
-           if(netq.eq.1) then
-              LB(I1) = 30
-              LB(I2) = -33
-           elseif(netq.eq.0) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=30
-              else
-                 LB(I1)=33
-              endif
-              LB(I2) = -LB(I1)
-           else
-              LB(I1) = 33
-              LB(I2) = -30
-           endif
+        ELSE IF (X1 .LE. XSK4) THEN
+           LB(I1) = 30
+c           LB(I2) = 30
+           LB(I2) = -30
            E(I1) = AKS
            E(I2) = AKS
            IKKG = 0
            IKKL = 0
            GOTO 100
          ENDIF
-      endif
-      ENDIF
+       endif
+         ENDIF
 *
- 100  CONTINUE
+100    CONTINUE
        EM1=E(I1)
        EM2=E(I2)
-clin-6/2013:
-       if((lb1.ge.21.and.lb1.le.24).or.(lb2.ge.21.and.lb2.le.24)
-     1      .or.iabs(lb1).eq.30.or.iabs(lb2).eq.30
-     2      .or.iabs(lb1).eq.33.or.iabs(lb2).eq.33) then
-          if(ianti.eq.1) then
-             if(LB(I1).eq.3.or.LB(I1).eq.5) then
-                LB(I1)=8-LB(I1)
-             elseif(LB(I1).eq.25.or.LB(I1).eq.27) then
-                LB(I1)=52-LB(I1)
-             endif
-             if(LB(I2).eq.23.or.LB(I2).eq.24) then
-                LB(I2)=LB(I2)-2
-             elseif(LB(I2).eq.30.or.LB(I2).eq.33) then
-                LB(I2)=-LB(I2)
-             endif
-          endif
-       endif
-c
+
 *-----------------------------------------------------------------------
 * CALCULATE THE MAGNITUDE OF THE FINAL MOMENTUM THROUGH
 * ENERGY CONSERVATION
@@ -22267,16 +19861,12 @@ c      subroutine xkhype(i1, i2, srt, sigk)
 *           the detailed balance                                          *
 * ***********************************
         PARAMETER (MAXSTR=150001,MAXR=1,AMN=0.939457,
-     1  AMP=0.93828,AP1=0.13496,AMRHO=0.77,AMOMGA=0.782,APHI=1.02,
+     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,APHI=1.02,
      2  AP2=0.13957,AM0=1.232,PI=3.1415926,CUTOFF=1.8966,AVMASS=0.9383)
-clin-6/2013:
-c     1  AMP=0.93828,AP1=0.13496,AMRHO=0.769,AMOMGA=0.782,APHI=1.02,
           parameter (pimass=0.140, AMETA = 0.5473, aka=0.498,
      &     aml=1.116,ams=1.193, AM1440 = 1.44, AM1535 = 1.535)
         COMMON  /EE/ID(MAXSTR), LB(MAXSTR)
 cc      SAVE /EE/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
         S = SRT ** 2
@@ -22301,15 +19891,11 @@ clin-6/2013:
 
         LB1 = LB(I1)
         LB2 = LB(I2)
-clin-6/2013:
-        isigma=0
         IF (iabs(LB1) .EQ. 14 .OR. iabs(LB2) .EQ. 14) THEN
            XKAON0 = PNLKA(SRT)
            XKAON0 = 2.0 * XKAON0
            PI2 = (S - (AML + AKA) ** 2) * (S - (AML - AKA) ** 2)
         ELSE
-clin-6/2013:
-           isigma=1
            XKAON0 = PNSKA(SRT)
            XKAON0 = 2.0 * XKAON0
            PI2 = (S - (AMS + AKA) ** 2) * (S - (AMS - AKA) ** 2)
@@ -22377,10 +19963,6 @@ clin-6/2013:
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
            XKY9 = 3.0 * PF2 / PI2 * XKAON0
-cma-ch-04/18 change for iblock=1908 for K + Si -> omega + p(n)
-        chratio=6./4.
-        if(isigma.eq.1)XKY9=XKY9*chratio
-
         END IF
         
         XM1 = AMOMGA
@@ -22395,10 +19977,6 @@ cma-ch-04/18 change for iblock=1908 for K + Si -> omega + p(n)
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
            XKY11 = 3.0 * PF2 / PI2 * XKAON0
-cma-ch-04/18 change for iblock=1908 for K + Si -> omega + N*(1440)
-        chratio=6./4.
-        if(isigma.eq.1)XKY11=XKY11*chratio
-
         END IF
         
         XM1 = AMOMGA
@@ -22406,10 +19984,6 @@ cma-ch-04/18 change for iblock=1908 for K + Si -> omega + N*(1440)
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
            XKY12 = 3.0 * PF2 / PI2 * XKAON0
-cma-ch-04/18 change for iblock=1908 for K + Si -> omega + N*(1535)
-        chratio=6./4.
-        if(isigma.eq.1)XKY12=XKY12*chratio
-
         END IF
         
         XM1 = AMETA
@@ -22417,10 +19991,6 @@ cma-ch-04/18 change for iblock=1908 for K + Si -> omega + N*(1535)
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
            XKY13 = 1.0 * PF2 / PI2 * XKAON0
-cma-ch-04/18 change for iblock=1908 for K + Si -> eta + p(n)
-        chratio=6./4.
-        if(isigma.eq.1)XKY13=XKY13*chratio
-
         END IF
         
         XM1 = AMETA
@@ -22435,10 +20005,6 @@ cma-ch-04/18 change for iblock=1908 for K + Si -> eta + p(n)
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
            XKY15 = 1.0 * PF2 / PI2 * XKAON0
-cma-ch-04/18 change for iblock=1908 for K + Si -> eta + N*(1440)
-        chratio=6./4.
-        if(isigma.eq.1)XKY15=XKY15*chratio
-
         END IF
         
         XM1 = AMETA
@@ -22446,10 +20012,6 @@ cma-ch-04/18 change for iblock=1908 for K + Si -> eta + N*(1440)
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
            XKY16 = 1.0 * PF2 / PI2 * XKAON0
-cma-ch-04/18 change for iblock=1908 for K + Si -> eta + N*(1550)
-        chratio=6./4.
-        if(isigma.eq.1)XKY16=XKY16*chratio
-
         END IF
 
 csp11/21/01  K+ + La --> phi + N 
@@ -22462,28 +20024,11 @@ csp11/21/01  K+ + La --> phi + N
          PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
 c     ! fm^-1
          XKY17 = 3.0 * PF2 / PI2 * SIG/10.
-cma-ch-04/18 change for iblock=1908 for K + La-->phi + N
-        chratio=1.
-        if(isigma.eq.1)XKY17=XKY17*chratio
-
         endif
        endif
 csp11/21/01  end 
 c
-clin-6/2013 forbidden charge states for K+Sigma:
-       if(isigma.eq.1) then
-          if((ianti.eq.0.and.(netq.gt.1.or.netq.lt.0))
-     1         .or.(ianti.eq.1.and.(netq.gt.0.or.netq.lt.-1))) then
-             XKY9=0.
-             XKY11=0.
-             XKY12=0.
-             XKY13=0.
-             XKY15=0.
-             XKY16=0.
-             XKY17=0.
-          endif
-       endif
-c
+
        IF ((iabs(LB1) .GE. 15 .AND. iabs(LB1) .LE. 17) .OR. 
      &     (iabs(LB2) .GE. 15 .AND. iabs(LB2) .LE. 17)) THEN
            DDF = 3.0
@@ -22539,7 +20084,7 @@ c     with j=1 for the lighter baryon:
      1     am0,am1535,am1535,am1440,am1535,am1440,am1535,am1535/
 c     factr2(i) gives weights for producing i pions from ppbar annihilation:
       DATA factr2/0,1,1.17e-01,3.27e-03,3.58e-05,1.93e-07/
-c     niso(i) gives the isospin degeneracy factor for final channel i:
+c     niso(i) gives the degeneracy factor for final channel i:
       DATA niso/1,2,1,16,16,4,4,64,4,4,32,32,4,8,4/
 
       END   
@@ -22547,138 +20092,22 @@ c     niso(i) gives the isospin degeneracy factor for final channel i:
 
 *****************************************
 * get the number of BbarB states available for mm collisions of energy srt 
-clin-5/2016:
-c      subroutine getnst(srt)
-      subroutine getnst(srt,lb1,lb2)
+      subroutine getnst(srt)
 *  srt    = DSQRT(s) in GeV                                                   *
 *****************************************
-      parameter (pimass=0.140,pi=3.1415926,two=2.)
+      parameter (pimass=0.140,pi=3.1415926)
       COMMON/ppbmas/niso(15),nstate,ppbm(15,2),thresh(15),weight(15)
 cc      SAVE /ppbmas/
       common/ppb1/ene,factr2(6),fsum,ppinnb,s,wtot
 cc      SAVE /ppb1/
       common/ppmm/pprr,ppee,pppe,rpre,xopoe,rree
 cc      SAVE /ppmm/
-clin-6/2013:
-      COMMON/charge/netq,ianti
-      dimension xallow(15)
       SAVE   
 
       s=srt**2
       nstate=0
       wtot=0.
       if(srt.le.thresh(1)) return
-      if(netq.eq.-2.or.netq.eq.2) then
-clin-6/2013 take care of forbidden charge states:
-         xallow(1)=0.
-         xallow(2)=0.
-         xallow(3)=0.
-clin-cma-4/2018 division by two=2 
-c     since pi+pi+ goes to p+Delta-bar but not pbar+Delta
-c     but the cross section (4)/niso(4) includes both channels,
-c     xallow(i) (except the factor of "two") is the chratio factor
-c    (=# of all charge states / # of allowed charge states
-c     for a given hadron reaction A+B->C+D):
-         xallow(4)=(6./5.)/two
-         xallow(5)=(6./5.)/two
-         xallow(8)=1.
-         xallow(11)=1.
-c
-         xallow(6)=0.
-         xallow(7)=0.
-         xallow(13)=0.
-         xallow(14)=0.
-      elseif(netq.eq.-1.or.netq.eq.1) then
-         xallow(1)=0.
-         xallow(3)=0.
-clin-cma-4/2018 for (pi pi) or (rho rho) or (pi rho) -> B Bbar:
-clin-ch-5/2016 for (pi pi) or (rho rho) -> N Nbar:
-c         if((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.3.and.lb2.le.5)) then
-cma-ch-06/16 correct xallow(1) for iblock=18021 and iblock=18022
-cma-ch-06/16            xallow(2)=6./4.
-         if( ((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.3.and.lb2.le.5)).or.
-     1     ((lb1.ge.25.and.lb1.le.27).and.(lb2.ge.25.and.lb2.le.27)).or.
-     2     ((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.25.and.lb2.le.27)).or.
-     3     ((lb1.ge.25.and.lb1.le.27).and.(lb2.ge.3.and.lb2.le.5))) then
-            xallow(2)=(6./1.)/two
-            xallow(4)=6./5.
-            xallow(5)=6./5.
-            xallow(6)=6./3./two
-            xallow(7)=6./3./two
-            xallow(8)=1.
-            xallow(11)=1.
-            xallow(13)=6./4.
-            xallow(14)=6./4.
-clin-cma-4/2018 for (pi omega) or (rho omega) -> B Bbar:
-         elseif(((lb1.ge.3.and.lb1.le.5).and.lb2.eq.28).or.
-     1           ((lb2.ge.3.and.lb2.le.5).and.lb1.eq.28).or.
-     2           ((lb1.ge.25.and.lb1.le.27).and.lb2.eq.28).or.
-     1           ((lb2.ge.25.and.lb2.le.27).and.lb1.eq.28)) then
-            xallow(2)=(3./1.)/two
-            xallow(4)=1.
-            xallow(5)=1.
-            xallow(6)=3./2./two
-            xallow(7)=3./2./two
-            xallow(8)=1.
-            xallow(11)=1.
-            xallow(13)=1.
-            xallow(14)=1.
-         endif
-      elseif(netq.eq.0) then
-         xallow(2)=0.
-clin-cma-4/2018 for (pi pi) or (rho rho) or (pi rho) -> B Bbar:
-         if( ((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.3.and.lb2.le.5)).or.
-     1     ((lb1.ge.25.and.lb1.le.27).and.(lb2.ge.25.and.lb2.le.27)).or.
-     2     ((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.25.and.lb2.le.27)).or.
-     3     ((lb1.ge.25.and.lb1.le.27).and.(lb2.ge.3.and.lb2.le.5))) then
-            xallow(1)=6./2.
-            xallow(3)=6./2.
-            xallow(4)=6./5.
-            xallow(5)=6./5.
-            xallow(6)=6./3.
-            xallow(7)=6./3.
-            xallow(8)=1.
-            xallow(11)=1.
-            xallow(13)=6./4.
-            xallow(14)=6./4.
-clin-cma-4/2018 for (pi omega) or (rho omega) -> B Bbar:
-         elseif(((lb1.ge.3.and.lb1.le.5).and.lb2.eq.28).or.
-     1           ((lb2.ge.3.and.lb2.le.5).and.lb1.eq.28).or.
-     2           ((lb1.ge.25.and.lb1.le.27).and.lb2.eq.28).or.
-     1           ((lb2.ge.25.and.lb2.le.27).and.lb1.eq.28)) then
-            xallow(1)=3./1.
-            xallow(3)=3./1.
-            xallow(4)=1.
-            xallow(5)=1.
-            xallow(6)=3./2.
-            xallow(7)=3./2.
-            xallow(8)=1.
-            xallow(11)=1.
-            xallow(13)=1.
-            xallow(14)=1.
-clin-cma-4/2018-ma for (omega omega) -> B Bbar:
-         elseif((lb1.eq.28.and.lb2.eq.28)
-     1   .or.(lb2.eq.28.and.lb1.eq.28))
-     2           then
-            xallow(1)=1.
-            xallow(3)=1.
-            xallow(4)=1.
-            xallow(5)=1.
-            xallow(6)=1.
-            xallow(7)=1.
-            xallow(8)=1.
-            xallow(11)=1.
-            xallow(13)=1.
-            xallow(14)=1.
-         endif
-      endif
-clin-cma-4/2018 symmetry relations:
-      xallow(9)=xallow(6)
-      xallow(10)=xallow(7)
-      xallow(12)=xallow(11)
-      xallow(15)=xallow(13)
-c
-clin-cma-4/2018 determine how many BBbar state are kinematically available:
       do 1001 i=1,15
          weight(i)=0.
          if(srt.gt.thresh(i)) nstate=i
@@ -22686,9 +20115,7 @@ clin-cma-4/2018 determine how many BBbar state are kinematically available:
       do 1002 i=1,nstate
          pf2=(s-(ppbm(i,1)+ppbm(i,2))**2)
      1        *(s-(ppbm(i,1)-ppbm(i,2))**2)/4/s
-clin-6/2013:
-c         weight(i)=pf2*niso(i)
-         weight(i)=pf2*niso(i)*xallow(i)
+         weight(i)=pf2*niso(i)
          wtot=wtot+weight(i)
  1002 continue
       ene=(srt/pimass)**3/(6.*pi**2)
@@ -22709,9 +20136,7 @@ cc      SAVE /ppb1/
       common/ppmm/pprr,ppee,pppe,rpre,xopoe,rree
 cc      SAVE /ppmm/
       SAVE   
-clin-cma-4/2018 factr2(n)/fsum is the fraction 
-c     for PPbar to go to the n-pion channel,
-c     wtot is the sum of pf^2*isospinDegeneracyFactor*chratio:
+
       sppb2p=xppbar(srt)*factr2(2)/fsum
       pi2=(s-4*pimass**2)/4
       ppbbar=4./9.*sppb2p/pi2*wtot
@@ -22826,22 +20251,14 @@ cc      SAVE /ppb1/
 cc      SAVE /ppmm/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
-
-clin-6/2013 ctest off
-c      lbb1=111
-c      lbb2=111
-c      write(6,*), 'bbarfs1: ',lbb1,lbb2
 
 c     determine which final BbarB channel occurs:
       rd=RANART(NSEED)
       wsum=0.
       do 1001 i=1,nstate
          wsum=wsum+weight(i)
-cma-05/16         if(rd.le.(wsum/wtot)) then
-         if(rd.lt.(wsum/wtot)) then
+         if(rd.le.(wsum/wtot)) then
             ifs=i
             ei1=ppbm(i,1)
             ei2=ppbm(i,2)
@@ -22857,9 +20274,7 @@ c1    pbar p
          lbb2=1
       elseif(ifs.eq.2) then
 c2    pbar n
-clin-6/2013:
-c         if(RANART(NSEED).le.0.5) then
-         if(netq.eq.-1) then
+         if(RANART(NSEED).le.0.5) then
             iblock=18021
             lbb1=-1
             lbb2=2
@@ -22875,597 +20290,266 @@ c3    nbar n
          lbb1=-2
          lbb2=2
 c4&5  (pbar nbar) Delta, (p n) anti-Delta
-clin-6/2013:
-c4  pbar Delta, or p anti-Delta:
-      elseif(ifs.eq.4) then
-         if(netq.eq.2.or.netq.eq.-2) then
-            iblock=18041+(2+netq)/4
-            lbb1=1*(netq/2)
-            lbb2=-6*(netq/2)
-         elseif(netq.eq.1.or.netq.eq.-1) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18041+(1+netq)/2
-               lbb1=1*netq
-               lbb2=-7*netq
-            else
-               iblock=18042-(1+netq)/2
-               lbb1=-1*netq
-               lbb2=9*netq
-            endif
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18042
-               lbb1=1
-               lbb2=-8
-            else
+      elseif(ifs.eq.4.or.ifs.eq.5) then
+         rd=RANART(NSEED)
+         if(rd.le.0.5) then
+c     (pbar nbar) Delta
+            if(ifs.eq.4) then
                iblock=18041
                lbb1=-1
-               lbb2=8
-            endif
-         endif
-c5  nbar Delta, or n anti-Delta:
-      elseif(ifs.eq.5) then
-         if(netq.eq.2.or.netq.eq.-2) then
-            iblock=18051+(2+netq)/4
-            lbb1=-2*(netq/2)
-            lbb2=9*(netq/2)
-         elseif(netq.eq.1.or.netq.eq.-1) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18051+(1+netq)/2
-               lbb1=2*netq
-               lbb2=-6*netq
-            else
-               iblock=18052-(1+netq)/2
-               lbb1=-2*netq
-               lbb2=8*netq
-            endif
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18052
-               lbb1=2
-               lbb2=-7
             else
                iblock=18051
                lbb1=-2
+            endif
+            rd2=RANART(NSEED)
+            if(rd2.le.0.25) then
+               lbb2=6
+            elseif(rd2.le.0.5) then
                lbb2=7
+            elseif(rd2.le.0.75) then
+               lbb2=8
+            else
+               lbb2=9
+            endif
+         else
+c     (p n) anti-Delta
+            if(ifs.eq.4) then
+               iblock=18042
+               lbb1=1
+            else
+               iblock=18052
+               lbb1=2
+            endif
+            rd2=RANART(NSEED)
+            if(rd2.le.0.25) then
+               lbb2=-6
+            elseif(rd2.le.0.5) then
+               lbb2=-7
+            elseif(rd2.le.0.75) then
+               lbb2=-8
+            else
+               lbb2=-9
             endif
          endif
-c      elseif(ifs.eq.4.or.ifs.eq.5) then
-c         rd=RANART(NSEED)
-c         if(rd.le.0.5) then
-cc     (pbar nbar) Delta
-c            if(ifs.eq.4) then
-c               iblock=18041
-c               lbb1=-1
-c            else
-c               iblock=18051
-c               lbb1=-2
-c            endif
-c            rd2=RANART(NSEED)
-c            if(rd2.le.0.25) then
-c               lbb2=6
-c            elseif(rd2.le.0.5) then
-c               lbb2=7
-c            elseif(rd2.le.0.75) then
-c               lbb2=8
-c            else
-c               lbb2=9
-c            endif
-c         else
-cc     (p n) anti-Delta
-c            if(ifs.eq.4) then
-c               iblock=18042
-c               lbb1=1
-c            else
-c               iblock=18052
-c               lbb1=2
-c            endif
-c            rd2=RANART(NSEED)
-c            if(rd2.le.0.25) then
-c               lbb2=-6
-c            elseif(rd2.le.0.5) then
-c               lbb2=-7
-c            elseif(rd2.le.0.75) then
-c               lbb2=-8
-c            else
-c               lbb2=-9
-c            endif
-c         endif
 c6&7  (pbar nbar) N*(1440), (p n) anti-N*(1440)
-clin-6/2013:
-      elseif(ifs.eq.6) then
-         if(netq.eq.1.or.netq.eq.-1) then
-            iblock=18061+(1+netq)/2
-            lbb1=1*netq
-            lbb2=-10*netq
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18062
-               lbb1=1
-               lbb2=-11
-            else
+      elseif(ifs.eq.6.or.ifs.eq.7) then
+         rd=RANART(NSEED)
+         if(rd.le.0.5) then
+c     (pbar nbar) N*(1440)
+            if(ifs.eq.6) then
                iblock=18061
                lbb1=-1
-               lbb2=11
-            endif
-         endif
-      elseif(ifs.eq.7) then
-         if(netq.eq.1.or.netq.eq.-1) then
-            iblock=18071+(1+netq)/2
-            lbb1=-2*netq
-            lbb2=11*netq
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18072
-               lbb1=2
-               lbb2=-10
             else
                iblock=18071
                lbb1=-2
+            endif
+            rd2=RANART(NSEED)
+            if(rd2.le.0.5) then
                lbb2=10
+            else
+               lbb2=11
+            endif
+         else
+c     (p n) anti-N*(1440)
+            if(ifs.eq.6) then
+               iblock=18062
+               lbb1=1
+            else
+               iblock=18072
+               lbb1=2
+            endif
+            rd2=RANART(NSEED)
+            if(rd2.le.0.5) then
+               lbb2=-10
+            else
+               lbb2=-11
             endif
          endif
-c      elseif(ifs.eq.6.or.ifs.eq.7) then
-c         rd=RANART(NSEED)
-c         if(rd.le.0.5) then
-cc     (pbar nbar) N*(1440)
-c            if(ifs.eq.6) then
-c               iblock=18061
-c               lbb1=-1
-c            else
-c               iblock=18071
-c               lbb1=-2
-c            endif
-c            rd2=RANART(NSEED)
-c            if(rd2.le.0.5) then
-c               lbb2=10
-c            else
-c               lbb2=11
-c            endif
-c         else
-cc     (p n) anti-N*(1440)
-c            if(ifs.eq.6) then
-c               iblock=18062
-c               lbb1=1
-c            else
-c               iblock=18072
-c               lbb1=2
-c            endif
-c            rd2=RANART(NSEED)
-c            if(rd2.le.0.5) then
-c               lbb2=-10
-c            else
-c               lbb2=-11
-c            endif
-c         endif
-clin-6/2013:
 c8    Delta anti-Delta
       elseif(ifs.eq.8) then
          iblock=1808
-         if(netq.eq.3.or.netq.eq.-3) then
-            lbb1=9*(netq/3)
-            lbb2=-6*(netq/3)
-         elseif(netq.eq.2.or.netq.eq.-2) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               lbb1=9*(netq/2)
-               lbb2=-7*(netq/2)
-            else
-               lbb1=8*(netq/2)
-               lbb2=-6*(netq/2)
-            endif
-         elseif(netq.eq.1.or.netq.eq.-1) then
-            rd=RANART(NSEED)
-            if(rd.le.1./3.) then
-               lbb1=9*netq
-               lbb2=-8*netq
-            elseif(rd.le.2./3.) then
-               lbb1=8*netq
-               lbb2=-7*netq
-            else
-               lbb1=7*netq
-               lbb2=-6*netq
-            endif
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.1./4.) then
-               lbb1=9
-               lbb2=-9
-            elseif(rd.le.1./2.) then
-               lbb1=8
-               lbb2=-8
-            elseif(rd.le.3./4.) then
-               lbb1=7
-               lbb2=-7
-            else
-               lbb1=6
-               lbb2=-6
-            endif
+         rd1=RANART(NSEED)
+         if(rd1.le.0.25) then
+            lbb1=6
+         elseif(rd1.le.0.5) then
+            lbb1=7
+         elseif(rd1.le.0.75) then
+            lbb1=8
+         else
+            lbb1=9
          endif
-c         rd1=RANART(NSEED)
-c         if(rd1.le.0.25) then
-c            lbb1=6
-c         elseif(rd1.le.0.5) then
-c            lbb1=7
-c         elseif(rd1.le.0.75) then
-c            lbb1=8
-c         else
-c            lbb1=9
-c         endif
-c         rd2=RANART(NSEED)
-c         if(rd2.le.0.25) then
-c            lbb2=-6
-c         elseif(rd2.le.0.5) then
-c            lbb2=-7
-c         elseif(rd2.le.0.75) then
-c            lbb2=-8
-c         else
-c            lbb2=-9
-c         endif
-clin-6/2013:
+         rd2=RANART(NSEED)
+         if(rd2.le.0.25) then
+            lbb2=-6
+         elseif(rd2.le.0.5) then
+            lbb2=-7
+         elseif(rd2.le.0.75) then
+            lbb2=-8
+         else
+            lbb2=-9
+         endif
 c9&10 (pbar nbar) N*(1535), (p n) anti-N*(1535)
-      elseif(ifs.eq.9) then
-         if(netq.eq.1.or.netq.eq.-1) then
-            iblock=18091+(1+netq)/2
-            lbb1=1*netq
-            lbb2=-12*netq
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18092
-               lbb1=1
-               lbb2=-13
-            else
+      elseif(ifs.eq.9.or.ifs.eq.10) then
+         rd=RANART(NSEED)
+         if(rd.le.0.5) then
+c     (pbar nbar) N*(1440)
+            if(ifs.eq.9) then
                iblock=18091
                lbb1=-1
-               lbb2=13
-            endif
-         endif
-      elseif(ifs.eq.10) then
-         if(netq.eq.1.or.netq.eq.-1) then
-            iblock=18101+(1+netq)/2
-            lbb1=-2*netq
-            lbb2=13*netq
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18102
-               lbb1=2
-               lbb2=-12
             else
                iblock=18101
                lbb1=-2
+            endif
+            rd2=RANART(NSEED)
+            if(rd2.le.0.5) then
                lbb2=12
-            endif
-         endif
-c      elseif(ifs.eq.9.or.ifs.eq.10) then
-c         rd=RANART(NSEED)
-c         if(rd.le.0.5) then
-cc     (pbar nbar) N*(1440)
-c            if(ifs.eq.9) then
-c               iblock=18091
-c               lbb1=-1
-c            else
-c               iblock=18101
-c               lbb1=-2
-c            endif
-c            rd2=RANART(NSEED)
-c            if(rd2.le.0.5) then
-c               lbb2=12
-c            else
-c               lbb2=13
-c            endif
-c         else
-cc     (p n) anti-N*(1535)
-c            if(ifs.eq.9) then
-c               iblock=18092
-c               lbb1=1
-c            else
-c               iblock=18102
-c               lbb1=2
-c            endif
-c            rd2=RANART(NSEED)
-c            if(rd2.le.0.5) then
-c               lbb2=-12
-c            else
-c               lbb2=-13
-c            endif
-c         endif
-clin-6/2013:
-c11&12 anti-Delta N*, Delta anti-N*
-      elseif(ifs.eq.11) then
-         if(netq.eq.2.or.netq.eq.-2) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18111+(2+netq)/4
-               lbb1=9*(netq/2)
-               lbb2=-10*(netq/2)
             else
-               iblock=18112-(2+netq)/4
-               lbb1=-6*(netq/2)
-               lbb2=11*(netq/2)
-            endif
-         elseif(netq.eq.1.or.netq.eq.-1) then
-            rd=RANART(NSEED)
-            if(rd.le.0.25) then
-               iblock=18111+(1+netq)/2
-               lbb1=9*netq
-               lbb2=-11*netq
-            elseif(rd.le.0.5) then
-               iblock=18111+(1+netq)/2
-               lbb1=8*netq
-               lbb2=-10*netq
-            elseif(rd.le.0.75) then
-               iblock=18112-(1+netq)/2
-               lbb1=-7*netq
-               lbb2=11*netq
-            else
-               iblock=18112-(1+netq)/2
-               lbb1=-6*netq
-               lbb2=10*netq
-            endif
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.25) then
-               iblock=18112
-               lbb1=8
-               lbb2=-11
-            elseif(rd.le.0.5) then
-               iblock=18112
-               lbb1=7
-               lbb2=-10
-            elseif(rd.le.0.75) then
-               iblock=18111
-               lbb1=-8
-               lbb2=11
-            else
-               iblock=18111
-               lbb1=-7
-               lbb2=10
-            endif
-         endif
-      elseif(ifs.eq.12) then
-         if(netq.eq.2.or.netq.eq.-2) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               iblock=18121+(2+netq)/4
-               lbb1=9*(netq/2)
-               lbb2=-12*(netq/2)
-            else
-               iblock=18122-(2+netq)/4
-               lbb1=-6*(netq/2)
-               lbb2=13*(netq/2)
-            endif
-         elseif(netq.eq.1.or.netq.eq.-1) then
-            rd=RANART(NSEED)
-            if(rd.le.0.25) then
-               iblock=18121+(1+netq)/2
-               lbb1=9*netq
-               lbb2=-13*netq
-            elseif(rd.le.0.5) then
-               iblock=18121+(1+netq)/2
-               lbb1=8*netq
-               lbb2=-12*netq
-            elseif(rd.le.0.75) then
-               iblock=18122-(1+netq)/2
-               lbb1=-7*netq
-               lbb2=13*netq
-            else
-               iblock=18122-(1+netq)/2
-               lbb1=-6*netq
-               lbb2=12*netq
-            endif
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.25) then
-               iblock=18122
-               lbb1=8
-               lbb2=-13
-            elseif(rd.le.0.5) then
-               iblock=18122
-               lbb1=7
-               lbb2=-12
-            elseif(rd.le.0.75) then
-               iblock=18121
-               lbb1=-8
                lbb2=13
+            endif
+         else
+c     (p n) anti-N*(1535)
+            if(ifs.eq.9) then
+               iblock=18092
+               lbb1=1
             else
-               iblock=18121
-               lbb1=-7
-               lbb2=12
+               iblock=18102
+               lbb1=2
+            endif
+            rd2=RANART(NSEED)
+            if(rd2.le.0.5) then
+               lbb2=-12
+            else
+               lbb2=-13
             endif
          endif
-c      elseif(ifs.eq.11.or.ifs.eq.12) then
-c         rd=RANART(NSEED)
-c         if(rd.le.0.5) then
-cc     anti-Delta N*
-c            rd1=RANART(NSEED)
-c            if(rd1.le.0.25) then
-c               lbb1=-6
-c            elseif(rd1.le.0.5) then
-c               lbb1=-7
-c            elseif(rd1.le.0.75) then
-c               lbb1=-8
-c            else
-c               lbb1=-9
-c            endif
-c            if(ifs.eq.11) then
-c               iblock=18111
-c               rd2=RANART(NSEED)
-c               if(rd2.le.0.5) then
-c                  lbb2=10
-c               else
-c                  lbb2=11
-c               endif
-c            else
-c               iblock=18121
-c               rd2=RANART(NSEED)
-c               if(rd2.le.0.5) then
-c                  lbb2=12
-c               else
-c                  lbb2=13
-c               endif
-c            endif
-c         else
-cc     Delta anti-N*
-c            rd1=RANART(NSEED)
-c            if(rd1.le.0.25) then
-c               lbb1=6
-c            elseif(rd1.le.0.5) then
-c               lbb1=7
-c            elseif(rd1.le.0.75) then
-c               lbb1=8
-c            else
-c               lbb1=9
-c            endif
-c            if(ifs.eq.11) then
-c               iblock=18112
-c               rd2=RANART(NSEED)
-c               if(rd2.le.0.5) then
-c                  lbb2=-10
-c               else
-c                  lbb2=-11
-c               endif
-c            else
-c               iblock=18122
-c               rd2=RANART(NSEED)
-c               if(rd2.le.0.5) then
-c                  lbb2=-12
-c               else
-c                  lbb2=-13
-c               endif
-c            endif
-c         endif
-clin-6/2013:
+c11&12 anti-Delta N*, Delta anti-N*
+      elseif(ifs.eq.11.or.ifs.eq.12) then
+         rd=RANART(NSEED)
+         if(rd.le.0.5) then
+c     anti-Delta N*
+            rd1=RANART(NSEED)
+            if(rd1.le.0.25) then
+               lbb1=-6
+            elseif(rd1.le.0.5) then
+               lbb1=-7
+            elseif(rd1.le.0.75) then
+               lbb1=-8
+            else
+               lbb1=-9
+            endif
+            if(ifs.eq.11) then
+               iblock=18111
+               rd2=RANART(NSEED)
+               if(rd2.le.0.5) then
+                  lbb2=10
+               else
+                  lbb2=11
+               endif
+            else
+               iblock=18121
+               rd2=RANART(NSEED)
+               if(rd2.le.0.5) then
+                  lbb2=12
+               else
+                  lbb2=13
+               endif
+            endif
+         else
+c     Delta anti-N*
+            rd1=RANART(NSEED)
+            if(rd1.le.0.25) then
+               lbb1=6
+            elseif(rd1.le.0.5) then
+               lbb1=7
+            elseif(rd1.le.0.75) then
+               lbb1=8
+            else
+               lbb1=9
+            endif
+            if(ifs.eq.11) then
+               iblock=18112
+               rd2=RANART(NSEED)
+               if(rd2.le.0.5) then
+                  lbb2=-10
+               else
+                  lbb2=-11
+               endif
+            else
+               iblock=18122
+               rd2=RANART(NSEED)
+               if(rd2.le.0.5) then
+                  lbb2=-12
+               else
+                  lbb2=-13
+               endif
+            endif
+         endif
 c13   N*(1440) anti-N*(1440)
       elseif(ifs.eq.13) then
          iblock=1813
-         if(netq.eq.1.or.netq.eq.-1) then
-            lbb1=-10*netq
-            lbb2=11*netq
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               lbb1=10
-               lbb2=-10
-            else
-               lbb1=-11
-               lbb2=11
-            endif
+         rd1=RANART(NSEED)
+         if(rd1.le.0.5) then
+            lbb1=10
+         else
+            lbb1=11
          endif
-c         rd1=RANART(NSEED)
-c         if(rd1.le.0.5) then
-c            lbb1=10
-c         else
-c            lbb1=11
-c         endif
-c         rd2=RANART(NSEED)
-c         if(rd2.le.0.5) then
-c            lbb2=-10
-c         else
-c            lbb2=-11
-c         endif
-clin-6/2013:
+         rd2=RANART(NSEED)
+         if(rd2.le.0.5) then
+            lbb2=-10
+         else
+            lbb2=-11
+         endif
 c14   anti-N*(1440) N*(1535), N*(1440) anti-N*(1535)
       elseif(ifs.eq.14) then
-         iblock=1814
-         if(netq.eq.1.or.netq.eq.-1) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               lbb1=11*netq
-               lbb2=-12*netq
-            else
-               lbb1=-10*netq
-               lbb2=13*netq
-            endif
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.25) then
-               lbb1=11
-               lbb2=-13
-            elseif(rd.le.0.5) then
-               lbb1=10
-               lbb2=-12
-            elseif(rd.le.0.75) then
-               lbb1=-11
-               lbb2=13
-            else
+         rd=RANART(NSEED)
+         if(rd.le.0.5) then
+c     anti-N*(1440) N*(1535)
+            iblock=18141
+            rd1=RANART(NSEED)
+            if(rd1.le.0.5) then
                lbb1=-10
+            else
+               lbb1=-11
+            endif
+            rd2=RANART(NSEED)
+            if(rd2.le.0.5) then
                lbb2=12
+            else
+               lbb2=13
+            endif
+         else
+c     N*(1440) anti-N*(1535)
+            iblock=18142
+            rd1=RANART(NSEED)
+            if(rd1.le.0.5) then
+               lbb1=10
+            else
+               lbb1=11
+            endif
+            rd2=RANART(NSEED)
+            if(rd2.le.0.5) then
+               lbb2=-12
+            else
+               lbb2=-13
             endif
          endif
-c         rd=RANART(NSEED)
-c         if(rd.le.0.5) then
-cc     anti-N*(1440) N*(1535)
-c            iblock=18141
-c            rd1=RANART(NSEED)
-c            if(rd1.le.0.5) then
-c               lbb1=-10
-c            else
-c               lbb1=-11
-c            endif
-c            rd2=RANART(NSEED)
-c            if(rd2.le.0.5) then
-c               lbb2=12
-c            else
-c               lbb2=13
-c            endif
-c         else
-cc     N*(1440) anti-N*(1535)
-c            iblock=18142
-c            rd1=RANART(NSEED)
-c            if(rd1.le.0.5) then
-c               lbb1=10
-c            else
-c               lbb1=11
-c            endif
-c            rd2=RANART(NSEED)
-c            if(rd2.le.0.5) then
-c               lbb2=-12
-c            else
-c               lbb2=-13
-c            endif
-c         endif
-clin-6/2013:
 c15   N*(1535) anti-N*(1535)
       elseif(ifs.eq.15) then
          iblock=1815
-         if(netq.eq.1.or.netq.eq.-1) then
-            lbb1=-12*netq
-            lbb2=13*netq
-         elseif(netq.eq.0) then
-            rd=RANART(NSEED)
-            if(rd.le.0.5) then
-               lbb1=12
-               lbb2=-12
-            else
-               lbb1=-13
-               lbb2=13
-            endif
+         rd1=RANART(NSEED)
+         if(rd1.le.0.5) then
+            lbb1=12
+         else
+            lbb1=13
          endif
-c         rd1=RANART(NSEED)
-c         if(rd1.le.0.5) then
-c            lbb1=12
-c         else
-c            lbb1=13
-c         endif
-c         rd2=RANART(NSEED)
-c         if(rd2.le.0.5) then
-c            lbb2=-12
-c         else
-c            lbb2=-13
-c         endif
+         rd2=RANART(NSEED)
+         if(rd2.le.0.5) then
+            lbb2=-12
+         else
+            lbb2=-13
+         endif
       else
       endif
-
-clin-6/2013 ctest off
-c      write(6,*), 'bbarfs2: ',lbb1,lbb2
 
       RETURN
       END
@@ -23489,10 +20573,6 @@ c     for now, rho mass taken to be the central value in these two processes
            pprr=rtop(srt)
         endif
 c
-cma-ch-04/18: no change for iblock=1850 and iblock=1851
-        chratio=1.
-        pprr=pprr*chratio
-
         return
         END
 
@@ -23534,10 +20614,8 @@ cc      SAVE /ppb1/
 cc      SAVE /ppmm/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
-    
+
       if((lb(i1).ge.3.and.lb(i1).le.5)
      1     .and.(lb(i2).ge.3.and.lb(i2).le.5)) then
          iblock=1850
@@ -23545,40 +20623,13 @@ clin-6/2013:
          ei2=0.77
 c     for now, we don't check isospin states(allowing pi+pi+ & pi0pi0 -> 2rho)
 c     thus the cross sections used are considered as the isospin-averaged ones.
-clin-6/2013 same charges for pion and rho are assumed below:
-czbyin-8/26/10 make sure charge conserved
-c         lbb1=25+int(3*RANART(NSEED))
-c         lbb2=25+int(3*RANART(NSEED))
-         if(netq.eq.0) then
-            if(RANART(NSEED).le.0.5) then
-               lbb1=26
-               lbb2=26
-            else
-               lbb1=25
-               lbb2=27
-            endif
-         else
-            lbb1=22+lb(i1)
-            lbb2=22+lb(i2)
-         endif
+         lbb1=25+int(3*RANART(NSEED))
+         lbb2=25+int(3*RANART(NSEED))
       elseif((lb(i1).ge.25.and.lb(i1).le.27)
      1     .and.(lb(i2).ge.25.and.lb(i2).le.27)) then
          iblock=1851
-c         lbb1=3+int(3*RANART(NSEED))
-c         lbb2=3+int(3*RANART(NSEED))
-         if(netq.eq.0) then
-            if(RANART(NSEED).le.0.5) then
-               lbb1=4
-               lbb2=4
-            else
-               lbb1=3
-               lbb2=5
-            endif
-         else
-            lbb1=lb(i1)-22
-            lbb2=lb(i2)-22
-         endif
-czbyin-8/26/10 end of making sure charge conservation
+         lbb1=3+int(3*RANART(NSEED))
+         lbb2=3+int(3*RANART(NSEED))
          ei1=ap2
          ei2=ap2
          if(lbb1.eq.4) ei1=ap1
@@ -23599,15 +20650,8 @@ cc      SAVE /ppmm/
       SAVE   
 
         ppee=0.
-clin-6/2013:
-c        if((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.3.and.lb2.le.5)) then
-        if((lb1.eq.3.and.lb2.eq.5).or.(lb1.eq.5.and.lb2.eq.3)
-     1       .or.(lb1.eq.4.and.lb2.eq.4)) then
-cma-ch-04/18: change for iblock=1860 and no change for iblock=1861
-cma-ch-04/18           if(srt.gt.(2*ETAM)) ppee=ptoe(srt)
-           chratio=6./2.
-           if(srt.gt.(2*ETAM)) ppee=ptoe(srt)*chratio
-
+        if((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.3.and.lb2.le.5)) then
+           if(srt.gt.(2*ETAM)) ppee=ptoe(srt)
         elseif(lb1.eq.0.and.lb2.eq.0) then
            ppee=etop(srt)
         endif
@@ -23656,8 +20700,6 @@ cc      SAVE /ppb1/
 cc      SAVE /ppmm/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
       if((lb(i1).ge.3.and.lb(i1).le.5)
@@ -23671,17 +20713,8 @@ c     thus the cross sections used are considered as the isospin-averaged ones.
          lbb2=0
       elseif(lb(i1).eq.0.and.lb(i2).eq.0) then
          iblock=1861
-clin-6/2013:
-         rd=RANART(NSEED)
-         if(rd.le.1./3.) then
-            lbb1=3
-         elseif(rd.le.2./3.) then
-            lbb1=4
-         else
-            lbb1=5
-         endif
-c         lbb2=3+int(3*RANART(NSEED))
-         lbb2=8-lbb1
+         lbb1=3+int(3*RANART(NSEED))
+         lbb2=3+int(3*RANART(NSEED))
          ei1=ap2
          ei2=ap2
          if(lbb1.eq.4) ei1=ap1
@@ -23703,12 +20736,7 @@ cc      SAVE /ppmm/
 
         pppe=0.
         if((lb1.ge.3.and.lb1.le.5).and.(lb2.ge.3.and.lb2.le.5)) then
-cma-ch-04/18: change for iblock=1870 and no change for iblock=1871
-cma-ch-04/18           if(srt.gt.(ETAM+pimass)) pppe=pptope(srt)
-           chratio=6./4.
-           if(srt.gt.(ETAM+pimass)) pppe=pptope(srt)*chratio
-clin-6/2013 forbidden charge states:
-         if((lb1.eq.3.and.lb2.eq.3).or.(lb1.eq.5.and.lb2.eq.5)) pppe=0.
+           if(srt.gt.(ETAM+pimass)) pppe=pptope(srt)
         elseif((lb1.ge.3.and.lb1.le.5).and.lb2.eq.0) then
            pppe=petopp(srt)
         elseif((lb2.ge.3.and.lb2.le.5).and.lb1.eq.0) then
@@ -23759,60 +20787,27 @@ cc      SAVE /ppb1/
 cc      SAVE /ppmm/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
       if((lb(i1).ge.3.and.lb(i1).le.5)
      1     .and.(lb(i2).ge.3.and.lb(i2).le.5)) then
          iblock=1870
-clin-6/2013:
-c         ei1=ap2
-c         ei2=etam
-cc     for now, we don't check isospin states(allowing pi+pi+ & pi0pi0 -> 2rho)
-cc     thus the cross sections used are considered as the isospin-averaged ones.
-c         lbb1=3+int(3*RANART(NSEED))
-c         if(lbb1.eq.4) ei1=ap1
-         if((lb(i1).eq.3.and.lb(i2).eq.5).or.(lb(i1).eq.5.and.lb(i2)
-     1        .eq.3).or.(lb(i1).eq.4.and.lb(i2).eq.4)) then
-            lbb1=4
-            ei1=ap1
-         elseif((lb(i1).eq.3.and.lb(i2).eq.4).or.(lb(i1).eq.4.and.lb(i2)
-     1        .eq.3)) then
-            lbb1=3
-            ei1=ap2
-         else
-            lbb1=5
-            ei1=ap2
-         endif
+         ei1=ap2
+         ei2=etam
+c     for now, we don't check isospin states(allowing pi+pi+ & pi0pi0 -> 2rho)
+c     thus the cross sections used are considered as the isospin-averaged ones.
+         lbb1=3+int(3*RANART(NSEED))
+         if(lbb1.eq.4) ei1=ap1
          lbb2=0
       elseif((lb(i1).ge.3.and.lb(i1).le.5.and.lb(i2).eq.0).or.
      1        (lb(i2).ge.3.and.lb(i2).le.5.and.lb(i1).eq.0)) then
          iblock=1871
-clin-6/2013:
-c         lbb1=3+int(3*RANART(NSEED))
-c         lbb2=3+int(3*RANART(NSEED))
-c            ei1=ap2
-c            ei2=ap2
-c         if(lbb1.eq.4) ei1=ap1
-c         if(lbb2.eq.4) ei2=ap1
-         if(lb(i1).eq.4.or.lb(i2).eq.4) then
-c     Note: pi0 eta -> pi0 pi0 is forbidden due to CG coeff:
-            lbb1=3
-            lbb2=5
-            ei1=ap2
-            ei2=ap2
-         elseif(lb(i1).eq.0) then
-            lbb1=lb(i2)
-            lbb2=4
-            ei1=ap2
-            ei2=ap1
-         elseif(lb(i2).eq.0) then
-            lbb1=lb(i1)
-            lbb2=4
-            ei1=ap2
-            ei2=ap1
-         endif
+         lbb1=3+int(3*RANART(NSEED))
+         lbb2=3+int(3*RANART(NSEED))
+         ei1=ap2
+         ei2=ap2
+         if(lbb1.eq.4) ei1=ap1
+         if(lbb2.eq.4) ei2=ap1
       endif
 
       return
@@ -23826,35 +20821,13 @@ c     Note: pi0 eta -> pi0 pi0 is forbidden due to CG coeff:
 cc      SAVE /ppb1/
         common/ppmm/pprr,ppee,pppe,rpre,xopoe,rree
 cc      SAVE /ppmm/
-        SAVE   
+      SAVE   
 
         rpre=0.
-
-cma-ch-06/16        if(lb1.ge.25.and.lb1.le.27.and.lb2.ge.3.and.lb2.le.5) then
-cma-ch-06/16           if(srt.gt.(ETAM+arho)) rpre=rptore(srt)
-cma-ch-06/16clin-6/2013 forbidden charge states:
-cma-ch-06/16        if((lb1.eq.25.and.lb2.eq.3).or.(lb1.eq.27.and.lb2.eq.5)) rpre=0.
-cma-ch-06/16        elseif(lb2.ge.25.and.lb2.le.27.and.lb1.ge.3.and.lb1.le.5) then
-cma-ch-06/16           if(srt.gt.(ETAM+arho)) rpre=rptore(srt)
-cma-ch-06/16clin-6/2013 forbidden charge states:
-cma-ch-06/16        if((lb2.eq.25.and.lb1.eq.3).or.(lb2.eq.27.and.lb1.eq.5)) rpre=0.
-cma-ch-06/16        elseif(lb1.ge.25.and.lb1.le.27.and.lb2.eq.0) then
-cma-ch-06/16           if(srt.gt.(pimass+arho)) rpre=retorp(srt)
-cma-ch-06/16        elseif(lb2.ge.25.and.lb2.le.27.and.lb1.eq.0) then
-cma-ch-06/16           if(srt.gt.(pimass+arho)) rpre=retorp(srt)
-cma-ch-06/16        endif
-
-cma-ch-04/18: change for iblock=1880 and no change for iblock=1881
         if(lb1.ge.25.and.lb1.le.27.and.lb2.ge.3.and.lb2.le.5) then
-           chratio=9./7.
-           if(srt.gt.(ETAM+arho)) rpre=rptore(srt)*chratio
-clin-6/2013 forbidden charge states: !just do it like this
-        if((lb1.eq.25.and.lb2.eq.3).or.(lb1.eq.27.and.lb2.eq.5)) rpre=0.
+           if(srt.gt.(ETAM+arho)) rpre=rptore(srt)
         elseif(lb2.ge.25.and.lb2.le.27.and.lb1.ge.3.and.lb1.le.5) then
-           chratio=9./7.
-           if(srt.gt.(ETAM+arho)) rpre=rptore(srt)*chratio
-clin-6/2013 forbidden charge states:
-        if((lb2.eq.25.and.lb1.eq.3).or.(lb2.eq.27.and.lb1.eq.5)) rpre=0.
+           if(srt.gt.(ETAM+arho)) rpre=rptore(srt)
         elseif(lb1.ge.25.and.lb1.le.27.and.lb2.eq.0) then
            if(srt.gt.(pimass+arho)) rpre=retorp(srt)
         elseif(lb2.ge.25.and.lb2.le.27.and.lb1.eq.0) then
@@ -23905,71 +20878,36 @@ cc      SAVE /ppb1/
 cc      SAVE /ppmm/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
-clin-6/2013:
-cczbyin-8/26/10 charge conservation
-c      netq=LUCHGE(INVFLV(lb(i1)))/3+LUCHGE(INVFLV(lb(i2)))/3
-cczbyin-8/26/10
-      if(netq.ge.-1.and.netq.le.1) then
-         if((lb(i1).ge.25.and.lb(i1).le.27
-     1        .and.lb(i2).ge.3.and.lb(i2).le.5).or.
-     2        (lb(i1).ge.3.and.lb(i1).le.5
+      if((lb(i1).ge.25.and.lb(i1).le.27
+     1     .and.lb(i2).ge.3.and.lb(i2).le.5).or.
+     2     (lb(i1).ge.3.and.lb(i1).le.5
      3     .and.lb(i2).ge.25.and.lb(i2).le.27)) then
-            iblock=1880
-            ei1=arho
-            ei2=etam
+         iblock=1880
+         ei1=arho
+         ei2=etam
 c     for now, we don't check isospin states(allowing pi+pi+ & pi0pi0 -> 2rho)
 c     thus the cross sections used are considered as the isospin-averaged ones.
-czbyin-8/26/10 make sure charge is conserved
-c         lbb1=25+int(3*RANART(NSEED))
-            lbb1 = 26+netq
-            lbb2=0
-         elseif((lb(i1).ge.25.and.lb(i1).le.27.and.lb(i2).eq.0).or.
-     1           (lb(i2).ge.25.and.lb(i2).le.27.and.lb(i1).eq.0)) then
-            iblock=1881
-clin-6/2013 corrections:
-c            ich = int(3*RANART(NSEED))
-cc            lbb1=25+int(3*RANART(NSEED))
-cc            lbb2=3+int(3*RANART(NSEED))
-c            lbb1=25+ich
-cclin-5/2013 Yin's bug: can generate baryons by mistake:
-c            lbb2=5-ich+netq
-            if(netq.eq.1.or.netq.eq.-1) then
-               if(RANART(NSEED).le.0.5) then
-                  lbb1=26
-                  lbb2=4+netq
-               else
-                  lbb1=26+netq
-                  lbb2=4
-               endif
-            else
-c     Note: rho0 eta -> rho0 pi0 is forbidden due to CG coeff:
-               if(RANART(NSEED).le.0.5) then
-                  lbb1=25
-                  lbb2=5
-               else
-                  lbb1=27
-                  lbb2=3
-               endif
-            endif
-ctest off            write(89,*) lb(i1),lb(i2),netq,lbb1,lbb2
-czbyin-8/26/10 end of making sure charge conserved
-            ei1=arho
-            ei2=ap2
-            if(lbb2.eq.4) ei2=ap1
-         endif
+         lbb1=25+int(3*RANART(NSEED))
+         lbb2=0
+      elseif((lb(i1).ge.25.and.lb(i1).le.27.and.lb(i2).eq.0).or.
+     1        (lb(i2).ge.25.and.lb(i2).le.27.and.lb(i1).eq.0)) then
+         iblock=1881
+         lbb1=25+int(3*RANART(NSEED))
+         lbb2=3+int(3*RANART(NSEED))
+         ei1=arho
+         ei2=ap2
+         if(lbb2.eq.4) ei2=ap1
       endif
+
       return
       END
 
 *****************************************
 * for omega pi <-> omega eta cross sections
         SUBROUTINE sopoe(lb1,lb2,srt)
-cma-ch-06/16        parameter (ETAM=0.5475,aomega=0.782)
-      parameter (pimass=0.140,ETAM=0.5475,aomega=0.782)
+        parameter (ETAM=0.5475,aomega=0.782)
       common/ppb1/ene,factr2(6),fsum,ppinnb,s,wtot
 cc      SAVE /ppb1/
       common/ppmm/pprr,ppee,pppe,rpre,xopoe,rree
@@ -23977,20 +20915,12 @@ cc      SAVE /ppmm/
       SAVE   
 
         xopoe=0.
-clin-6/2013 isospin coupling makes this process forbidden:
-        return
         if((lb1.eq.28.and.lb2.ge.3.and.lb2.le.5).or.
      1       (lb2.eq.28.and.lb1.ge.3.and.lb1.le.5)) then
-cma-ch-04/18: change for iblock=1890 and no change for iblock=1891
-cma-ch-04/18           if(srt.gt.(aomega+ETAM)) xopoe=xop2oe(srt)
-           chratio=3./1.
-           if(srt.gt.(aomega+ETAM)) xopoe=xop2oe(srt)*chratio
-        if(lb1.eq.3.or.lb1.eq.5.or.lb2.eq.3.or.lb2.eq.5) xopoe=0.
+           if(srt.gt.(aomega+ETAM)) xopoe=xop2oe(srt)
         elseif((lb1.eq.28.and.lb2.eq.0).or.
      1          (lb1.eq.0.and.lb2.eq.28)) then
-cma-ch-06/16-bug           if(srt.gt.(aomega+ETAM)) xopoe=xoe2op(srt)
-           if(srt.gt.(pimass+ETAM)) xopoe=xoe2op(srt)
-
+           if(srt.gt.(aomega+ETAM)) xopoe=xoe2op(srt)
         endif
 
         return
@@ -24038,8 +20968,6 @@ cc      SAVE /ppb1/
 cc      SAVE /ppmm/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
       if((lb(i1).ge.3.and.lb(i1).le.5.and.lb(i2).eq.28).or.
@@ -24055,9 +20983,7 @@ c     thus the cross sections used are considered as the isospin-averaged ones.
      1        (lb(i1).eq.0.and.lb(i2).eq.28)) then
          iblock=1891
          lbb1=28
-clin-6/2013:
-c         lbb2=3+int(3*RANART(NSEED))
-         lbb2=4
+         lbb2=3+int(3*RANART(NSEED))
          ei1=aomega
          ei2=ap2
          if(lbb2.eq.4) ei2=ap1
@@ -24077,15 +21003,9 @@ cc      SAVE /ppmm/
       SAVE   
 
         rree=0.
-clin-6/2013:
-c        if(lb1.ge.25.and.lb1.le.27.and.
-c     1       lb2.ge.25.and.lb2.le.27) then
-        if((lb1.eq.25.and.lb2.eq.27).or.(lb1.eq.27.and.lb2.eq.25)
-     1       .or.(lb1.eq.26.and.lb2.eq.26)) then
-cma-ch-04/18: change for iblock=1895 and no change iblock=1896
-cma-ch-04/18           if(srt.gt.(2*ETAM)) rree=rrtoee(srt)
-           chratio=6./2.
-           if(srt.gt.(2*ETAM)) rree=rrtoee(srt)*chratio
+        if(lb1.ge.25.and.lb1.le.27.and.
+     1       lb2.ge.25.and.lb2.le.27) then
+           if(srt.gt.(2*ETAM)) rree=rrtoee(srt)
         elseif(lb1.eq.0.and.lb2.eq.0) then
            if(srt.gt.(2*arho)) rree=eetorr(srt)
         endif
@@ -24133,46 +21053,21 @@ cc      SAVE /ppb1/
 cc      SAVE /ppmm/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
       if(lb(i1).ge.25.and.lb(i1).le.27.and.
      1     lb(i2).ge.25.and.lb(i2).le.27) then
-clin-6/2013 only 0 netcharge is allowed for rho rho -> eta eta:
-czbyin-8/26/10 make sure the reaction can happen, otherwise elastic scattering?
-c         if(lb(i1).eq.-lb(i2)) then
-            iblock=1895
-            ei1=etam
-            ei2=etam
+         iblock=1895
+         ei1=etam
+         ei2=etam
 c     for now, we don't check isospin states(allowing pi+pi+ & pi0pi0 -> 2rho)
 c     thus the cross sections used are considered as the isospin-averaged ones.
-            lbb1=0
-            lbb2=0
-c         else
-c            lbb1 = lb(i1)
-c            lbb2 = lb(i2)
-c            ei1=arho
-c            ei2=arho
-c         endif
-czbyin-8/26/10 end
+         lbb1=0
+         lbb2=0
       elseif(lb(i1).eq.0.and.lb(i2).eq.0) then
          iblock=1896
-cczbyin-8/26/10 make sure charge is conserved
-c         lbb1=25+int(3*RANART(NSEED))
-c         lbb2=25+int(3*RANART(NSEED))
-         rd=RANART(NSEED)
-         if(rd.le.1./.3) then
-            lbb1=25
-            lbb2=27
-         elseif(rd.le.2./.3) then
-            lbb1=26
-            lbb2=26
-         else
-            lbb1=27
-            lbb2=25
-         endif
-czbyin-8/26/10 end
+         lbb1=25+int(3*RANART(NSEED))
+         lbb2=25+int(3*RANART(NSEED))
          ei1=arho
          ei2=arho
       endif
@@ -24191,8 +21086,6 @@ czbyin-8/26/10 end
      & OMEGAM = 0.7819, ETAM = 0.5473)
       PARAMETER (MAXSTR=150001)
       COMMON  /CC/      E(MAXSTR)
-clin-6/2013:
-      COMMON/charge/netq,ianti
 cc      SAVE /CC/
       SAVE   
 
@@ -24212,55 +21105,33 @@ c        PI2 = (S - (aks + AKA) ** 2) * (S - (aks - AKA) ** 2)
         SIGK = 1.E-08
         if(PI2 .le. 0.0) return
 
-clin-4/2018 -> pi rho:
         XM1 = PIMASS
         XM2 = RHOM
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PI2 .GT. 0.0 .AND. PF2 .GT. 0.0) THEN
-clin-4/2018 correction on the K* spin factor:
-c           SIGKS1 = 27.0 / 4.0 * PF2 / PI2 * XPION0
-           SIGKS1 = 27.0 / 12.0 * PF2 / PI2 * XPION0
+           SIGKS1 = 27.0 / 4.0 * PF2 / PI2 * XPION0
         END IF
 
-clin-4/2018 -> pi omega:
         XM1 = PIMASS
         XM2 = OMEGAM
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PI2 .GT. 0.0 .AND. PF2 .GT. 0.0) THEN
-clin-4/2018 correction on the K* spin factor:
-c           SIGKS2 = 9.0 / 4.0 * PF2 / PI2 * XPION0
-           SIGKS2 = 9.0 / 12.0 * PF2 / PI2 * XPION0
+           SIGKS2 = 9.0 / 4.0 * PF2 / PI2 * XPION0
         END IF
 
-clin-4/2018 -> eta rho:
         XM1 = RHOM
         XM2 = ETAM
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
-clin-4/2018 correction on the K* spin factor:
-c           SIGKS3 = 9.0 / 4.0 * PF2 / PI2 * XPION0
-           SIGKS3 = 9.0 / 12.0 * PF2 / PI2 * XPION0
+           SIGKS3 = 9.0 / 4.0 * PF2 / PI2 * XPION0
         END IF
 
-cma-ch-04/18
-cclin-6/2013:
-c        if(netq.gt.1.or.netq.lt.-1) then
-        if(netq.ne.0) then
-           SIGKS4=0
-        else
-clin-4/2018 -> eta omega:
         XM1 = OMEGAM
         XM2 = ETAM
         PF2 = (S - (XM1 + XM2) ** 2) * (S - (XM1 - XM2) ** 2)
         IF (PF2 .GT. 0.0) THEN
-clin-4/2018 correction on the K* spin factor:
-c           SIGKS4 = 3.0 / 4.0 * PF2 / PI2 * XPION0
-           SIGKS4 = 3.0 / 12.0 * PF2 / PI2 * XPION0
-clin-cma-ch-04/18 change for iblock=466
-           chratio=4./2.
-           SIGKS4 = chratio*SIGKS4
+           SIGKS4 = 3.0 / 4.0 * PF2 / PI2 * XPION0
         END IF
-        endif
 
         SIGK=SIGKS1+SIGKS2+SIGKS3+SIGKS4
 
@@ -24292,8 +21163,6 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
        IBLOCK=466
@@ -24303,57 +21172,19 @@ clin-6/2013:
         XSK2 = XSK1 + XSK2
         XSK3 = XSK2 + XSK3
         XSK4 = XSK3 + XSK4
-cma-05/16        IF (X1 .LE. XSK1) THEN
-        IF (X1 .LT. XSK1) THEN
-clin-6/2013:
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-c           LB(I2) = 25 + int(3 * RANART(NSEED))
-           if(netq.eq.1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=5
-                 LB(I2)=26
-              else
-                 LB(I1)=4
-                 LB(I2)=27
-              endif
-           elseif(netq.eq.0) then
-              rd=RANART(NSEED)
-              if(rd.le.1./3.) then
-                 LB(I1)=5
-                 LB(I2)=25
-              elseif(rd.le.2./3.) then
-                 LB(I1)=4
-                 LB(I2)=26
-              else
-                 LB(I1)=3
-                 LB(I2)=27
-              endif
-           elseif(netq.eq.-1) then
-              if(RANART(NSEED).le.0.5) then
-                 LB(I1)=3
-                 LB(I2)=26
-              else
-                 LB(I1)=4
-                 LB(I2)=25
-              endif
-           endif
-c
+        IF (X1 .LE. XSK1) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
+           LB(I2) = 25 + int(3 * RANART(NSEED))
            E(I1) = AP2
            E(I2) = rhom
-cma-05/16        ELSE IF (X1 .LE. XSK2) THEN
-        ELSE IF (X1 .LT. XSK2) THEN
-clin-6/2013:
-c           LB(I1) = 3 + int(3 * RANART(NSEED))
-           LB(I1)=4+netq
+        ELSE IF (X1 .LE. XSK2) THEN
+           LB(I1) = 3 + int(3 * RANART(NSEED))
            LB(I2) = 28
            E(I1) = AP2
            E(I2) = AMOMGA
-cma-05/16        ELSE IF (X1 .LE. XSK3) THEN
-        ELSE IF (X1 .LT. XSK3) THEN
+        ELSE IF (X1 .LE. XSK3) THEN
            LB(I1) = 0
-clin-6/2013:
-c           LB(I2) = 25 + int(3 * RANART(NSEED))
-           LB(I2)=26+netq
+           LB(I2) = 25 + int(3 * RANART(NSEED))
            E(I1) = AETA
            E(I2) = rhom
         ELSE
@@ -24380,6 +21211,8 @@ c           LB(I2) = 25 + int(3 * RANART(NSEED))
         PARAMETER (MAXSTR=150001,MAXR=1,
      1  AMN=0.939457,AMP=0.93828,
      2  AP1=0.13496,AP2=0.13957,AM0=1.232,PI=3.1415926)
+clin-9/2012: improve precision for argument in sqrt():
+        double precision e10,e20,scheck,p1,p2,p3
         COMMON /AA/ R(3,MAXSTR)
 cc      SAVE /AA/
         COMMON /BB/ P(3,MAXSTR)
@@ -24398,45 +21231,49 @@ cc      SAVE /PB/
 cc      SAVE /PC/
         COMMON   /PD/LPION(MAXSTR,MAXR)
 cc      SAVE /PD/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 * 1. DETERMINE THE MOMENTUM COMPONENT OF THE K* IN THE CMS OF PI-K FRAME
 *    WE LET I1 TO BE THE K* AND ABSORB I2
-        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
-        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
-clin-6/2013:
-c        IF(LB(I2) .EQ. 21 .OR. LB(I2) .EQ. 23) THEN
-        IF(LB(I2) .GE. 21 .and. LB(I2) .LE. 24) THEN
+
+clin-9/2012: improve precision for argument in sqrt():
+c        E10=SQRT(E(I1)**2+P(1,I1)**2+P(2,I1)**2+P(3,I1)**2)
+c        E20=SQRT(E(I2)**2+P(1,I2)**2+P(2,I2)**2+P(3,I2)**2)
+        E10=dSQRT(dble(E(I1))**2+dble(P(1,I1))**2
+     1     +dble(P(2,I1))**2+dble(P(3,I1))**2)
+        E20=dSQRT(dble(E(I2))**2+dble(P(1,I2))**2
+     1       +dble(P(2,I2))**2+dble(P(3,I2))**2)
+        p1=dble(P(1,I1))+dble(P(1,I2))
+        p2=dble(P(2,I1))+dble(P(2,I2))
+        p3=dble(P(3,I1))+dble(P(3,I2))
+
+        IF(LB(I2) .EQ. 21 .OR. LB(I2) .EQ. 23) THEN
         E(I1)=0.
         I=I2
         ELSE
         E(I2)=0.
         I=I1
         ENDIF
-clin-6/2013:
-c        if(LB(I).eq.23) then
-        if(LB(I).ge.23) then
-c           LB(I)=30
-           if(netq.eq.1) then
-              LB(I)=30
-           else
-              LB(I)=33
-           endif
-c        else if(LB(I).eq.21) then
-        else
-c           LB(I)=-30
-           if(netq.eq.-1) then
-              LB(I)=-30
-           else
-              LB(I)=-33
-           endif
+        if(LB(I).eq.23) then
+           LB(I)=30
+        else if(LB(I).eq.21) then
+           LB(I)=-30
         endif
         P(1,I)=P(1,I1)+P(1,I2)
         P(2,I)=P(2,I1)+P(2,I2)
         P(3,I)=P(3,I1)+P(3,I2)
 * 2. DETERMINE THE MASS OF K* BY USING THE REACTION KINEMATICS
-        DM=SQRT((E10+E20)**2-P(1,I)**2-P(2,I)**2-P(3,I)**2)
+
+clin-9/2012: check argument in sqrt():
+        scheck=(E10+E20)**2-p1**2-p2**2-p3**2
+        if(scheck.lt.0) then
+           write(99,*) 'scheck49: ',scheck
+           write(99,*) 'scheck49',scheck,E10,E20,P(1,I),P(2,I),P(3,I)
+           write(99,*) 'scheck49-1',E(I1),P(1,I1),P(2,I1),P(3,I1)
+           write(99,*) 'scheck49-2',E(I2),P(1,I2),P(2,I2),P(3,I2)
+        endif
+        DM=sqrt(sngl(scheck))
+c        DM=SQRT((E10+E20)**2-P(1,I)**2-P(2,I)**2-P(3,I)**2)
+
         E(I)=DM
         RETURN
         END
@@ -24460,9 +21297,7 @@ c sp 01/03/01
       parameter      (MX=4,MY=4,MZ=8,MPX=4,MPY=4,mpz=10,mpzp=10)
       PARAMETER (AMN=0.939457,AMP=0.93828,AP1=0.13496,AP2=0.13957)
       PARAMETER      (AKA=0.498,ALA=1.1157,ASA=1.1974,aks=0.895)
-clin-6/2013:
-c      PARAMETER      (ACAS=1.3213,AOME=1.6724,AMRHO=0.769,AMOMGA=0.782)
-      PARAMETER      (ACAS=1.3213,AOME=1.6724,AMRHO=0.77,AMOMGA=0.782)
+      PARAMETER      (ACAS=1.3213,AOME=1.6724,AMRHO=0.769,AMOMGA=0.782)
       PARAMETER      (AETA=0.548,ADIOMG=3.2288)
       parameter            (maxx=20,maxz=24)
       COMMON   /AA/  R(3,MAXSTR)
@@ -24507,16 +21342,8 @@ cc      SAVE /RNDF77/
       COMMON /dpert/dpertt(MAXSTR,MAXR),dpertp(MAXSTR),dplast(MAXSTR),
      1     dpdcy(MAXSTR),dpdpi(MAXSTR,MAXR),dpt(MAXSTR, MAXR),
      2     dpp1(MAXSTR,MAXR),dppion(MAXSTR,MAXR)
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
-clin-6/2013:
-      if(ianti.eq.1) then
-         netq0=-netq
-      else
-         netq0=netq
-      endif
-c
+
       px0 = px
       py0 = py
       pz0 = pz
@@ -24541,35 +21368,19 @@ c                !! flag for elastic scatt only (-1=no)
 
 * K-/K*0bar + La/Si --> cascade + pi
 * K+/K*0 + La/Si (bar) --> cascade-bar + pi
-cma-ch-05/16       if( (lb1.eq.21.or.lb1.eq.23.or.iabs(lb1).eq.30) .and.
-       if( (lb1.eq.21.or.lb1.eq.23.or.iabs(lb1).eq.30 .or.
-     &  lb1.eq.22.or.lb1.eq.24.or.iabs(lb1).eq.33) .and.
-
+       if( (lb1.eq.21.or.lb1.eq.23.or.iabs(lb1).eq.30) .and.
      &     (iabs(lb2).ge.14.and.iabs(lb2).le.17) )go to 60
-
-cma-ch-05/16       if( (lb2.eq.21.or.lb2.eq.23.or.iabs(lb2).eq.30) .and.
-       if( (lb2.eq.21.or.lb2.eq.23.or.iabs(lb2).eq.30 .or.
-     &  lb2.eq.22.or.lb2.eq.24.or.iabs(lb2).eq.33) .and.
-
+       if( (lb2.eq.21.or.lb2.eq.23.or.iabs(lb2).eq.30) .and.
      &     (iabs(lb1).ge.14.and.iabs(lb1).le.17) )go to 60
 * K-/K*0bar + cascade --> omega + pi
 * K+/K*0 + cascade-bar --> omega-bar + pi
-cma-ch-05/16         if( (lb1.eq.21.or.lb1.eq.23.or.iabs(lb1).eq.30) .and.
-cma-ch-05/16      &      (iabs(lb2).eq.40.or.iabs(lb2).eq.41) )go to 70
-cma-ch-05/16         if( (lb2.eq.21.or.lb2.eq.23.or.iabs(lb2).eq.30) .and.
-cma-ch-05/16      &      (iabs(lb1).eq.40.or.iabs(lb1).eq.41) )go to 70
-
-        if( (lb1.eq.21.or.lb1.eq.23.or.iabs(lb1).eq.30
-cma-ch-04/18-727typo     &  .or.lb1.eq.22.or.lb1.eq.24.or.iabs(lb1).eq.34) .and.
-     &  .or.lb1.eq.22.or.lb1.eq.24.or.iabs(lb1).eq.33) .and.
+        if( (lb1.eq.21.or.lb1.eq.23.or.iabs(lb1).eq.30) .and.
      &      (iabs(lb2).eq.40.or.iabs(lb2).eq.41) )go to 70
-        if( (lb2.eq.21.or.lb2.eq.23.or.iabs(lb2).eq.30
-     &  .or.lb2.eq.22.or.lb2.eq.24.or.iabs(lb2).eq.33) .and.
+        if( (lb2.eq.21.or.lb2.eq.23.or.iabs(lb2).eq.30) .and.
      &      (iabs(lb1).eq.40.or.iabs(lb1).eq.41) )go to 70
 c
 c annhilation of cascade,cascade-bar, omega,omega-bar
 c
-clin-6/2013: this subroutine includes pi & eta (not rho or omega mesons):
 * K- + La/Si <-- cascade + pi(eta,rho,omega)
 * K+ + La/Si(bar) <-- cascade-bar + pi(eta,rho,omega)
        if( (((lb1.ge.3.and.lb1.le.5).or.lb1.eq.0) 
@@ -24611,13 +21422,7 @@ c     but these two factors cancel out in the ratio pii/pff:
      &            sqrt((srt**2-(asap+akap)**2)*(srt**2-(asap-akap)**2))
 c 
          sigeta = 0.
-clin-6/2013 forbidden charge states:
-c        if(srt .gt. (acas+aeta))then
-        if((ianti.eq.0.and.(netq.gt.0.or.netq.lt.-1))
-     1        .or.(ianti.eq.1.and.(netq.gt.1.or.netq.lt.0))) then
-           sigeta=0.
-        elseif(srt .gt. (acas+aeta))then
-c
+        if(srt .gt. (acas+aeta))then
            srrt = srt - (acas+aeta) + (amn+akap)
          pkaon = sqrt(((srrt**2-(amn**2+akap**2))/2./amn)**2 - akap**2)
             sigca = 1.5*( akNPsg(pkaon)+akNPsg(pkaon) )
@@ -24625,17 +21430,7 @@ c
          sigeta = cmat*
      &            sqrt((srt**2-(acas+aeta)**2)*(srt**2-(acas-aeta)**2))/
      &            sqrt((srt**2-(asap+akap)**2)*(srt**2-(asap-akap)**2))
-
-cma-ch-04/18 change for iblock=727 for K-bar+sigma-->cascade+eta
-        if((iabs(lb1).ge.15 .and. iabs(lb1).le.17).or.
-     &  (iabs(lb2).ge.15 .and. iabs(lb2).le.17)) then
-          chratio=6./4.
-          sigeta=sigeta*chratio
         endif
-c        if((lb1.eq.17 .and. lb2.eq.22).or.
-c     &  (lb2.eq.17 .and. lb1.eq.22))sigeta=0.
-        endif
-
 c
          sigca = sigpi + sigeta
          sigpe = 0.
@@ -24646,68 +21441,29 @@ c        if(iperts .eq. 1) sigpe = 40.   !! perturbative xsecn
          dsr = ds + 0.1
          ec = (em1+em2+0.02)**2
          call distce(i1,i2,dsr,ds,dt,ec,srt,ic,px,py,pz)
-         if(ic .eq. -1)return
-         brpp = sigca/sig
+           if(ic .eq. -1)return
+          brpp = sigca/sig
 c
-clin-6/2013:
-cc else particle production
-c          if( (lb1.ge.14.and.lb1.le.17) .or.
-c     &          (lb2.ge.14.and.lb2.le.17) )then
-cc   !! cascade- or cascde0
-c            lbpp1 = 40 + int(2*RANART(NSEED))
-c          else
-c* elseif(lb1 .eq. -14 .or. lb2 .eq. -14)
-cc     !! cascade-bar- or cascde0 -bar
-c            lbpp1 = -40 - int(2*RANART(NSEED))
-c          endif
-c              empp1 = acas
-c           if(RANART(NSEED) .lt. sigpi/sigca)then
-cc    !! pion
-c            lbpp2 = 3 + int(3*RANART(NSEED))
-c            empp2 = 0.138
-c           else
-cc    !! eta
-c            lbpp2 = 0
-c            empp2 = aeta
-c           endif        
-         if(RANART(NSEED) .lt. sigpi/sigca)then
+c else particle production
+          if( (lb1.ge.14.and.lb1.le.17) .or.
+     &          (lb2.ge.14.and.lb2.le.17) )then
+c   !! cascade- or cascde0
+            lbpp1 = 40 + int(2*RANART(NSEED))
+          else
+* elseif(lb1 .eq. -14 .or. lb2 .eq. -14)
+c     !! cascade-bar- or cascde0 -bar
+            lbpp1 = -40 - int(2*RANART(NSEED))
+          endif
+              empp1 = acas
+           if(RANART(NSEED) .lt. sigpi/sigca)then
 c    !! pion
-            if(netq0.eq.-2) then
-               lbpp1=40
-               lbpp2=3
-            elseif(netq0.eq.-1) then
-               if(RANART(NSEED).lt.0.5)then
-                  lbpp1=41
-                  lbpp2=3
-               else
-                  lbpp1=40
-                  lbpp2=4
-               endif
-            elseif(netq0.eq.0) then
-               if(RANART(NSEED).lt.0.5)then
-                  lbpp1=41
-                  lbpp2=4
-               else
-                  lbpp1=40
-                  lbpp2=5
-               endif
-            elseif(netq0.eq.1) then
-               lbpp1=41
-               lbpp2=5
-            endif
-            empp2=0.138
-         else
+            lbpp2 = 3 + int(3*RANART(NSEED))
+            empp2 = 0.138
+           else
 c    !! eta
-            lbpp1=41+netq0
-            lbpp2=0
-            empp2=aeta
-         endif        
-         empp1=acas
-         if(ianti.eq.1) then
-            lbpp1=-lbpp1
-            if(lbpp2.eq.3.or.lbpp2.eq.5) lbpp2=8-lbpp2
-         endif
-c
+            lbpp2 = 0
+            empp2 = aeta
+           endif        
 c* check real process of cascade(bar) and pion formation
           if(RANART(NSEED) .lt. brpp)then
 c       !! real process flag
@@ -24743,7 +21499,6 @@ c  !! only pion
          if(srt .lt. (aome+ames))return 
           srrt = srt - (aome+ames) + (amn+akap)
          pkaon = sqrt(((srrt**2-(amn**2+akap**2))/2./amn)**2 - akap**2)
-clin-6/2013: note that --> Om + eta was commented out and not performed.
 c use K(bar) + Ca --> Om + eta  xsecn same as  K(bar) + N --> Si + Pi
 *  as Omega have no resonances
 c** using same matrix elements as K-bar + N -> Si + pi
@@ -24754,9 +21509,6 @@ c** using same matrix elements as K-bar + N -> Si + pi
         sigom = cmat*
      &           sqrt((srt**2-(aome+ames)**2)*(srt**2-(aome-ames)**2))/
      &           sqrt((srt**2-(acap+akap)**2)*(srt**2-(acap-akap)**2))
-        if((lb1.eq.40 .and. lb2.eq.21).or.
-     &  (lb2.eq.40 .and. lb1.eq.21))sigom=0.
-
           sigpe = 0.
 clin-2/25/03 disable the perturb option:
 c         if(iperts .eq. 1) sigpe = 40.   !! perturbative xsecn
@@ -24768,30 +21520,21 @@ c         if(iperts .eq. 1) sigpe = 40.   !! perturbative xsecn
            if(ic .eq. -1)return
            brpp = sigom/sig
 c
-clin-6/2013:
-cc else particle production
-c           if( (lb1.ge.40.and.lb1.le.41) .or.
-c     &           (lb2.ge.40.and.lb2.le.41) )then
-cc    !! omega
-c            lbpp1 = 45
-c           else
-c* elseif(lb1 .eq. -40 .or. lb2 .eq. -40)
-cc    !! omega-bar
-c            lbpp1 = -45
-c           endif
-c           empp1 = aome
-c*           lbpp2 = 0    !! eta
-cc    !! pion
-c           lbpp2 = 3 + int(3*RANART(NSEED))
-c           empp2 = ames
-           lbpp1=45
-           empp1=aome
-           lbpp2=5+netq0
-           empp2=ames
-           if(ianti.eq.1) then
-              lbpp1=-lbpp1
-              if(lbpp2.eq.3.or.lbpp2.eq.5) lbpp2=8-lbpp2
+c else particle production
+           if( (lb1.ge.40.and.lb1.le.41) .or.
+     &           (lb2.ge.40.and.lb2.le.41) )then
+c    !! omega
+            lbpp1 = 45
+           else
+* elseif(lb1 .eq. -40 .or. lb2 .eq. -40)
+c    !! omega-bar
+            lbpp1 = -45
            endif
+           empp1 = aome
+*           lbpp2 = 0    !! eta
+c    !! pion
+           lbpp2 = 3 + int(3*RANART(NSEED))
+           empp2 = ames
 c
 c* check real process of omega(bar) and pion formation
            xrand=RANART(NSEED)
@@ -24808,7 +21551,7 @@ c   !! pion formed with prob 1.
             proper(i2) = 1.
           elseif(xrand.lt.brpp) then
 c else omega(bar) formed perturbatively and cascade destroyed
-             e(idp)=0.
+             e(idp) = 0.
           endif
              go to 700
             
@@ -24831,18 +21574,7 @@ c  !! using K only
             akal = aka
 c
          alas = ala
-clin-6/2013 forbidden charge states for pi Cascade -> Kbar +Lambda:
-c       if(srt .le. (alas+aka))return
-       if(srt .le. (alas+aka)) then
-          return
-clin-4/2018:
-c       elseif((ianti.eq.0.and.(netq.gt.0.or.netq.lt.-1))
-c     1         .or.(ianti.eq.1.and.(netq.gt.1.or.netq.lt.0))) then
-       elseif(netq0.gt.0.or.netq0.lt.-1) then
-c
-          sigcal=0.
-       else
-c
+       if(srt .le. (alas+aka))return
            srrt = srt - (acap+app) + (amn+aka)
          pkaon = sqrt(((srrt**2-(amn**2+aka**2))/2./amn)**2 - aka**2)
 c** using same matrix elements as K-bar + N -> La/Si + pi
@@ -24860,18 +21592,6 @@ c       !! eta
         sigcal = sigca*dfr*(srt**2-(alas+aka)**2)*
      &           (srt**2-(alas-aka)**2)/(srt**2-(acap+app)**2)/
      &           (srt**2-(acap-app)**2)
-
-cma-ch-04/18 change for iblock=727 for pi+cascade-->K-bar+Lambda
-        if((lb1.ge.3 .and. lb1.le.5).or.
-     &       (lb2.ge.3 .and. lb2.le.5)) then
-           chratio=6./4.
-           sigcal=sigcal*chratio
-        endif
-ctest on
-c        write(99,*) lb1,lb2,sigcal,netq,netq0,ianti
-
-clin-6/2013:
-      endif
 c
           alas = ASA
        if(srt .le. (alas+aka))then
@@ -24922,68 +21642,27 @@ c else pert. produced cascade(bar) is annhilated OR real process
 c
 * DECIDE LAMBDA OR SIGMA PRODUCTION
 c
-clin-6/2013:
-c       IF(sigcal/sig .GT. RANART(NSEED))THEN  
-c          if(lb1.eq.40.or.lb1.eq.41.or.lb2.eq.40.or.lb2.eq.41)then
-c          lbpp1 = 21
-c           lbpp2 = 14
-c          else
-c           lbpp1 = 23
-c           lbpp2 = -14
-c          endif
-c         alas = ala
-c       ELSE
-c          if(lb1.eq.40.or.lb1.eq.41.or.lb2.eq.40.or.lb2.eq.41)then
-c           lbpp1 = 21
-c            lbpp2 = 15 + int(3 * RANART(NSEED))
-c          else
-c            lbpp1 = 23
-c            lbpp2 = -15 - int(3 * RANART(NSEED))
-c          endif
-c         alas = ASA       
-c        ENDIF
-c             empp1 = aka  
-c             empp2 = alas 
        IF(sigcal/sig .GT. RANART(NSEED))THEN  
-c     Lambda production:
-          lbpp1=22+netq0
-          lbpp2=14
-          alas=ala
-       ELSE
-c     Sigma production:
-          if(netq0.eq.-2) then
-             lbpp1=21
-             lbpp2=15
-          elseif(netq0.eq.-1) then
-             if(RANART(NSEED).lt.0.5)then
-                lbpp1=21
-                lbpp2=16
-             else
-                lbpp1=22
-                lbpp2=15
-             endif
-          elseif(netq0.eq.0) then
-             if(RANART(NSEED).lt.0.5)then
-                lbpp1=21
-                lbpp2=17
-             else
-                lbpp1=22
-                lbpp2=16
-             endif
-          elseif(netq0.eq.1) then
-             lbpp1=22
-             lbpp2=17
+          if(lb1.eq.40.or.lb1.eq.41.or.lb2.eq.40.or.lb2.eq.41)then
+          lbpp1 = 21
+           lbpp2 = 14
+          else
+           lbpp1 = 23
+           lbpp2 = -14
           endif
-          alas=ASA       
-       ENDIF
-       if(ianti.eq.1) then
-c     K- -> K+ and K0 -> K0bar for anti-baryon channels:
-          lbpp1=lbpp1+2
-c     B -> Bbar for anti-baryon channels:
-          lbpp2=-lbpp2
-       endif
-       empp1=aka  
-       empp2=alas 
+         alas = ala
+       ELSE
+          if(lb1.eq.40.or.lb1.eq.41.or.lb2.eq.40.or.lb2.eq.41)then
+           lbpp1 = 21
+            lbpp2 = 15 + int(3 * RANART(NSEED))
+          else
+            lbpp1 = 23
+            lbpp2 = -15 - int(3 * RANART(NSEED))
+          endif
+         alas = ASA       
+        ENDIF
+             empp1 = aka  
+             empp2 = alas 
 c
 c check for real process for L/S(bar) and K(bar) formation
           if(RANART(NSEED) .lt. proper(idp))then
@@ -25001,7 +21680,7 @@ c   !! L/S(bar) formed with prob 1.
              go to 700
            else
 c else only cascade(bar) annhilation & go out
-            e(idp)=0.
+            e(idp) = 0.
            endif
           return
 c
@@ -25040,13 +21719,7 @@ c    !! pion
         sigom = sigom*dfr*(srt**2-(acas+aka)**2)*
      &           (srt**2-(acas-aka)**2)/(srt**2-(aomp+app)**2)/
      &           (srt**2-(aomp-app)**2)
-c
-cma-ch-04/18 change for iblock=727 for pi+Omega-->K-bar+Cascade
-        chratio=1.
-        sigom=sigom*chratio
-        if((lb1.eq.45 .and. lb2.eq.5).or.
-     &  (lb2.eq.45 .and. lb1.eq.5))sigom=0.
-
+c                                                                         
          brpp = 1.
          ds = sqrt(sigom/31.4)
          dsr = ds + 0.1
@@ -25069,42 +21742,20 @@ c  !! elastic cross section of 20 mb
 c
 c else pert. produced omega(bar) annhilated  OR real process
 c annhilate only pert. omega, rest from hijing go out WITHOUT annhil.
-clin-6/2013:
-c           if(lb1.eq.45 .or. lb2.eq.45)then
-cc  !! Ca
-c             lbpp1 = 40 + int(2*RANART(NSEED))
-cc   !! K-
-c             lbpp2 = 21
-c            else
-c* elseif(lb1 .eq. -45 .or. lb2 .eq. -45)
-cc    !! Ca-bar
-c            lbpp1 = -40 - int(2*RANART(NSEED))
-cc      !! K+
-c            lbpp2 = 23
-c           endif
-c           empp1 = acas
-c           empp2 = aka  
-       if(netq0.eq.-2) then
-          lbpp1=40
-          lbpp2=21
-       elseif(netq0.eq.-1) then
-          if(RANART(NSEED).lt.0.5)then
-             lbpp1=40
-             lbpp2=22
-          else
-             lbpp1=41
-             lbpp2=21
-          endif
-       elseif(netq0.eq.0) then
-          lbpp1=41
-          lbpp2=22
-       endif
-       if(ianti.eq.1) then
-          lbpp1=-lbpp1
-          lbpp2=lbpp2+2
-       endif
-       empp1=acas
-       empp2=aka  
+           if(lb1.eq.45 .or. lb2.eq.45)then
+c  !! Ca
+             lbpp1 = 40 + int(2*RANART(NSEED))
+c   !! K-
+             lbpp2 = 21
+            else
+* elseif(lb1 .eq. -45 .or. lb2 .eq. -45)
+c    !! Ca-bar
+            lbpp1 = -40 - int(2*RANART(NSEED))
+c      !! K+
+            lbpp2 = 23
+           endif
+             empp1 = acas
+             empp2 = aka  
 c
 c check for real process for Cas(bar) and K(bar) formation
           if(RANART(NSEED) .lt. proper(idp))then
@@ -25121,7 +21772,7 @@ c   !! K(bar) formed with prob 1.
 c
            else
 c else Cascade(bar)  produced and Omega(bar) annhilated
-            e(idp)=0.
+            e(idp) = 0.
            endif
 c   !! for produced particles
              go to 700
@@ -25236,8 +21887,6 @@ cc      SAVE /EE/
 cc      SAVE /input1/
       COMMON/RNDF77/NSEED
 cc      SAVE /RNDF77/
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 
        PX0=PX
@@ -25363,9 +22012,7 @@ cc      SAVE /BG/
 *---------------------------------------------------------------------------
 c
 clin-8/2008 B+B->Deuteron+Meson cross section in mb:
-clin-6/2013:
-c      subroutine sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
-      subroutine sbbdm(srt,sdprod,lbm,xmm,pfinal)
+      subroutine sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
       PARAMETER (xmd=1.8756,AP1=0.13496,AP2=0.13957,
      1     xmrho=0.770,xmomega=0.782,xmeta=0.548,srt0=2.012)
       common/leadng/lb1,px1,py1,pz1,em1,e1,xfnl,yfnl,zfnl,tfnl,
@@ -25373,15 +22020,7 @@ c      subroutine sbbdm(srt,sdprod,ianti,lbm,xmm,pfinal)
       common /dpi/em2,lb2
       common /para8/ idpert,npertd,idxsec
       COMMON/RNDF77/NSEED
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
-clin-6/2013:
-      if(ianti.eq.1) then
-         netq0=-netq
-      else
-         netq0=netq
-      endif
 c
       sdprod=0.
       sbbdpi=0.
@@ -25409,7 +22048,16 @@ c         em2=1.535
 c      endif
 c
       s=srt**2
-      pinitial=sqrt((s-(em1+em2)**2)*(s-(em1-em2)**2))/2./srt
+
+clin-9/2012: check argument in sqrt():
+      scheck=(s-(em1+em2)**2)*(s-(em1-em2)**2)
+      if(scheck.le.0) then
+         write(99,*) 'scheck50: ', scheck
+         stop
+      endif
+      pinitial=sqrt(scheck)/2./srt
+c      pinitial=sqrt((s-(em1+em2)**2)*(s-(em1-em2)**2))/2./srt
+
       fs=fnndpi(s)
 c     Determine isospin and spin factors for the ratio between 
 c     BB->Deuteron+Meson and Deuteron+Meson->BB cross sections:
@@ -25468,22 +22116,13 @@ c     d pi: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
          xmm=ap1
       ELSE
 c     For baryon resonances, use isospin-averaged cross sections:
-clin-6/2013:
-c         lbm=3+int(3 * RANART(NSEED))
-         lbm=3+netq0
-         if(ianti.eq.1) lbm=8-lbm
-c
+         lbm=3+int(3 * RANART(NSEED))
          if(lbm.eq.4) then
             xmm=ap1
          else
             xmm=ap2
          endif
       ENDIF
-c
-clin-6/2013:
-      if(netq0.gt.2.or.netq0.lt.0) then
-         sbbdpi=0.
-      else
 c
       if(srt.ge.(xmd+xmm)) then
          pfinal=sqrt((s-(xmd+xmm)**2)*(s-(xmd-xmm)**2))/2./srt
@@ -25521,34 +22160,8 @@ c     at the same sqrt(s):
 c
          endif
       endif
-clin-6/2013:
-      endif
-cma-ch-04/18 change for iblock=501 for --->d+pi
-      if((ilb1.ge.1.and.ilb1.le.2.and.ilb2.ge.6.and.ilb2.le.9).or.
-     1 (ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.1.and.ilb2.le.2)) then
-      chratio=8./6.
-      sbbdpi=sbbdpi*chratio
-      endif
-
-      if((ilb1.ge.10.and.ilb1.le.13.and.ilb2.ge.6.and.ilb2.le.9).or.
-     1 (ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.10.and.ilb2.le.13)) then
-      chratio=8./6.
-      sbbdpi=sbbdpi*chratio
-      endif
-
-      if(ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.6.and.ilb2.le.9) then
-      chratio=10./6.
-      sbbdpi=sbbdpi*chratio
-      endif
-cma-ch-04/18-end change for iblock=501 for --->d+pi
-
 c     
 *     d rho: DETERMINE THE CROSS SECTION TO THIS FINAL STATE:
-clin-6/2013:
-      if(netq0.gt.2.or.netq0.lt.0) then
-         sbbdrho=0.
-      else
-c
       if(srt.gt.(xmd+xmrho)) then
          pfinal=sqrt((s-(xmd+xmrho)**2)*(s-(xmd-xmrho)**2))/2./srt
          if(idxsec.eq.1) then
@@ -25566,35 +22179,8 @@ c     The spin- and isospin-averaged factor is 3-times larger for rho:
             sbbdrho=fs*pfinal/pinitial/6.*(pifactor*3.)
          endif
       endif
-clin-6/2013:
-      endif
-
-cma-ch-04/18 change for iblock=501 for --->d+rho
-      if((ilb1.ge.1.and.ilb1.le.2.and.ilb2.ge.6.and.ilb2.le.9).or.
-     1 (ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.1.and.ilb2.le.2)) then
-      chratio=8./6.
-      sbbdrho=sbbdrho*chratio
-      endif
-
-      if((ilb1.ge.10.and.ilb1.le.13.and.ilb2.ge.6.and.ilb2.le.9).or.
-     1 (ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.10.and.ilb2.le.13)) then
-      chratio=8./6.
-      sbbdrho=sbbdrho*chratio
-      endif
-
-      if(ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.6.and.ilb2.le.9) then
-      chratio=10./6.
-      sbbdrho=sbbdrho*chratio
-      endif
-cma-ch-04/18-end change for iblock=501 for --->d+rho
-
 c
 *     d omega: DETERMINE THE CROSS SECTION TO THIS FINAL STATE:
-clin-6/2013:
-      if(netq0.ne.1) then
-         sbbdomega=0.
-      else
-c
       if(srt.gt.(xmd+xmomega)) then
          pfinal=sqrt((s-(xmd+xmomega)**2)*(s-(xmd-xmomega)**2))/2./srt
          if(idxsec.eq.1) then
@@ -25611,51 +22197,8 @@ c
             sbbdomega=fs*pfinal/pinitial/6.*pifactor
          endif
       endif
-clin-6/2013:
-      endif
 c
-
-cma-ch-04/18 change for iblock=501 for --->d+omega
-      if(ilb1.ge.1.and.ilb1.le.2.and.ilb2.ge.1.and.ilb2.le.2) then
-      chratio=3./1.
-      sbbdomega=sbbdomega*chratio
-      endif
-
-      if((ilb1.ge.1.and.ilb1.le.2.and.ilb2.ge.10.and.ilb2.le.13).or.
-     1 (ilb1.ge.10.and.ilb1.le.13.and.ilb2.ge.1.and.ilb2.le.2)) then
-      chratio=3./1.
-      sbbdomega=sbbdomega*chratio
-      endif
-
-      if((ilb1.ge.1.and.ilb1.le.2.and.ilb2.ge.6.and.ilb2.le.9).or.
-     1 (ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.1.and.ilb2.le.2)) then
-      chratio=8./2.
-      sbbdomega=sbbdomega*chratio
-      endif
-
-      if(ilb1.ge.10.and.ilb1.le.13.and.ilb2.ge.10.and.ilb2.le.13)then
-      chratio=3./1.
-      sbbdomega=sbbdomega*chratio
-      endif
-
-      if((ilb1.ge.10.and.ilb1.le.13.and.ilb2.ge.6.and.ilb2.le.9).or.
-     1 (ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.10.and.ilb2.le.13)) then
-      chratio=8./2.
-      sbbdomega=sbbdomega*chratio
-      endif
-
-      if(ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.6.and.ilb2.le.9) then
-      chratio=10./2.
-      sbbdomega=sbbdomega*chratio
-      endif
-cma-ch-04/18-end change for iblock=501 for --->d+omega
-
 *     d eta: DETERMINE THE CROSS SECTION TO THIS FINAL STATE:
-clin-6/2013:
-      if(netq0.ne.1) then
-         sbbdomega=0.
-      else
-c
       if(srt.gt.(xmd+xmeta)) then
          pfinal=sqrt((s-(xmd+xmeta)**2)*(s-(xmd-xmeta)**2))/2./srt
          if(idxsec.eq.1) then
@@ -25672,44 +22215,7 @@ c
             sbbdeta=fs*pfinal/pinitial/6.*(pifactor/3.)
          endif
       endif
-clin-6/2013:
-      endif
 c
-cma-ch-04/18 change for iblock=501 for --->d+eta
-      if(ilb1.ge.1.and.ilb1.le.2.and.ilb2.ge.1.and.ilb2.le.2) then
-      chratio=3./1.
-      sbbdeta=sbbdeta*chratio
-      endif
-
-      if((ilb1.ge.1.and.ilb1.le.2.and.ilb2.ge.10.and.ilb2.le.13).or.
-     1 (ilb1.ge.10.and.ilb1.le.13.and.ilb2.ge.1.and.ilb2.le.2)) then
-      chratio=3./1.
-      sbbdeta=sbbdeta*chratio
-      endif
-
-      if((ilb1.ge.1.and.ilb1.le.2.and.ilb2.ge.6.and.ilb2.le.9).or.
-     1 (ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.1.and.ilb2.le.2)) then
-      chratio=8./2.
-      sbbdeta=sbbdeta*chratio
-      endif
-
-      if(ilb1.ge.10.and.ilb1.le.13.and.ilb2.ge.10.and.ilb2.le.13)then
-      chratio=3./1.
-      sbbdeta=sbbdeta*chratio
-      endif
-
-      if((ilb1.ge.10.and.ilb1.le.13.and.ilb2.ge.6.and.ilb2.le.9).or.
-     1 (ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.10.and.ilb2.le.13)) then
-      chratio=8./2.
-      sbbdeta=sbbdeta*chratio
-      endif
-
-      if(ilb1.ge.6.and.ilb1.le.9.and.ilb2.ge.6.and.ilb2.le.9) then
-      chratio=10./2.
-      sbbdeta=sbbdeta*chratio
-      endif
-cma-ch-04/18-end change for iblock=501 for --->d+eta
-
       sdprod=sbbdpi+sbbdrho+sbbdomega+sbbdeta
 ctest off
 c      write(99,111) srt,sbbdpi,sbbdrho,sbbdomega,sbbdeta,sdprod
@@ -25719,18 +22225,12 @@ c
 c
 c     choose final state and assign masses here:
       x1=RANART(NSEED)
-cma-05/16      if(x1.le.sbbdpi/sdprod) then
-      if(x1.lt.sbbdpi/sdprod) then
+      if(x1.le.sbbdpi/sdprod) then
 c     use the above-determined lbm and xmm.
-cma-05/16      elseif(x1.le.(sbbdpi+sbbdrho)/sdprod) then
-      elseif(x1.lt.(sbbdpi+sbbdrho)/sdprod) then
-clin-6/2013:
-c         lbm=25+int(3*RANART(NSEED))
-         lbm=25+netq0
-         if(ianti.eq.1) lbm=52-lbm
+      elseif(x1.le.(sbbdpi+sbbdrho)/sdprod) then
+         lbm=25+int(3*RANART(NSEED))
          xmm=xmrho
-cma-05/16      elseif(x1.le.(sbbdpi+sbbdrho+sbbdomega)/sdprod) then
-      elseif(x1.lt.(sbbdpi+sbbdrho+sbbdomega)/sdprod) then
+      elseif(x1.le.(sbbdpi+sbbdrho+sbbdomega)/sdprod) then
          lbm=28
          xmm=xmomega
       else
@@ -25742,9 +22242,7 @@ c
       end
 c
 c     Generate angular distribution of Deuteron in the CMS frame:
-clin-6/2013:
-c      subroutine bbdangle(pxd,pyd,pzd,nt,ipert1,ianti,idloop,pfinal,
-      subroutine bbdangle(pxd,pyd,pzd,nt,ipert1,idloop,pfinal,
+      subroutine bbdangle(pxd,pyd,pzd,nt,ipert1,ianti,idloop,pfinal,
      1 dprob1,lbm)
       PARAMETER (PI=3.1415926)
       common/leadng/lb1,px1,py1,pz1,em1,e1,xfnl,yfnl,zfnl,tfnl,
@@ -25753,8 +22251,6 @@ c      subroutine bbdangle(pxd,pyd,pzd,nt,ipert1,ianti,idloop,pfinal,
       COMMON/RNDF77/NSEED
       common /para8/ idpert,npertd,idxsec
       COMMON /AREVT/ IAEVT, IARUN, MISS
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 c     take isotropic distribution for now:
       C1=1.0-2.0*RANART(NSEED)
@@ -25796,9 +22292,7 @@ c
       end
 c
 c     Deuteron+Meson->B+B cross section (in mb)
-clin-6/2013:
-c      subroutine sdmbb(SRT,sdm,ianti)
-      subroutine sdmbb(SRT,sdm)
+      subroutine sdmbb(SRT,sdm,ianti)
       PARAMETER (AMN=0.939457,AMP=0.93828,
      1     AM0=1.232,AM1440=1.44,AM1535=1.535,srt0=2.012)
       common/leadng/lb1,px1,py1,pz1,em1,e1,xfnl,yfnl,zfnl,tfnl,
@@ -25814,15 +22308,7 @@ c      subroutine sdmbb(SRT,sdm,ianti)
      1     sdmss,sdmsp,sdmpp
       common /para8/ idpert,npertd,idxsec
       COMMON/RNDF77/NSEED
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
-clin-6/2013:
-      if(ianti.eq.1) then
-         netq0=-netq
-      else
-         netq0=netq
-      endif
 c
       sdm=0.
       sdmel=0.
@@ -25888,50 +22374,31 @@ c     spins and isospins) for d+Meson elastic at the same sqrt(s)-threshold:
          sdmel=fdpiel(snew)
       endif
 c
-clin-6/2013:
-c*     NN: DETERMINE THE CHARGE STATES OF PARTICLESIN THE FINAL STATE
-c      IF(((lb1.eq.5.or.lb2.eq.5.or.lb1.eq.27.or.lb2.eq.27)
-c     1     .and.ianti.eq.0).or.
-c     2     ((lb1.eq.3.or.lb2.eq.3.or.lb1.eq.25.or.lb2.eq.25)
-c     3     .and.ianti.eq.1))THEN
-c*     (1) FOR Deuteron+(pi+,rho+) -> P+P or DeuteronBar+(pi-,rho-)-> PBar+PBar:
-c         lbnn1=1
-c         lbnn2=1
-c         xmnn1=amp
-c         xmnn2=amp
-clin-6/2013: found bug in the following: ".eq.3" should be ".eq.4":
-c      ELSEIF(lb1.eq.3.or.lb2.eq.3.or.lb1.eq.26.or.lb2.eq.26
-c     1        .or.lb1.eq.28.or.lb2.eq.28.or.lb1.eq.0.or.lb2.eq.0)THEN
-c*     (2) FOR Deuteron+(pi0,rho0,omega,eta) -> N+P 
-c*     or DeuteronBar+(pi0,rho0,omega,eta) ->NBar+PBar:
-c         lbnn1=2
-c         lbnn2=1
-c         xmnn1=amn
-cc         xmnn2=amp
-c      ELSE
-c*     (3) FOR Deuteron+(pi-,rho-) -> N+N or DeuteronBar+(pi+,rho+)-> NBar+NBar:
-c         lbnn1=2
-c         lbnn2=2
-c         xmnn1=amn
-c         xmnn2=amn
-c      ENDIF
-      if(netq0.eq.0) then
-         lbnn1=2
-         lbnn2=2
-         xmnn1=amn
-         xmnn2=amn
-      elseif(netq0.eq.1) then
-         lbnn1=2
-         lbnn2=1
-         xmnn1=amn
-         xmnn2=amp
-      elseif(netq0.eq.2) then
+*     NN: DETERMINE THE CHARGE STATES OF PARTICLESIN THE FINAL STATE
+      IF(((lb1.eq.5.or.lb2.eq.5.or.lb1.eq.27.or.lb2.eq.27)
+     1     .and.ianti.eq.0).or.
+     2     ((lb1.eq.3.or.lb2.eq.3.or.lb1.eq.25.or.lb2.eq.25)
+     3     .and.ianti.eq.1))THEN
+*     (1) FOR Deuteron+(pi+,rho+) -> P+P or DeuteronBar+(pi-,rho-)-> PBar+PBar:
          lbnn1=1
          lbnn2=1
          xmnn1=amp
          xmnn2=amp
-      endif
-c
+      ELSEIF(lb1.eq.3.or.lb2.eq.3.or.lb1.eq.26.or.lb2.eq.26
+     1        .or.lb1.eq.28.or.lb2.eq.28.or.lb1.eq.0.or.lb2.eq.0)THEN
+*     (2) FOR Deuteron+(pi0,rho0,omega,eta) -> N+P 
+*     or DeuteronBar+(pi0,rho0,omega,eta) ->NBar+PBar:
+         lbnn1=2
+         lbnn2=1
+         xmnn1=amn
+         xmnn2=amp
+      ELSE
+*     (3) FOR Deuteron+(pi-,rho-) -> N+N or DeuteronBar+(pi+,rho+)-> NBar+NBar:
+         lbnn1=2
+         lbnn2=2
+         xmnn1=amn
+         xmnn2=amn
+      ENDIF
       if(srt.gt.(xmnn1+xmnn2)) then
          pfinal=sqrt((s-(xmnn1+xmnn2)**2)*(s-(xmnn1-xmnn2)**2))/2./srt
          if(idxsec.eq.1) then
@@ -25958,35 +22425,8 @@ c     at the same sqrt(s):
       endif
 c     
 *     ND: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
-clin-6/2013:
-c      lbnd1=1+int(2*RANART(NSEED))
-c      lbnd2=6+int(4*RANART(NSEED))
-      if(netq0.eq.0) then
-         if(RANART(NSEED).le.0.5) then
-            lbnd1=2
-            lbnd2=7
-         else
-            lbnd1=1
-            lbnd2=6
-         endif
-      elseif(netq0.eq.1) then
-         if(RANART(NSEED).le.0.5) then
-            lbnd1=2
-            lbnd2=8
-         else
-            lbnd1=1
-            lbnd2=7
-         endif
-      elseif(netq0.eq.2) then
-         if(RANART(NSEED).le.0.5) then
-            lbnd1=2
-            lbnd2=9
-         else
-            lbnd1=1
-            lbnd2=8
-         endif
-      endif
-c
+      lbnd1=1+int(2*RANART(NSEED))
+      lbnd2=6+int(4*RANART(NSEED))
       if(lbnd1.eq.1) then
          xmnd1=amp
       elseif(lbnd1.eq.2) then
@@ -26012,25 +22452,8 @@ c     The spin- and isospin-averaged factor is 8-times larger for ND:
       endif
 c
 *     NS: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
-clin-6/2013:
-c      lbns1=1+int(2*RANART(NSEED))
-c      lbns2=10+int(2*RANART(NSEED))
-      if(netq0.eq.0) then
-         lbns1=2
-         lbns2=10
-      elseif(netq0.eq.1) then
-         if(RANART(NSEED).le.0.5) then
-            lbns1=2
-            lbns2=11
-         else
-            lbns1=1
-            lbns2=10
-         endif
-      elseif(netq0.eq.2) then
-         lbns1=1
-         lbns2=11
-      endif
-c
+      lbns1=1+int(2*RANART(NSEED))
+      lbns2=10+int(2*RANART(NSEED))
       if(lbns1.eq.1) then
          xmns1=amp
       elseif(lbns1.eq.2) then
@@ -26055,25 +22478,8 @@ c
       endif
 c
 *     NP: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
-clin-6/2013:
-c      lbnp1=1+int(2*RANART(NSEED))
-c      lbnp2=12+int(2*RANART(NSEED))
-      if(netq0.eq.0) then
-         lbnp1=2
-         lbnp2=12
-      elseif(netq0.eq.1) then
-         if(RANART(NSEED).le.0.5) then
-            lbnp1=2
-            lbnp2=13
-         else
-            lbnp1=1
-            lbnp2=12
-         endif
-      elseif(netq0.eq.2) then
-         lbnp1=1
-         lbnp2=13
-      endif
-c
+      lbnp1=1+int(2*RANART(NSEED))
+      lbnp2=12+int(2*RANART(NSEED))
       if(lbnp1.eq.1) then
          xmnp1=amp
       elseif(lbnp1.eq.2) then
@@ -26098,35 +22504,8 @@ c
       endif
 c
 *     DD: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
-clin-6/2013:
-c      lbdd1=6+int(4*RANART(NSEED))
-c      lbdd2=6+int(4*RANART(NSEED))
-      if(netq0.eq.0) then
-         if(RANART(NSEED).le.0.5) then
-            lbdd1=7
-            lbdd2=7
-         else
-            lbdd1=6
-            lbdd2=8
-         endif
-      elseif(netq0.eq.1) then
-         if(RANART(NSEED).le.0.5) then
-            lbdd1=7
-            lbdd2=8
-         else
-            lbdd1=6
-            lbdd2=9
-         endif
-      elseif(netq0.eq.2) then
-         if(RANART(NSEED).le.0.5) then
-            lbdd1=7
-            lbdd2=9
-         else
-            lbdd1=8
-            lbdd2=8
-         endif
-      endif
-c
+      lbdd1=6+int(4*RANART(NSEED))
+      lbdd2=6+int(4*RANART(NSEED))
       xmdd1=am0
       xmdd2=am0
       if(srt.gt.(xmdd1+xmdd2)) then
@@ -26147,35 +22526,8 @@ c
       endif
 c
 *     DS: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
-clin-6/2013:
-c      lbds1=6+int(4*RANART(NSEED))
-c      lbds2=10+int(2*RANART(NSEED))
-      if(netq0.eq.0) then
-         if(RANART(NSEED).le.0.5) then
-            lbds1=6
-            lbds2=11
-         else
-            lbds1=7
-            lbds2=10
-         endif
-      elseif(netq0.eq.1) then
-         if(RANART(NSEED).le.0.5) then
-            lbds1=7
-            lbds2=11
-         else
-            lbds1=8
-            lbds2=10
-         endif
-      elseif(netq0.eq.2) then
-         if(RANART(NSEED).le.0.5) then
-            lbds1=8
-            lbds2=11
-         else
-            lbds1=9
-            lbds2=10
-         endif
-      endif
-c
+      lbds1=6+int(4*RANART(NSEED))
+      lbds2=10+int(2*RANART(NSEED))
       xmds1=am0
       xmds2=am1440
       if(srt.gt.(xmds1+xmds2)) then
@@ -26196,35 +22548,8 @@ c
       endif
 c
 *     DP: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
-clin-6/2013:
-c      lbdp1=6+int(4*RANART(NSEED))
-c      lbdp2=12+int(2*RANART(NSEED))
-      if(netq0.eq.0) then
-         if(RANART(NSEED).le.0.5) then
-            lbdp1=6
-            lbdp2=13
-         else
-            lbdp1=7
-            lbdp2=12
-         endif
-      elseif(netq0.eq.1) then
-         if(RANART(NSEED).le.0.5) then
-            lbdp1=7
-            lbdp2=13
-         else
-            lbdp1=8
-            lbdp2=12
-         endif
-      elseif(netq0.eq.2) then
-         if(RANART(NSEED).le.0.5) then
-            lbdp1=8
-            lbdp2=13
-         else
-            lbdp1=9
-            lbdp2=12
-         endif
-      endif
-c
+      lbdp1=6+int(4*RANART(NSEED))
+      lbdp2=12+int(2*RANART(NSEED))
       xmdp1=am0
       xmdp2=am1535
       if(srt.gt.(xmdp1+xmdp2)) then
@@ -26245,20 +22570,8 @@ c
       endif
 c
 *     SS: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
-clin-6/2013:
-c      lbss1=10+int(2*RANART(NSEED))
-c      lbss2=10+int(2*RANART(NSEED))
-      if(netq0.eq.0) then
-         lbss1=10
-         lbss2=10
-      elseif(netq0.eq.1) then
-         lbss1=10
-         lbss2=11
-      elseif(netq0.eq.2) then
-         lbss1=11
-         lbss2=11
-      endif
-c
+      lbss1=10+int(2*RANART(NSEED))
+      lbss2=10+int(2*RANART(NSEED))
       xmss1=am1440
       xmss2=am1440
       if(srt.gt.(xmss1+xmss2)) then
@@ -26279,25 +22592,8 @@ c
       endif
 c
 *     SP: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
-clin-6/2013:
-c      lbsp1=10+int(2*RANART(NSEED))
-c      lbsp2=12+int(2*RANART(NSEED))
-      if(netq0.eq.0) then
-         lbsp1=10
-         lbsp2=12
-      elseif(netq0.eq.1) then
-         if(RANART(NSEED).le.0.5) then
-            lbsp1=10
-            lbsp2=13
-         else
-            lbsp1=11
-            lbsp2=12
-         endif
-      elseif(netq0.eq.2) then
-         lbsp1=11
-         lbsp2=13
-      endif
-c
+      lbsp1=10+int(2*RANART(NSEED))
+      lbsp2=12+int(2*RANART(NSEED))
       xmsp1=am1440
       xmsp2=am1535
       if(srt.gt.(xmsp1+xmsp2)) then
@@ -26318,20 +22614,8 @@ c
       endif
 c
 *     PP: DETERMINE THE CHARGE STATES OF PARTICLES IN THE FINAL STATE
-clin-6/2013:
-c      lbpp1=12+int(2*RANART(NSEED))
-c      lbpp2=12+int(2*RANART(NSEED))
-      if(netq0.eq.0) then
-         lbpp1=12
-         lbpp2=12
-      elseif(netq0.eq.1) then
-         lbpp1=12
-         lbpp2=13
-      elseif(netq0.eq.2) then
-         lbpp1=13
-         lbpp2=13
-      endif
-c
+      lbpp1=12+int(2*RANART(NSEED))
+      lbpp2=12+int(2*RANART(NSEED))
       xmpp1=am1535
       xmpp2=am1535
       if(srt.gt.(xmpp1+xmpp2)) then
@@ -26385,9 +22669,7 @@ c
 c
 clin-9/2008 Deuteron+Meson ->B+B and elastic collisions
       SUBROUTINE crdmbb(PX,PY,PZ,SRT,I1,I2,IBLOCK,
-     1     NTAG,sig,NT)
-c     1     NTAG,sig,NT,ianti)
-clin-6/2013:
+     1     NTAG,sig,NT,ianti)
       PARAMETER (MAXSTR=150001,MAXR=1)
       COMMON /AA/R(3,MAXSTR)
       COMMON /BB/ P(3,MAXSTR)
@@ -26411,8 +22693,6 @@ clin-6/2013:
       common /dpisig/sdmel,sdmnn,sdmnd,sdmns,sdmnp,sdmdd,sdmds,sdmdp,
      1     sdmss,sdmsp,sdmpp
       COMMON/RNDF77/NSEED
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 *-----------------------------------------------------------------------
       IBLOCK=0
@@ -26435,8 +22715,7 @@ cccc  Elastic collision or destruction of perturbatively-produced deuterons:
       if((idpert.eq.1.or.idpert.eq.2).and.dpertp(ideut).ne.1.) then
 c     choose reaction channels:
          x1=RANART(NSEED)
-cma-05/16         if(x1.le.sdmel/sig)then
-         if(x1.lt.sdmel/sig)then
+         if(x1.le.sdmel/sig)then
 c     Elastic collisions:
             if(ianti.eq.0) then
                write(91,*) '  d+',lbm,' (pert d M elastic) @nt=',nt
@@ -26445,7 +22724,16 @@ c     Elastic collisions:
                write(91,*) '  d+',lbm,' (pert dbar M elastic) @nt=',nt
      1              ,' @prob=',dpertp(ideut)
             endif
-            pfinal=sqrt((s-(em1+em2)**2)*(s-(em1-em2)**2))/2./srt
+
+clin-9/2012: check argument in sqrt():
+            scheck=(s-(em1+em2)**2)*(s-(em1-em2)**2)
+            if(scheck.lt.0) then
+               write(99,*) 'scheck51: ', scheck
+               scheck=0.
+            endif
+            pfinal=sqrt(scheck)/2./srt
+c            pfinal=sqrt((s-(em1+em2)**2)*(s-(em1-em2)**2))/2./srt
+
             CALL dmelangle(pxn,pyn,pzn,pfinal)
             CALL ROTATE(PX,PY,PZ,Pxn,Pyn,Pzn)
             EdCM=SQRT(E(ideut)**2+Pxn**2+Pyn**2+Pzn**2)
@@ -26487,64 +22775,54 @@ cccc  Destruction of regularly-produced deuterons:
       IBLOCK=502
 c     choose final state and assign masses here:
       x1=RANART(NSEED)
-cma-05/16      if(x1.le.sdmnn/sig)then
-      if(x1.lt.sdmnn/sig)then
+      if(x1.le.sdmnn/sig)then
          lbb1=lbnn1
          lbb2=lbnn2
          xmb1=xmnn1
          xmb2=xmnn2
-cma-05/16      elseif(x1.le.(sdmnn+sdmnd)/sig)then
-      elseif(x1.lt.(sdmnn+sdmnd)/sig)then
+      elseif(x1.le.(sdmnn+sdmnd)/sig)then
          lbb1=lbnd1
          lbb2=lbnd2
          xmb1=xmnd1
          xmb2=xmnd2
-cma-05/16      elseif(x1.le.(sdmnn+sdmnd+sdmns)/sig)then
-      elseif(x1.lt.(sdmnn+sdmnd+sdmns)/sig)then
+      elseif(x1.le.(sdmnn+sdmnd+sdmns)/sig)then
          lbb1=lbns1
          lbb2=lbns2
          xmb1=xmns1
          xmb2=xmns2
-cma-05/16      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp)/sig)then
-      elseif(x1.lt.(sdmnn+sdmnd+sdmns+sdmnp)/sig)then
+      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp)/sig)then
          lbb1=lbnp1
          lbb2=lbnp2
          xmb1=xmnp1
          xmb2=xmnp2
-cma-05/16      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd)/sig)then
-      elseif(x1.lt.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd)/sig)then
+      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd)/sig)then
          lbb1=lbdd1
          lbb2=lbdd2
          xmb1=xmdd1
          xmb2=xmdd2
-cma-05/16      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds)/sig)then
-      elseif(x1.lt.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds)/sig)then
+      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds)/sig)then
          lbb1=lbds1
          lbb2=lbds2
          xmb1=xmds1
          xmb2=xmds2
-cma-05/16      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp)/sig)then
-      elseif(x1.lt.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp)/sig)then
+      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp)/sig)then
          lbb1=lbdp1
          lbb2=lbdp2
          xmb1=xmdp1
          xmb2=xmdp2
-cma-05/16      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp
-      elseif(x1.lt.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp
+      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp
      1        +sdmss)/sig)then
          lbb1=lbss1
          lbb2=lbss2
          xmb1=xmss1
          xmb2=xmss2
-cma-05/16      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp
-      elseif(x1.lt.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp
+      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp
      1        +sdmss+sdmsp)/sig)then
          lbb1=lbsp1
          lbb2=lbsp2
          xmb1=xmsp1
          xmb2=xmsp2
-cma-05/16      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp
-      elseif(x1.lt.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp
+      elseif(x1.le.(sdmnn+sdmnd+sdmns+sdmnp+sdmdd+sdmds+sdmdp
      1        +sdmss+sdmsp+sdmpp)/sig)then
          lbb1=lbpp1
          lbb2=lbpp2
@@ -26564,8 +22842,16 @@ c     Elastic collision:
       E(I2)=xmb2
       lb1=lb(i1)
       lb2=lb(i2)
-      pfinal=sqrt((s-(xmb1+xmb2)**2)*(s-(xmb1-xmb2)**2))/2./srt
-c
+
+clin-9/2012: check argument in sqrt():
+      scheck=(s-(xmb1+xmb2)**2)*(s-(xmb1-xmb2)**2)
+      if(scheck.lt.0) then
+         write(99,*) 'scheck52: ', scheck
+         scheck=0.
+      endif
+      pfinal=sqrt(scheck)/2./srt
+c      pfinal=sqrt((s-(xmb1+xmb2)**2)*(s-(xmb1-xmb2)**2))/2./srt
+
       if(iblock.eq.502) then
          CALL dmangle(pxn,pyn,pzn,nt,ianti,pfinal,lbm)
       elseif(iblock.eq.504) then
@@ -26698,8 +22984,7 @@ c     spins and isospins) for d+Baryon elastic at the same sqrt(s)-threshold:
       end
 clin-9/2008 Deuteron+Baryon elastic collisions
       SUBROUTINE crdbel(PX,PY,PZ,SRT,I1,I2,IBLOCK,
-     1     NTAG,sig,NT)
-clin-6/2013:     1     NTAG,sig,NT,ianti)
+     1     NTAG,sig,NT,ianti)
       PARAMETER (MAXSTR=150001,MAXR=1)
       COMMON /AA/R(3,MAXSTR)
       COMMON /BB/ P(3,MAXSTR)
@@ -26714,8 +22999,6 @@ clin-6/2013:     1     NTAG,sig,NT,ianti)
       COMMON /dpert/dpertt(MAXSTR,MAXR),dpertp(MAXSTR),dplast(MAXSTR),
      1     dpdcy(MAXSTR),dpdpi(MAXSTR,MAXR),dpt(MAXSTR, MAXR),
      2     dpp1(MAXSTR,MAXR),dppion(MAXSTR,MAXR)
-clin-6/2013:
-      COMMON/charge/netq,ianti
       SAVE   
 *-----------------------------------------------------------------------
       IBLOCK=0
@@ -26746,7 +23029,16 @@ cccc  Elastic collision of perturbatively-produced deuterons:
      1           ,' @prob=',dpertp(ideut),p(1,idb),p(2,idb)
      2           ,p(1,ideut),p(2,ideut)
          endif
-         pfinal=sqrt((s-(em1+em2)**2)*(s-(em1-em2)**2))/2./srt
+
+clin-9/2012: check argument in sqrt():
+         scheck=(s-(em1+em2)**2)*(s-(em1-em2)**2)
+         if(scheck.lt.0) then
+            write(99,*) 'scheck53: ', scheck
+            scheck=0.
+         endif
+         pfinal=sqrt(scheck)/2./srt
+c         pfinal=sqrt((s-(em1+em2)**2)*(s-(em1-em2)**2))/2./srt
+
          CALL dbelangle(pxn,pyn,pzn,pfinal)
          CALL ROTATE(PX,PY,PZ,Pxn,Pyn,Pzn)
          EdCM=SQRT(E(ideut)**2+Pxn**2+Pyn**2+Pzn**2)
@@ -26779,7 +23071,15 @@ c     Elastic collision of regularly-produced deuterons:
          write (91,*) ' d+',lbb,' (regular dbar Bbar elastic) @evt#',
      1        iaevt,' @nt=',nt,' lb1,2=',lb1,lb2
       endif
-      pfinal=sqrt((s-(em1+em2)**2)*(s-(em1-em2)**2))/2./srt
+clin-9/2012: check argument in sqrt():
+      scheck=(s-(em1+em2)**2)*(s-(em1-em2)**2)
+      if(scheck.lt.0) then
+         write(99,*) 'scheck54: ', scheck
+         scheck=0.
+      endif
+      pfinal=sqrt(scheck)/2./srt
+c      pfinal=sqrt((s-(em1+em2)**2)*(s-(em1-em2)**2))/2./srt
+
       CALL dbelangle(pxn,pyn,pzn,pfinal)
 *     ROTATE THE MOMENTA OF PARTICLES IN THE CMS OF P1+P2
 c     (This is not needed for isotropic distributions)
@@ -26871,564 +23171,3 @@ c     Cross section of Deuteron+N elastic (in mb):
       endif
       return
       end
-c
-clin-6/2013 final states for (NDN*)(NDN*)->(ND)(LambdaSigma)K:
-       subroutine nnnddd(ic,ianti,netq,lb1f,lb2f,lbpif)
-       COMMON/RNDF77/NSEED
-       SAVE
-       if(ianti.eq.1) then
-          netq0=-netq
-       else
-          netq0=netq
-       endif
-c
-       if(ic.eq.0) then
-c     phi production:
-          lbpif=29
-          if(netq0.eq.0.or.netq0.eq.2) then
-             lb1f=2-netq0/2
-             lb2f=2-netq0/2
-          else
-             lb1f=1
-             lb2f=2
-          endif
-       elseif(ic.eq.1) then
-c     to NLK:
-          lb2f=14
-          if(netq0.eq.0) then
-             lb1f=2
-             lbpif=24
-          elseif(netq0.eq.1) then
-             if(RANART(NSEED).le.0.5) then
-                lb1f=2
-                lbpif=23
-             else
-                lb1f=1
-                lbpif=24
-             endif
-          elseif(netq0.eq.2) then
-             lb1f=1
-             lbpif=23
-          endif
-       elseif(ic.eq.2) then
-c     to NSK:
-          if(netq0.eq.-1) then
-             lb1f=2
-             lb2f=15
-             lbpif=24
-          elseif(netq0.eq.0) then
-             rd=RANART(NSEED)
-             if(rd.le.1./3.) then
-                lb1f=2
-                lb2f=16
-                lbpif=24
-             elseif(rd.le.2./3.) then
-                lb1f=2
-                lb2f=15
-                lbpif=23
-             else
-                lb1f=1
-                lb2f=15
-                lbpif=24
-             endif
-          elseif(netq0.eq.1) then
-             rd=RANART(NSEED)
-             if(rd.le.0.25) then
-                lb1f=2
-                lb2f=16
-                lbpif=23
-             elseif(rd.le.0.5) then
-                lb1f=2
-                lb2f=17
-                lbpif=24
-             elseif(rd.le.0.75) then
-                lb1f=1
-                lb2f=15
-                lbpif=23
-             else
-                lb1f=1
-                lb2f=16
-                lbpif=24
-             endif
-          elseif(netq0.eq.2) then
-             rd=RANART(NSEED)
-             if(rd.le.1./3.) then
-                lb1f=2
-                lb2f=17
-                lbpif=23
-             elseif(rd.le.2./3.) then
-                lb1f=1
-                lb2f=16
-                lbpif=23
-             else
-                lb1f=1
-                lb2f=17
-                lbpif=24
-             endif
-          elseif(netq0.eq.3) then
-             lb1f=1
-             lb2f=17
-             lbpif=23
-          endif
-       elseif(ic.eq.3) then
-c     to DLK:
-          lb2f=14
-          if(netq0.eq.-1) then
-             lb1f=6
-             lbpif=24
-          elseif(netq0.eq.0) then
-             if(RANART(NSEED).le.0.5) then
-                lb1f=6
-                lbpif=23
-             else
-                lb1f=7
-                lbpif=24
-             endif
-          elseif(netq0.eq.1) then
-             if(RANART(NSEED).le.0.5) then
-                lb1f=7
-                lbpif=23
-             else
-                lb1f=8
-                lbpif=24
-             endif
-          elseif(netq0.eq.2) then
-             if(RANART(NSEED).le.0.5) then
-                lb1f=8
-                lbpif=23
-             else
-                lb1f=9
-                lbpif=24
-             endif
-          elseif(netq0.eq.3) then
-             lb1f=9
-             lbpif=23
-          endif
-       elseif(ic.eq.4) then
-c     to DSK:
-          if(netq0.eq.-2) then
-             lb1f=6
-             lb2f=15
-             lbpif=24
-          elseif(netq0.eq.-1) then
-             rd=RANART(NSEED)
-             if(rd.le.1./3.) then
-                lb1f=6
-                lb2f=15
-                lbpif=23
-             elseif(rd.le.2./3.) then
-                lb1f=6
-                lb2f=16
-                lbpif=24
-             else
-                lb1f=7
-                lb2f=15
-                lbpif=24
-             endif
-          elseif(netq0.eq.0) then
-             rd=RANART(NSEED)
-             if(rd.le.0.2) then
-                lb1f=6
-                lb2f=17
-                lbpif=24
-             elseif(rd.le.0.4) then
-                lb1f=6
-                lb2f=16
-                lbpif=23
-             elseif(rd.le.0.6) then
-                lb1f=7
-                lb2f=15
-                lbpif=23
-             elseif(rd.le.0.8) then
-                lb1f=7
-                lb2f=16
-                lbpif=24
-             else
-                lb1f=8
-                lb2f=15
-                lbpif=24
-             endif
-          elseif(netq0.eq.1) then
-             rd=RANART(NSEED)
-             if(rd.le.1./6.) then
-                lb1f=6
-                lb2f=17
-                lbpif=23
-             elseif(rd.le.2./6.) then
-                lb1f=7
-                lb2f=17
-                lbpif=24
-             elseif(rd.le.3./6.) then
-                lb1f=7
-                lb2f=16
-                lbpif=23
-             elseif(rd.le.4./6.) then
-                lb1f=8
-                lb2f=15
-                lbpif=23
-             elseif(rd.le.5./6.) then
-                lb1f=8
-                lb2f=16
-                lbpif=24
-             else
-                lb1f=9
-                lb2f=15
-                lbpif=24
-             endif
-          elseif(netq0.eq.2) then
-             rd=RANART(NSEED)
-             if(rd.le.0.2) then
-                lb1f=7
-                lb2f=17
-                lbpif=23
-             elseif(rd.le.0.4) then
-                lb1f=8
-                lb2f=16
-                lbpif=23
-             elseif(rd.le.0.6) then
-                lb1f=8
-                lb2f=17
-                lbpif=24
-             elseif(rd.le.0.8) then
-                lb1f=9
-                lb2f=15
-                lbpif=23
-             else
-                lb1f=9
-                lb2f=16
-                lbpif=24
-             endif
-          elseif(netq0.eq.3) then
-             rd=RANART(NSEED)
-             if(rd.le.1./3.) then
-                lb1f=8
-                lb2f=17
-                lbpif=23
-             elseif(rd.le.2./3.) then
-                lb1f=9
-                lb2f=17
-                lbpif=24
-             else
-                lb1f=9
-                lb2f=16
-                lbpif=23
-             endif
-          elseif(netq0.eq.4) then
-             lb1f=9
-             lb2f=17
-             lbpif=23
-          endif
-       endif
-c
-       return
-       end
-c
-       subroutine khypmb(ic,ianti,netq,lb1f,lb2f)
-       COMMON/RNDF77/NSEED
-       SAVE
-clin-6/2013:
-       if(ianti.eq.1) then
-          netq0=-netq
-       else
-          netq0=netq
-       endif
-c     
-c     First switch ID (use 2 for ID of proton and 1 for neutron),
-c     so the N isospin-order would be same as N1* and N2*:
-       if(ic.eq.1.or.ic.eq.3.or.ic.eq.4
-     1      .or.ic.eq.5.or.ic.eq.7.or.ic.eq.8) then
-c     to (pi rho) (N N*):
-c     2nd particle needs to be baryon:
-          if(ic.eq.1.or.ic.eq.3.or.ic.eq.4) then
-             istepm=0
-          else
-             istepm=22
-          endif
-c
-          if(ic.eq.1.or.ic.eq.5) then
-             istepb=0
-          elseif(ic.eq.3.or.ic.eq.7) then
-             istepb=9
-          else
-             istepb=11
-          endif
-c
-          if(netq0.eq.-1) then
-             lb1f=3+istepm
-             lb2f=1+istepb
-          elseif(netq0.eq.0) then
-             if(RANART(NSEED).le.0.5) then
-                lb1f=3+istepm
-                lb2f=2+istepb
-             else
-                lb1f=4+istepm
-                lb2f=1+istepb
-             endif
-          elseif(netq0.eq.1) then
-             if(RANART(NSEED).le.0.5) then
-                lb1f=4+istepm
-                lb2f=2+istepb
-             else
-                lb1f=5+istepm
-                lb2f=1+istepb
-             endif
-          else
-             lb1f=5+istepm
-             lb2f=2+istepb
-          endif
-       elseif(ic.eq.2.or.ic.eq.6) then
-c     to (pi rho) Delta:
-          if(ic.eq.2) then
-             istepm=0
-          else
-             istepm=22
-          endif
-c
-          if(netq0.eq.-2) then
-             lb1f=3+istepm
-             lb2f=6
-          elseif(netq0.eq.-1) then
-             if(RANART(NSEED).le.0.5) then
-                lb1f=3+istepm
-                lb2f=7
-             else
-                lb1f=4+istepm
-                lb2f=6
-             endif
-          elseif(netq0.eq.0) then
-             rd=RANART(NSEED)
-             if(rd.le.1./3.) then
-                lb1f=3+istepm
-                lb2f=8
-             elseif(rd.le.2./3.) then
-                lb1f=4+istepm
-                lb2f=7
-             else
-                lb1f=5+istepm
-                lb2f=6
-             endif
-          elseif(netq0.eq.1) then
-             rd=RANART(NSEED)
-             if(rd.le.1./3.) then
-                lb1f=3+istepm
-                lb2f=9
-             elseif(rd.le.2./3.) then
-                lb1f=4+istepm
-                lb2f=8
-             else
-                lb1f=5+istepm
-                lb2f=7
-             endif
-          elseif(netq0.eq.2) then
-             if(RANART(NSEED).le.0.5) then
-                lb1f=4+istepm
-                lb2f=9
-             else
-                lb1f=5+istepm
-                lb2f=8
-             endif
-          else
-             lb1f=5+istepm
-             lb2f=9
-          endif
-       elseif(ic.eq.9.or.ic.eq.11.or.ic.eq.12
-     1         .or.ic.eq.13.or.ic.eq.15.or.ic.eq.16) then
-c     to (omega eta) (N N*):
-          if(ic.eq.9.or.ic.eq.11.or.ic.eq.12) then
-             istepm=28
-          else
-             istepm=0
-          endif
-c
-          if(ic.eq.9.or.ic.eq.13) then
-             istepb=0
-          elseif(ic.eq.11.or.ic.eq.15) then
-             istepb=9
-          else
-             istepb=11
-          endif
-c
-          lb1f=0+istepm
-          lb2f=1+netq0+istepb
-       elseif(ic.eq.10.or.ic.eq.14) then
-          if(ic.eq.10) then
-             istepm=28
-          else
-             istepm=0
-          endif
-c
-          lb1f=0+istepm
-          lb2f=7+netq0
-c     to (omega eta) Delta:
-       elseif(ic.eq.17) then
-          lb1f=29
-          lb2f=1+netq0
-c     to phi N:
-       else
-          write(89,*) 'khypmb has a wrong channel: ',ic
-       endif
-c
-c     switch ID of proton and neutron back to ART definition:
-       if(lb2f.eq.1.or.lb2f.eq.2) lb2f=3-lb2f
-c     antiparticles for mesons if ianti=1:
-       if(ianti.eq.1) then
-          if(lb1f.eq.3.or.lb1f.eq.5) then
-             lb1f=8-lb1f
-          elseif(lb1f.eq.25.or.lb1f.eq.27) then
-             lb1f=52-lb1f
-          endif
-       endif
-c
-       return
-       end
-c
-      function nstrange(lb)
-      COMMON/RNDF77/NSEED
-      SAVE   
-      kf=INVFLV(lb)
-      if(iabs(kf).eq.311.or.iabs(kf).eq.321
-     1     .or.iabs(kf).eq.313.or.iabs(kf).eq.323) then
-         nstrange=-isign(1,kf)
-      elseif(iabs(kf).eq.431.or.iabs(kf).eq.433) then
-         nstrange=-isign(1,kf)
-      elseif(iabs(kf).eq.531.or.iabs(kf).eq.533) then
-         nstrange=isign(1,kf)
-      elseif(iabs(kf).eq.3112.or.iabs(kf).eq.3122
-     1        .or.iabs(kf).eq.3212.or.iabs(kf).eq.3222
-     2        .or.iabs(kf).eq.3114.or.iabs(kf).eq.3214
-     3        .or.iabs(kf).eq.3224
-     4        .or.iabs(kf).eq.4132.or.iabs(kf).eq.4312
-     9        .or.iabs(kf).eq.4322.or.iabs(kf).eq.4324
-     5        .or.iabs(kf).eq.4232.or.iabs(kf).eq.4314) then
-clin-ch-6/2016 continuation line labeled 9 above and below are added.
-         nstrange=isign(1,kf)
-      elseif(iabs(kf).eq.3312.or.iabs(kf).eq.3322
-     9        .or.iabs(kf).eq.4332.or.iabs(kf).eq.4334
-     2        .or.iabs(kf).eq.3314.or.iabs(kf).eq.3324) then
-         nstrange=isign(2,kf)
-      elseif(iabs(kf).eq.3334) then
-         nstrange=isign(3,kf)
-      else
-         nstrange=0
-      endif
-      return
-      end
-
-clin-8/09/10 ctest on check conservation laws in each reaction:
-      subroutine checkq(nt,i1,i2,iblock,netqini,netbini,netsini,
-     1     lb1i,lb2i,irun,nnnini,nnn)
-      PARAMETER (MAXSTR=150001,MAXR=1)
-      COMMON /CC/ E(MAXSTR)
-      COMMON /EE/ ID(MAXSTR),LB(MAXSTR)
-      COMMON   /PD/LPION(MAXSTR,MAXR)
-      SAVE
-      netqfinal=0
-      netbfinal=0
-      netsfinal=0
-      if(e(i1).ne.0) then
-         netsfinal=netsfinal+nstrange(lb(i1))
-         if(iabs(lb(i1)).eq.42) then
-            netqfinal=netqfinal+ISIGN(1,lb(i1))
-         else
-            netqfinal=netqfinal+LUCHGE(INVFLV(lb(i1)))/3
-         endif
-         if(iabs(INVFLV(lb(i1))).gt.1000
-     1        .and.iabs(INVFLV(lb(i1))).lt.10000) then
-            netbfinal=netbfinal+ISIGN(1,INVFLV(lb(i1)))
-         elseif(iabs(INVFLV(lb(i1))).eq.42) then
-            netbfinal=netbfinal+ISIGN(2,lb(i1))
-         endif
-      endif
-      if(e(i2).ne.0) then
-         netsfinal=netsfinal+nstrange(lb(i2))
-         if(iabs(lb(i2)).eq.42) then
-            netqfinal=netqfinal+ISIGN(1,lb(i2))
-         else
-            netqfinal=netqfinal+LUCHGE(INVFLV(lb(i2)))/3
-         endif
-         if(iabs(INVFLV(lb(i2))).gt.1000
-     1        .and.iabs(INVFLV(lb(i2))).lt.10000) then
-            netbfinal=netbfinal+ISIGN(1,INVFLV(lb(i2)))
-         elseif(iabs(INVFLV(lb(i2))).eq.42) then
-            netbfinal=netbfinal+ISIGN(2,lb(i2))
-         endif
-      endif
-      if((nnn-nnnini).ge.1) then
-         do imore=nnnini+1,nnn
-            lbpion=LPION(imore,IRUN)
-            netsfinal=netsfinal+nstrange(lbpion)
-            if(iabs(lbpion).eq.42) then
-               netqfinal=netqfinal+ISIGN(1,lbpion)
-            else
-               netqfinal=netqfinal+LUCHGE(INVFLV(lbpion))/3
-            endif
-            if(iabs(lbpion).gt.1000
-     1           .and.iabs(lbpion).lt.10000) then
-               netbfinal=netbfinal+ISIGN(1,lbpion)
-            elseif(iabs(lbpion).eq.42) then
-               netbfinal=netbfinal+ISIGN(2,lbpion)
-            endif
-         enddo
-      endif
-c
-cma-ch-04/18-writeallchannels
-      if(netqfinal.ne.netqini) then
-c     inelastic scatterings that violates charge conservation:
-         write (6,*) 'netcharge violated below: ----->'
-c         ifile=6
-      elseif(netbfinal.ne.netbini.or.netsfinal.ne.netsini) then
-         write (6,*) 'netb or nets violated below: ----->'
-c         ifile=6
-      else
-cc     inelastic scatterings that respects charge conservation:
-cc         ifile=89
-c         return
-      endif
-c
-      ifile=89
-
-c     write out main particles of the reaction:
-      if(e(i1).ne.0.and.e(i2).ne.0) then
-c         write(ifile,*) nt,iblock,INVFLV(lb1i),INVFLV(lb2i),'->',
-c     1   INVFLV(lb(i1)),INVFLV(lb(i2)),netqini,netqfinal,i1,i2
-cma-ch-04/18-writeallchannels         write(ifile,*) nt,iblock,lb1i,lb2i,'->',
-cma-ch-04/18-writeallchannels     1   lb(i1),lb(i2),netqini,netqfinal,i1,i2
-
-clin-6/2018:         write(ifile,*) iblock,lb1i,lb2i,lb(i1),lb(i2)
-
-      elseif(e(i1).ne.0) then
-c         write(ifile,*) nt,iblock,INVFLV(lb1i),INVFLV(lb2i),'->',
-c     1        INVFLV(lb(i1)),i1,i2
-cma-ch-04/18-writeallchannels         write(ifile,*) nt,iblock,lb1i,lb2i,'->',
-cma-ch-04/18-writeallchannels     1        lb(i1),i1,i2
-clin-6/2018:         write(ifile,*) iblock,lb1i,lb2i,lb(i1)
-
-      elseif(e(i2).ne.0) then
-c         write(ifile,*) nt,iblock,INVFLV(lb1i),INVFLV(lb2i),'->',
-c     1        INVFLV(lb(i2)),i1,i2
-cma-ch-04/18-writeallchannels         write(ifile,*) nt,iblock,lb1i,lb2i,'->',
-cma-ch-04/18-writeallchannels     1        lb(i2),i1,i2
-clin-6/2018:         write(ifile,*) iblock,lb1i,lb2i,lb(i2)
-
-      endif
-c     write out extra pions produced in the reaction:
-c      if((nnn-nnnini).ge.1) then
-c         write(ifile,*) 'nnnini,nnn=',nt, nnnini,nnn
-c         write(ifile,*)  ' plus ', nnn-nnnini,' pions:'
-c         do imore=nnnini+1,nnn
-cc            write(ifile,*)  INVFLV(LPION(imore,IRUN))
-c            write(ifile,*)  LPION(imore,IRUN)
-c         enddo
-c      endif
-
-      if(ifile.eq.15) write(ifile,*) 'netb or nets violated:',
-     1     netbini,netbfinal,netsini,netsfinal,nnnini,nnn,
-     2     lb1i,lb2i,'->',lb(i1),lb(i2),iblock
-c     if(netqfinal.ne.netqini)
-c     1              write(11,*)  'netcharge above changed by ',
-c     2              netqfinal-netqini
-clin-8/09/10-end
-
-      return
-      end
-      
