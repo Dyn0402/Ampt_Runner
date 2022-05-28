@@ -1,7 +1,6 @@
 #!/bin/sh
 
 system=`uname -s`
-nrandom=`date '+%d%H%M%S'`
 case $system in
     Linux|LINUX|UNIX|Unix|Darwin|DARWIN)
 #	echo "You are running operating system" $system
@@ -17,11 +16,11 @@ case $system in
 #	BINUMBER2=$(( $LOBOUND + ($HIBOUND * $RANDOM) / ($RANDMAX + 1) ))
 #	BINUMBER=$(( $BINUMBER1*10000+$BINUMBER2 ))
 #	echo $BINUMBER > nseed_runtime
-	echo $nrandom > nseed_runtime
+	echo $1 > nseed_runtime
 	;;
     OSF*)
 #	echo "You are running operating system" $system
-	echo $nrandom > nseed_runtime
+	echo $1 > nseed_runtime
 	;;
     *)
 	echo "You are running operating system other than Linux/UNIX/OSF"
@@ -30,7 +29,7 @@ case $system in
 	;;
 esac
 
-# rm -f *.o
+rm -f *.o
 #make
 cp input.ampt ana/
 echo "#  AMPT started at " `date` > start.time

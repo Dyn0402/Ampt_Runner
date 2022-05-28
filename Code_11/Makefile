@@ -3,7 +3,7 @@ hijing1.383_ampt.o hipyset1.35.o zpc.o linana.o
 F77=gfortran
 
 ampt: $(OBJ)
-	$(F77) -o ampt -O $(OBJ) $(LIBS)
+	$(F77) -o ampt -O $(OBJ)
 
 main.o: main.f
 	$(F77)  -c -O main.f
