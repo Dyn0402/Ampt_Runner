@@ -103,6 +103,8 @@ int makeAmptroot(string run_id)
 
 		event += 1;
 
+		cout << "Event num " << evn << " event count " << event << endl;
+
 		//****************************ampt.dat particle loop**************
 		qx = 0.; qy = 0.;
 		refmult = 0; refmult2 = 0; refmult3 = 0;
