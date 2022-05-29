@@ -12,7 +12,7 @@ A              ! TARG
 4		! ISOFT (D=1): select Default AMPT or String Melting(see below)
 150		! NTMAX: number of timesteps (D=150), see below
 0.2		! DT: timestep in fm (hadron cascade time= DT*NTMAX) (D=0.2)
-0.30	        ! PARJ(41): parameter a in Lund symmetric splitting function
+0.55	        ! PARJ(41): parameter a in Lund symmetric splitting function
 0.15            ! PARJ(42): parameter b in Lund symmetric splitting function
 1	        ! (D=1,yes;0,no) flag for popcorn mechanism(netbaryon stopping)
 1.0	        ! PARJ(5) to control BMBbar vs BBbar in popcorn (D=1.0)
