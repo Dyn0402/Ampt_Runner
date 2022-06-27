@@ -32,6 +32,7 @@
 using namespace std;
 
 const float etamax = 1;
+const int max_ident = 2;
 
 bool IdenticalTrack(float px1, float py1, float pz1, float pid1, float px2, float py2, float pz2, float pid2);
 
@@ -71,7 +72,7 @@ void CleanTree_rcf(const Char_t *inFile = "placeholder.list", const TString newd
         {
             oldtree->GetEntry(i);
 
-            bool isBadEvent = false;
+            int num_ident = 0;
             float px1, py1, pz1, px2, py2, pz2;
             int   pid1, pid2;
             float eta1, eta2, theta1, theta2, pt1, pt2;
@@ -108,15 +109,13 @@ void CleanTree_rcf(const Char_t *inFile = "placeholder.list", const TString newd
                     if (fabs(eta2) > etamax) continue;
                     if (abs(pid2) == 111 || abs(pid2) == 313) continue;
 
-                    if (IdenticalTrack(px1, py1, pz1, pid1, px2, py2, pz2, pid2)) 
-                    {
-                        isBadEvent = true; 
-                        isCorrupted = true; 
-                        BadEventList.push_back(i);
-                        break;
-                    }
+                    if (IdenticalTrack(px1, py1, pz1, pid1, px2, py2, pz2, pid2)) num_ident += 1;
                 }
-                if (isBadEvent) break;
+            }
+            if (num_ident >= max_ident) {
+                cout << "Event # " << i << " corrupt, num identical: " << num_ident << endl;
+                isCorrupted = true;
+                BadEventList.push_back(i);
             }
         }
 
@@ -146,7 +145,7 @@ void CleanTree_rcf(const Char_t *inFile = "placeholder.list", const TString newd
             oldtree->SetBranchAddress("ninest",   &ninest);
 
             //------------define a root file and tree :------------------------------
-            TFile *fnew = new TFile(newdir+fname,"RECREATE");
+            TFile *fnew = new TFile(newdir+"fix_"+fname,"RECREATE");
             TTree *tr = new TTree("tree","AMPT Data");
 
             //Define event branches:-------------------------------------------
@@ -187,8 +186,8 @@ void CleanTree_rcf(const Char_t *inFile = "placeholder.list", const TString newd
         f->Close();
         delete f; 
 
-        // delete bad input files from ./INPUTFILES/
-        if (isCorrupted) gSystem->Unlink(fullname);         
+        // delete good input files from ./INPUTFILES/
+        if (!isCorrupted) gSystem->Unlink(fullname);
     }
     fin.close();    
     

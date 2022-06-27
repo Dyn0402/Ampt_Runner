@@ -3,8 +3,7 @@
 <job  maxFilesPerProcess="100" simulateSubmission="false" fileListSyntax="xrootd">
     
     <command>
-	stardev
-	root4star -b -q CleanTree_rcf.cpp++\(\"$FILELIST\"\)
+	/star/u/dneff/Software/root/root-6.14.06/obj/bin/root -b -q CleanTree_rcf.cpp++\(\"$FILELIST\"\)
     </command>
     
     <SandBox installer="ZIP">
@@ -14,8 +13,8 @@
     </SandBox>
         
     <Generator>
-        <Location>./log/</Location>
-        <ScriptLocation>./script/</ScriptLocation>
+        <Location>/star/data01/pwg/dneff/AMPT/bad_events/log/</Location>
+        <ScriptLocation>/star/data01/pwg/dneff/AMPT/bad_events/script/</ScriptLocation>
     </Generator>
     
     <!--<input URL="file:/star/data01/pwg/dneff/data/AMPT/min_bias/string_melting/19GeV/&input_dir;"/>-->
@@ -23,6 +22,6 @@
     <output fromScratch="*.root" toURL="file:/star/data01/pwg/xiatong/AMPT/for_Gang/2-7TeV_PbPb/" />
     <output fromScratch="./INPUTFILES/*.root" toURL="file:/star/data01/pwg/xiatong/AMPT/for_Gang/2-7TeV_PbPb/" />
     
-    <stdout URL="file:/star/data01/pwg/xiatong/AMPT/debug/$JOBID.out"/>
-    <stderr URL="file:/star/data01/pwg/xiatong/AMPT/debug/$JOBID.err"/>
+    <stdout URL="file:/star/data01/pwg/dneff/AMPT/bad_events/debug/$JOBID.out"/>
+    <stderr URL="file:/star/data01/pwg/dneff/AMPT/bad_events/debug/$JOBID.err"/>
 </job>
