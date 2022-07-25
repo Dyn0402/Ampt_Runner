@@ -42,7 +42,6 @@ int makeAmptroot(string run_id)
 	// Input file variables
 	int evn, tn, nov, npp, npt, nesp, ninesp, nest, ninest, pid;  // for ampt.dat event
 	float px, py, pz, mass, x, y, z, t;  // for ampt.dat track
-	float empty;  // For last entry on event line
 
 
 	// Output tree variables
@@ -97,13 +96,11 @@ int makeAmptroot(string run_id)
 
 	while(infile)
 	{// event loop
-		infile>>evn>>tn>>nov>>imp>>npp>>npt>>nesp>>ninesp>>nest>>ninest>>empty;
+		infile>>evn>>tn>>nov>>imp>>npp>>npt>>nesp>>ninesp>>nest>>ninest;
 
 		if(infile.eof())  break;
 
 		event += 1;
-
-		cout << "Event num " << evn << " event count " << event << endl;
 
 		//****************************ampt.dat particle loop**************
 		qx = 0.; qy = 0.;

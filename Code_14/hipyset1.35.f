@@ -662,9 +662,7 @@ C...Form two particles from flavours of lowest-mass system, if feasible.
       IF(P(N+2,5)+P(N+3,5)+PARJ(64).GE.PECM) GOTO 260   
     
 C...Perform two-particle decay of jet system, if possible.  
-clin-5/2012:
-c      IF(PECM.GE.0.02d0*DPC(4)) THEN  
-      IF(dble(PECM).GE.0.02d0*DPC(4)) THEN  
+      IF(PECM.GE.0.02d0*DPC(4)) THEN  
         PA=SQRT((PECM**2-(P(N+2,5)+P(N+3,5))**2)*(PECM**2-  
      &  (P(N+2,5)-P(N+3,5))**2))/(2.*PECM)  
         UE(3)=2.*RLU(0)-1.  
@@ -1181,9 +1179,7 @@ C...Junction strings: find new transverse directions.
         DP(1,4)=SQRT(DP(1,1)**2+DP(1,2)**2+DP(1,3)**2)  
         DP(2,4)=SQRT(DP(2,1)**2+DP(2,2)**2+DP(2,3)**2)  
         DHC12=DFOUR(1,2)    
-clin-5/2012:
-c        IF(DHC12.LE.1E-2) THEN  
-        IF(DHC12.LE.1D-2) THEN  
+        IF(DHC12.LE.1E-2) THEN  
           P(IN(1)+2,4)=P(IN(1)+2,3) 
           P(IN(1)+2,1)=0.   
           IN(1)=IN(1)+4 
@@ -1243,9 +1239,7 @@ C...Junction strings: find coefficients for Gamma expression.
     
 C...Junction strings: solve (m2, Gamma) equation system for energies.   
       DHS1=DHM(3)*DHG(4)-DHM(4)*DHG(3)  
-clin-5/2012:
-c      IF(ABS(DHS1).LT.1E-4) GOTO 270    
-      IF(DABS(DHS1).LT.1D-4) GOTO 270    
+      IF(ABS(DHS1).LT.1E-4) GOTO 270    
       DHS2=DHM(4)*(dble(GAM(3))-DHG(1))-DHM(2)*DHG(3)-DHG(4)* 
      &(dble(P(I,5))**2-DHM(1))+DHG(2)*DHM(3)  
       DHS3=DHM(2)*(dble(GAM(3))-DHG(1))
@@ -1588,9 +1582,7 @@ C...Find new transverse directions (i.e. spacelike string vectors).
         DP(1,4)=DSQRT(DP(1,1)**2+DP(1,2)**2+DP(1,3)**2)  
         DP(2,4)=DSQRT(DP(2,1)**2+DP(2,2)**2+DP(2,3)**2)  
         DHC12=DFOUR(1,2)    
-clin-5/2012:
-c        IF(DHC12.LE.1E-2) THEN  
-        IF(DHC12.LE.1D-2) THEN  
+        IF(DHC12.LE.1E-2) THEN  
           P(IN(JT)+2,4)=P(IN(JT)+2,3)   
           P(IN(JT)+2,JT)=0. 
           IN(JT)=IN(JT)+4*JS    
@@ -1652,9 +1644,7 @@ C...Find coefficients for Gamma expression.
     
 C...Solve (m2, Gamma) equation system for energies taken.   
       DHS1=DHM(JR+1)*DHG(4)-DHM(4)*DHG(JR+1)    
-clin-5/2012:
-c      IF(ABS(DHS1).LT.1E-4) GOTO 550    
-      IF(DABS(DHS1).LT.1D-4) GOTO 550    
+      IF(ABS(DHS1).LT.1E-4) GOTO 550    
       DHS2=DHM(4)*(dble(GAM(3))-DHG(1))-DHM(JT+1)*DHG(JR+1)-DHG(4)*   
      &(dble(P(I,5))**2-DHM(1))+DHG(JT+1)*DHM(JR+1)    
       DHS3=DHM(JT+1)*(dble(GAM(3))-DHG(1))-DHG(JT+1)
@@ -4095,9 +4085,7 @@ C...Weight with azimuthal distribution, if required.
   370   DPT(5,J)=DPT(3,J)-DPMD*DPT(1,J)/DPMM    
         DPT(4,4)=DSQRT(DPT(4,1)**2+DPT(4,2)**2+DPT(4,3)**2)  
         DPT(5,4)=DSQRT(DPT(5,1)**2+DPT(5,2)**2+DPT(5,3)**2)  
-clin-5/2012:
-c        IF(MIN(DPT(4,4),DPT(5,4)).GT.0.1*PARJ(82)) THEN 
-        IF(sngl(MIN(DPT(4,4),DPT(5,4))).GT.(0.1*PARJ(82))) THEN 
+        IF(MIN(DPT(4,4),DPT(5,4)).GT.0.1*PARJ(82)) THEN 
            CAD=sngl((DPT(4,1)*DPT(5,1)+DPT(4,2)*DPT(5,2)+ 
      &    DPT(4,3)*DPT(5,3))/(DPT(4,4)*DPT(5,4)))
           IF(MAZIP.NE.0) THEN   
@@ -4970,9 +4958,7 @@ C...Check range of rotation/boost.
       ENDIF 
     
 C...Rotate, typically from z axis to direction (theta,phi). 
-clin-5/2012:
-c      IF(THE**2+PHI**2.GT.1E-20) THEN   
-      IF((THE**2+PHI**2).GT.1E-20) THEN   
+      IF(THE**2+PHI**2.GT.1E-20) THEN   
         ROT(1,1)=COS(THE)*COS(PHI)  
         ROT(1,2)=-SIN(PHI)  
         ROT(1,3)=SIN(THE)*COS(PHI)  
@@ -4994,9 +4980,7 @@ c      IF(THE**2+PHI**2.GT.1E-20) THEN
       ENDIF 
     
 C...Boost, typically from rest to momentum/energy=beta. 
-clin-5/2012:
-c      IF(DBX**2+DBY**2+DBZ**2.GT.1E-20) THEN    
-      IF((DBX**2+DBY**2+DBZ**2).GT.1D-20) THEN    
+      IF(DBX**2+DBY**2+DBZ**2.GT.1E-20) THEN    
         DB=SQRT(DBX**2+DBY**2+DBZ**2)   
         IF(DB.GT.0.99999999D0) THEN 
 C...Rescale boost vector if too close to unity. 
@@ -5061,9 +5045,7 @@ C...Check range of rotation/boost.
       ENDIF 
     
 C...Rotate, typically from z axis to direction (theta,phi). 
-clin-5/2012:
-c      IF(THE**2+PHI**2.GT.1E-20) THEN   
-      IF((THE**2+PHI**2).GT.1E-20) THEN   
+      IF(THE**2+PHI**2.GT.1E-20) THEN   
         ROT(1,1)=COS(THE)*COS(PHI)  
         ROT(1,2)=-SIN(PHI)  
         ROT(1,3)=SIN(THE)*COS(PHI)  
@@ -5083,9 +5065,7 @@ c      IF(THE**2+PHI**2.GT.1E-20) THEN
       ENDIF 
     
 C...Boost, typically from rest to momentum/energy=beta. 
-clin-5/2012:
-c      IF(DBX**2+DBY**2+DBZ**2.GT.1E-20) THEN    
-      IF((DBX**2+DBY**2+DBZ**2).GT.1D-20) THEN    
+      IF(DBX**2+DBY**2+DBZ**2.GT.1E-20) THEN    
         DB=SQRT(DBX**2+DBY**2+DBZ**2)   
         IF(DB.GT.0.99999999D0) THEN 
 C...Rescale boost vector if too close to unity. 
@@ -6070,9 +6050,6 @@ C...differential cross-sections to be used for weighting.
       DATA CHMO/'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep',  
      &'Oct','Nov','Dec'/, CHLH/'lepton','hadron'/   
     
-clin-12/2012 correct NN differential cross section in HIJING:
-      WRITE(MSTU(11),*) 'In PYINIT: BEAM,TARGET= ',BEAM,TARGET
-
 C...Write headers.  
 C      IF(MSTP(122).GE.1) WRITE(MSTU(11),1000) MSTP(181),MSTP(182),  
 C     &MSTP(185),CHMO(MSTP(184)),MSTP(183)   
@@ -14665,8 +14642,7 @@ C...FERMILAB-Pub-87/100-T, LBL-23504, June, 1987
       COMMON/LUDAT1/MSTU(200),PARU(200),MSTJ(200),PARJ(200) 
       SAVE /LUDAT1/ 
     
-clin-8/2014:
-c      ASINH(X)=LOG(X+SQRT(X**2+1.)) 
+      ASINH(X)=LOG(X+SQRT(X**2+1.)) 
       ACOSH(X)=LOG(X+SQRT(X**2-1.)) 
     
       IF(EPS.LT.0.) THEN    
@@ -14696,8 +14672,7 @@ C...FERMILAB-Pub-87/100-T, LBL-23504, June, 1987
       COMMON/LUDAT1/MSTU(200),PARU(200),MSTJ(200),PARJ(200) 
       SAVE /LUDAT1/ 
     
-clin-8/2014:
-c      ASINH(X)=LOG(X+SQRT(X**2+1.)) 
+      ASINH(X)=LOG(X+SQRT(X**2+1.)) 
       ACOSH(X)=LOG(X+SQRT(X**2-1.)) 
     
       IF(EPS.LT.0.) THEN    
