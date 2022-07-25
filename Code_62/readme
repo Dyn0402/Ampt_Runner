@@ -1,157 +1,89 @@
 AMPT Users' Guide
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-12/2016 test version v1.31t1/2.31t1 (as done in arXiv:1703.02673):
-     * HIJING occasionally produces a particle with negative energy, which 
-       leads to no hadron record for that event in ampt.dat (e.g. pPb at LHC);
-       made correction in this rare case by recalculating the particle energy.
-     * Print message to nohup.out in case of unphysical particle
-       energy/momentum values. 
-     * Reset FT(5) to |GZ5(I)| if the former is smaller in order to avoid 
-       Floating-Point Exception in the eta variable.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-9/2016 
-     * Allow a quark freedom to form either a baryon or a meson,
-       with the baryon/meson ratio controlled by 
-       an added parameter drbmRatio 
-       (setting it to 0 leads to no anti-baryons).
-       Note: partons are ordered in reverse order of formation time 
-       before coalescence.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-3/2016 & 5/2016 test version:
-     * Changed the following line in art1f.f to avoid the bug
-       that leads to loss of hadrons inside ART due to finite accuracy 
-       [which results in (ct-dt) + dt != ct exactly]:
-       &           FT1(NP1, IRUN) .GT. (CT - DT) .AND. 
-     * Write in file ana/parton-after-coalescence.dat the following 
-         for string melting runs:
-       For each event, the first line gives: 
-         event number, number of partons, number of formed baryons, 
-         number of formed mesons, impact-parameter, 
-         number of participant nucleons in projectile due to elastic 
-         collisions, number of participant nucleons in projectile due to 
-         inelastic collisions, and corresponding numbers in target,
-	 (and number of HIJING events that are aborted).
-       The next line gives information of one formed hadron:
-         number of quarks, sequence number in the event,
-	 PYTHIA ID, mass, x, y, z, t, distance(s) between coalescing quarks,
-	 transverse distance(s) between coalescing quarks,
-	 hadron Pz, hadron E, parton invariant mass, 
-	 hadron Pz - parton total Pz, hadron E - parton total E. 
-       The next 2 or 3 lines list partons which form the above hadron:
-         PYTHIA parton ID, three-momentum(Px,Py,Pz), mass, 
-         x, y, z, t.
-       Note: there is 1 distance between coalescing quarks for a meson
-         and 3 distances between coalescing quarks for a baryon or anti-baryon;
-         x, y, z, t of a hadron are values at its formation due to coalescence;
-         x, y, z, t of a parton are values at its last collision
-         (or formation if it has no collision).
+7/21/2022 test version v1.25t7cu/v2.25t7cu (sent to Gang Wang):
+     * UCLA group reported distorted b-distribution at low energies (7.7AGeV);
+       this is caused by changes in HIJSFT for the charge conservation version;
+       so those changes are reverted for correct impact parameter distribution
+       (and I do not see violation of netB or netQ conservations).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-8-9/2015 test version v1.26t6/v2.26t6:
-     * Put in safe conditions to avoid Floating-Point Exception in amptsub.f.
-     * Fixed a bug that may cause the first few events to be missing in
-       ampt.dat (mostly for low-multiplicity events such as PP collisions;
-       this error would also be indicated by file fort.99 that writes 
-       "Unexpected perturbative particles").
-     * Changed ptwo(2,5) and related variables to double precision
-       to avoid IEEE_DIVIDE_BY_ZERO or IEEE_INVALID or IEEE_OVERFLOW_FLAG
-       (especially at high energy such as LHC); also a few other places.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-4/2015 test version v1.26t5/v2.26t5:
-     * Random seed for HIJING is modified in main.f, so that a different 
-       random seed will always lead to a different random number sequence 
-       (in earlier versions, an even integer leads to the same random number 
-       sequence as the odd integer that is bigger than it by 1).
-     * set upper limit for gamma_s=P(s)/P(u) to 0.4 (to limit strangeness 
-       enhancement when string tension is strongly increased due to 
-       a very low value of parameter b in Lund symmetric splitting function
-       as done in arXiv:1403.6321).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-8/2014 test version v1.26t4/v2.26t4:
-     * Crash can come from finite precision of the defined asinh(x), 
-       where the argument of LOG() can be 0 for large negative x; 
-       defined asinh(x) differently in amptsub.f.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-2/05/2013 test version v1.26t3/v2.26t3:
-     * Modified amptsub.f so that spectator target nucleons in the LAB frame
-       will have the correct rapidity value of 0.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-12/19/2012 test version v1.26t2/v2.26t2:
-     * Modified format of ana/npart-xy.dat:
-       added last 2 columns on the present and original flavor code of nucleon.
-     * Corrected original nucleon flavor in the calculation of NN differential 
-       cross sections in HIJING.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-9/2012 test version v1.26t1/v2.26t1:
-     * Use double precision in art1f.f when calculating sqrt(s) to avoid crash
-       (segmentation fault due to s<0) at high energy such as LHC at large NT;
-       also use double precision in linana.f to calculate beta to avoid NaN.
-     * Use a more general formula in amptsub.f to calculate rapidity 
-       (valid for hadrons at large rapidities that have |Pz|>=E 
-       due to finite precision) 
-5/2012 
-     * Removed " $(LIBS)" from Makefile.
-     * Fixed data-type mismatches (mostly in hipyset1.35.f and linana.f).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-4/2012 test version v1.25t7d/v2.25t7d:
-     * Added pi0 electromagnetic decay flag (ipi0dcy) in file `input.ampt';
-       set to 1 to turn on pi0 decays after the hadron cascade.
-     * Modified format of ana/npart-xy.dat:
-       write impact parameter at the end of the first line of each event;
-       events in npart-xy.dat correspond to those in ana/ampt.dat (in that 
-       now events that eventually failed fragmentation and thus get repeated 
-       are not written to ana/npart-xy.dat).
-     * changed format of zpc.dat: now for both default and String Melting runs,
-       each line after the 1st line of an event gives the same following info:
-          PYTHIA particle ID number, three-momentum(Px,Py,Pz), mass, and 
-          space-time coordinates(x,y,z,t) of one final parton at freeze-out.
-     * corrected Kshort weak-decay width (used when Kshort decay flag is on).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-4/2012 test version v1.25t7c/v2.25t7c:
-     * fixed a bug (made in test version v1.25t7b/v2.25t7b),
-       which incorrectly sets the reaction plane at 5Pi/4.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-2/2012 test version v1.25t7b/v2.25t7b:
-     * modified code to enable random orientation of reaction plane by setting 
-       iphirp in input.ampt to 1. The value of the angle (0 to 2pi) is written 
-       out as the last value in the first line of each event in ana/ampt.dat.
-     * fixed a bug related to event triggering using pttrig and maxmiss.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-9/2011 test version v1.25t7/v2.25t7:
-     * added Pt tolerance etc to determining spectator nucleons consistently,
-       this is found to only affect string melting runs when LAB frame is used
-       (in that 1: npart values in ampt.dat are now correct and 
-       2: the run will not generate incorrect events that have no particles)
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-7/2011 test version v1.25t6/v2.25t6:
-     * Turned off heavy hadron decays in HIJING, so that the net-HeavyQuark 
-       number will be 0 in produced hadrons from HIJING (e.g. #c=#cbar).
-     * Added a missing /para7/ in hijing1.383_ampt.f for OSCAR output, 
-       this adds 1 output line to ana/parton-after-coalescence.dat for 
-       String Melting at the beginning of each event in the following format:
-              event #, number of partons in the event.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-5/13/2011 test version v1.25t4/v2.25t5:
-     * resonances (rho,omega,eta,K*,phi,Delta) produced from quark coalescence
+7/19/2022 test version v1.25t4cu/v2.25t6cu (sent to Gang Wang):
+     * Added the following change that was made to public AMPT on 
+       5/13/2011 for test version v1.25t4/v2.25t5:
+       resonances (rho,omega,eta,K*,phi,Delta) produced from quark coalescence
        in the String Melting version now have a random mass within a range 
        (~ +- twice the full Breit-Wigner width); 
        added for the purpose of resonance reconstruction using invariant mass.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+1/18/2022 test version v1.25t4cu/v2.25t5cu (sent to Gang Wang):
+     * Moved (anti)baryon coalescence in front of meson coalescence;
+       this helps to minimize the dN/deta asymmetry of antibaryons in 
+       low-energy AMPT-SM events for symmetric collisions. 
+       Note: this temporary fix will be eventually replaced with 
+       the new quark coalescence of nucl-th/1703.02673; 
+       the source of this asymmetry problem is found to be a small asymmetry
+       in dN/dy of initial hadrons from HIJING (the AMPT initial condition).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+6/26/2018 test version v1.25t4cu/v2.25t4cu (sent to Gang Wang & P. Tribedy):
+     * Added deformed Uranium U238 (Z=92,A=238) as projectile and/or target; 
+       density distribution taken from Masui et al. PLB 679, 440 (2009).
+     * Modified format of ana/npart-xy.dat:
+       write impact parameter at the end of the first line of each event;
+       events in npart-xy.dat correspond to those in ana/ampt.dat (in that 
+       events that eventually failed fragmentation and thus get repeated 
+       are not written to ana/npart-xy.dat).
+     * If an incoming nucleus is U238, the rotation angles (theta, phi) 
+       of its major axis relative to the beam axis are written in
+       the first line of each event in ana/npart-xy.dat. 
+       For example, for U238+U238 collisions, 
+       for each event, the first line of ana/npart-xy.dat gives:
+         event #, event-iteration flag, 
+         238, theta_p, phi_p (for projectile rotation), 
+         238, theta_t, phi_t (for target rotation), impact parameter.
+     * Added a new input parameter in file `input.ampt': urshad; 
+       set to 1 to remove the r_perp-dependence of nuclear shadowing of U238 
+       (i.e. use the same average nuclear shadowing for all nucleons in U238)
+       in order to better isolate the effects from deformed nuclei.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+4/26/2018:
+     * worked with Guo-Liang Ma to fix charge conservation; 
+       now charge is conserved and reaction rates have been checked.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+5/29&30/2016:
+     * fixed bugs in decays that violate charge/baryon conservation;
+       changes are labeled with clin-ch-6/2016.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+5/04-27/2016
+     * worked with Guo-Liang Ma to fix charge conservation; 
+       shutdown charge violation hadronic channels;
+       net-charge is conserved (without decays and before modifying
+       hadronic cross sections).
+       
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+6/2013 test version v1.25t4c/v2.25t4c:
+     * modified for charge conservation, changes are labeled with 
+       clin-6/2013.
+     * find that net-strangeness may be violated (mostly by 1),
+       and this comes from HIJING, not from other parts of AMPT.
+     * if net-charge or net-strangenss or net-baryon is violated
+       in an event, a message will be written into nohup.out 
+       with a keyword "violated".
+     * Numbers of +/-/0 charged particles before and after ART
+       in each event are written into nohup.out.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+8/2010 test version:
+     * modified for charge conservation, changes are labeled with 
+       clin-8/0*/10 where * is an integer.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 4/15/2010 test version v1.25t4/v2.25t4:
-     * Darwin added to the list of operating system in `exec';
      * crash (especially at low energies) was reported by P. Bhaduri, 
        modified a statement in subroutine HIJING to solve the problem.
 
@@ -235,22 +167,14 @@ AMPT Users' Guide
          number of formed baryons, number of formed mesons, 
          total number of initial particles, 
          total number of initial particles that cannot enter ZPC.
-	 (Added in 2016: ana/parton-initial-afterPropagation.dat now includes
-	 the parent hadron index & x & y for each parton.)
      * added ana/npart-xy.dat, which gives the transverse positions
        of all initial nucleons and their status; format is:
        For each event, the first line gives: 
-         event #, event-iteration flag, atomic masses of projectile and target,
-	 (impact parameter, added in 4/2012).
-       The first four values of each line that follows give (for each nucleon):
+         event #, event-iteration flag, atomic masses of projectile and target.
+       Each of the following four lines gives:
          x,y, sequence number in nucleus (positive for projectile, negative 
          for target), status (0: spectator, 1 or 2: wounded due to 
-         elastic collisions, 3: wounded due to inelastic collisions);
-         the 5th value of the line (added in 2/2012) gives the z position 
-	 of each nucleon inside a nucleus, with the center of each nucleus 
-	 defined as z=0 and the z values of nucleons correspond to those in a 
-	 spherical nucleus (i.e. the Lorentz contraction factor of the nucleus 
-	 along the z-axis is not included in the z values here).
+         elastic collisions, 3: wounded due to inelastic collisions).
      * ioscar=3 now enables the following output files in addition to 
        ana/parton-initial-afterPropagation.dat:
        all parton collision history in ana/parton-collisionsHistory.dat, 
@@ -411,7 +335,7 @@ AMPT Users' Guide
 
    The above modifications can be found by searching "clin-4/2008". 
    They are not found to change ampt.dat from a few tests on a Linux OS.
-   We thank A. Vander Molen and G. Westfall for pointing out these issues. 
+   We thanks A. Vander Molen and G. Westfall for pointing out these issues. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 2005 v1.12/v2.12:
@@ -444,8 +368,7 @@ AMPT Users' Guide
       with some general information written in `nohup.out'.
 
 *  Key initial parameters in `input.ampt' are:
-   EFRM: sqrt(s_NN) in GeV if FRAME is CMS, e.g. 200 for the maximum RHIC 
-      energy; projectile energy per nucleon if FRAME is LAB.
+   EFRM: sqrt(s_NN) in GeV, e.g. 200 for the maximum RHIC energy.
    NEVNT: the total number of events.
    BMIN, BMAX: the minimum and maximum impact parameter (in fm) 
       for all events with BMAX having an upper limit of HIPR1(34)+HIPR1(35)
@@ -530,7 +453,7 @@ AMPT Users' Guide
         For isoft=1 (default AMPT):
           PYTHIA particle ID number, three-momentum(Px,Py,Pz), mass, and 
           space-time coordinates(x,y,z,t) of one final parton at freeze-out.
-        For isoft=4 (String Melting, but format changed in 4/2012):
+        For isoft=4 (String Melting, format changed in 6/2009):
           PYTHIA particle ID number, three-momentum(Px,Py,Pz), mass, 
           the parent hadron sequence number that the parton comes from,
           the parton sequence number of this parton in the parent hadron
@@ -549,8 +472,8 @@ Please do not hesitate to contact us if needed. Have fun!
  
 Zi-Wei Lin (linz@ecu.edu)
 Che-Ming Ko (ko@comp.tamu.edu)
-Bao-An Li (Bao-An.Li@tamuc.edu)
+Bao-An Li (Bao-An_Li@tamu-commerce.edu)
 Subrata Pal (spal@tifr.res.in)
 Bin Zhang (bzhang@astate.edu)
  
-4/06/2015
+6/25/2009

@@ -208,8 +208,6 @@ cbz1/31/99
         DOUBLE PRECISION  ATAUI, ZT1, ZT2, ZT3
         DOUBLE PRECISION  xnprod,etprod,xnfrz,etfrz,
      & dnprod,detpro,dnfrz,detfrz
-clin-parentString:
-        DOUBLE PRECISION vxp0,vyp0,vzp0,xstrg0,ystrg0,xstrg,ystrg
 
 cbz1/31/99end
 
@@ -319,15 +317,11 @@ clin-6/22/01:
         common /lastt/itimeh,bimp
 cc      SAVE /lastt/
         COMMON /AREVT/ IAEVT, IARUN, MISS
-        common/phidcy/iphidcy,pttrig,ntrig,maxmiss,ipi0dcy
-clin-7/2011 ioscar value is needed:
-        common /para7/ ioscar,nsmm0,nsmb0,nsmab0,nsmm1,nsmb1,nsmab1
-clin-2/2012 allow random orientation of reaction plane:
-        common /phiHJ/iphirp,phiRP
-clin-parentString:
-        common /precpa/vxp0(MAXPTN),vyp0(MAXPTN),vzp0(MAXPTN),
-     1       xstrg0(MAXPTN),ystrg0(MAXPTN),
-     2       xstrg(MAXPTN),ystrg(MAXPTN),istrg0(MAXPTN),istrg(MAXPTN)
+        common/phidcy/iphidcy,pttrig,ntrig,maxmiss
+clin-6/2013:
+        common /para7/ ioscar,nsmbbbar,nsmmeson
+clin-8/2011 add U238:
+        common/u238/cxu,sxu,phiu,theup,phiup,theut,phiut,urshad
         SAVE   
 
         BMAX=MIN(BMAX0,HIPR1(34)+HIPR1(35))
@@ -345,16 +339,34 @@ C
         YP(3,1)=0.0
         IF(IHNT2(1).LE.1) GO TO 14
         DO 10 KP=1,IHNT2(1)
-5        R=HIRND(1)
-        X=RANART(NSEED)
-        CX=2.0*X-1.0
-        SX=SQRT(1.0-CX*CX)
-C                ********choose theta from uniform cos(theta) distr
-        PHI=RANART(NSEED)*2.0*HIPR1(40)
-C                ********choose phi form uniform phi distr 0 to 2*pi
-        YP(1,KP)=R*SX*COS(PHI)
-        YP(2,KP)=R*SX*SIN(PHI)
-        YP(3,KP)=R*CX
+clin-8/2011 add U238:
+c5        R=HIRND(1)
+ 5         continue
+           if(IHNT2(1).eq.238.and.IHNT2(2).eq.92) then
+c     Rotation of the major axis by a random angle (theta,phi):
+              if(KP.eq.1) then
+                 X=RANART(NSEED)
+                 CXU=2.0*X-1.0
+                 SXU=SQRT(1.0-CXU*CXU)
+                 PHIU=RANART(NSEED)*2.0*HIPR1(40)
+                 theup=acos(cxu)
+                 phiup=phiu
+              endif
+              call U238DF(1,KP)
+           else
+              R=HIRND(1)
+              X=RANART(NSEED)
+              CX=2.0*X-1.0
+              SX=SQRT(1.0-CX*CX)
+C     ********choose theta from uniform cos(theta) distr
+              PHI=RANART(NSEED)*2.0*HIPR1(40)
+C     ********choose phi form uniform phi distr 0 to 2*pi
+              YP(1,KP)=R*SX*COS(PHI)
+              YP(2,KP)=R*SX*SIN(PHI)
+              YP(3,KP)=R*CX
+           endif
+clin-8/2011-end
+
         IF(HIPR1(29).EQ.0.0) GO TO 10
         DO 8  KP2=1,KP-1
                 DNBP1=(YP(1,KP)-YP(1,KP2))**2
@@ -404,23 +416,51 @@ c     p & n has opposite coordinates in the deuteron frame:
         YP(2,J)=Y2
         YP(3,J)=Y3
 12        CONTINUE
-C
+ctest off U238: check shift of the center location of the nucleus from MC:
+        xtot=0
+        ytot=0
+        ztot=0
+        DO I=1,IHNT2(1)
+           xtot=xtot+YP(1,I)
+           ytot=ytot+YP(2,I)
+           ztot=ztot+YP(3,I)
+        enddo
+c        write(98,*) 'proj summed x,y,z=',xtot,ytot,ztot
+
 C******************************
 14        YT(1,1)=0.0
         YT(2,1)=0.0
         YT(3,1)=0.0
         IF(IHNT2(3).LE.1) GO TO 24
         DO 20 KT=1,IHNT2(3)
-15        R=HIRND(2)
-        X=RANART(NSEED)
-        CX=2.0*X-1.0
-        SX=SQRT(1.0-CX*CX)
-C                ********choose theta from uniform cos(theta) distr
-        PHI=RANART(NSEED)*2.0*HIPR1(40)
-C                ********chose phi form uniform phi distr 0 to 2*pi
-        YT(1,KT)=R*SX*COS(PHI)
-        YT(2,KT)=R*SX*SIN(PHI)
-        YT(3,KT)=R*CX
+clin-8/2011 add U238:
+c15        R=HIRND(2)
+ 15        continue
+           if(IHNT2(3).eq.238.and.IHNT2(4).eq.92) then
+c     Rotation of the major axis by a random angle (theta,phi):
+              if(KT.eq.1) then
+                 X=RANART(NSEED)
+                 CXU=2.0*X-1.0
+                 SXU=SQRT(1.0-CXU*CXU)
+                 PHIU=RANART(NSEED)*2.0*HIPR1(40)
+                 theut=acos(cxu)
+                 phiut=phiu
+              endif
+              call U238DF(2,KT)
+           else
+              R=HIRND(2)
+              X=RANART(NSEED)
+              CX=2.0*X-1.0
+              SX=SQRT(1.0-CX*CX)
+C     ********choose theta from uniform cos(theta) distr
+              PHI=RANART(NSEED)*2.0*HIPR1(40)
+C     ********chose phi form uniform phi distr 0 to 2*pi
+              YT(1,KT)=R*SX*COS(PHI)
+              YT(2,KT)=R*SX*SIN(PHI)
+              YT(3,KT)=R*CX
+           endif
+clin-8/2011-end
+
         IF(HIPR1(29).EQ.0.0) GO TO 20
         DO 18  KT2=1,KT-1
                 DNBT1=(YT(1,KT)-YT(1,KT2))**2
@@ -467,6 +507,16 @@ c
         YT(2,J)=Y2
         YT(3,J)=Y3
 22        CONTINUE
+ctest off U238: check shift of the center location of the nucleus from MC:
+        xtot=0
+        ytot=0
+        ztot=0
+        DO I=1,IHNT2(3)
+           xtot=xtot+YT(1,I)
+           ytot=ytot+YT(2,I)
+           ztot=ztot+YT(3,I)
+        enddo
+c        write(98,*) 'targ summed x,y,z=',xtot,ytot,ztot
 
 C********************
 24        MISS=-1
@@ -507,10 +557,8 @@ C       BY THE ANGLE PHI  FOR EACH COLLISION.******************
 C
         BB=SQRT(BMIN**2+RANART(NSEED)*(BMAX**2-BMIN**2))
 cbz6/28/99 flow1
-clin-2/2012:
+c        PHI=2.0*HIPR1(40)*RANART(NSEED)
         PHI=0.
-        if(iphirp.eq.1) PHI=2.0*HIPR1(40)*RANART(NSEED)
-        phiRP=phi
 cbz6/28/99 flow1 end
         BBX=BB*COS(PHI)
         BBY=BB*SIN(PHI)
@@ -531,6 +579,12 @@ C                ********mb=0.1*fm, YP is in fm,HIPR1(31) is in mb
      &           *SQRT(1.0-RRB1)
            APHX2=HIPR1(6)*4.0/3.0*(IHNT2(3)**0.3333333-1.0)
      &           *SQRT(1.0-RRB2)
+clin-8/2011 for U238: urshad=1 removes r_perp-dependence of nuclear shadowing:
+           if(IHNT2(1).eq.238.and.IHNT2(2).eq.92.and.urshad.eq.1) 
+     1          APHX1=HIPR1(6)*(IHNT2(1)**0.3333333-1.0)
+           if(IHNT2(3).eq.238.and.IHNT2(4).eq.92.and.urshad.eq.1) 
+     1          APHX2=HIPR1(6)*(IHNT2(3)**0.3333333-1.0)
+clin-8/2011-end
            HINT1(18)=HINT1(14)-APHX1*HINT1(15)
      &                        -APHX2*HINT1(16)+APHX1*APHX2*HINT1(17)
            IF(IHPR2(14).EQ.0.OR.
@@ -665,6 +719,12 @@ c           write(99,*) ' '
      &           *SQRT(1.0-RRB1)
            APHX2=HIPR1(6)*4.0/3.0*(IHNT2(3)**0.3333333-1.0)
      &           *SQRT(1.0-RRB2)
+clin-8/2011 for U238: urshad=1 removes r_perp-dependence of nuclear shadowing:
+           if(IHNT2(1).eq.238.and.IHNT2(2).eq.92.and.urshad.eq.1) 
+     1          APHX1=HIPR1(6)*(IHNT2(1)**0.3333333-1.0)
+           if(IHNT2(3).eq.238.and.IHNT2(4).eq.92.and.urshad.eq.1) 
+     1          APHX2=HIPR1(6)*(IHNT2(3)**0.3333333-1.0)
+clin-8/2011-end
            HINT1(65)=HINT1(61)-APHX1*HINT1(62)
      &                        -APHX2*HINT1(63)+APHX1*APHX2*HINT1(64)
            TTRIG=ROMG(R2)*HINT1(65)/HIPR1(31)
@@ -742,21 +802,13 @@ c
 c**************************
 c
 clin-6/2009 write out initial minijet information:
-clin-2/2012:
-c           call minijet_out(BB)
-           call minijet_out(BB,phiRP)
+           call minijet_out(BB)
            if(pttrig.gt.0.and.ntrig.eq.0) goto 50
-clin-4/2012 
 clin-6/2009 write out initial transverse positions of initial nucleons:
-c           write(94,*) IAEVT,MISS,IHNT2(1),IHNT2(3)
+clin-6/2018:           write(94,*) IAEVT,MISS,IHNT2(1),IHNT2(3)
         DO 201 JP=1,IHNT2(1)
 clin-6/2009:
-c           write(94,203) YP(1,JP)+0.5*BB, YP(2,JP), JP, NFP(JP,5)
-clin-2/2012:
-c       write(94,203) YP(1,JP)+0.5*BB, YP(2,JP), JP, NFP(JP,5),yp(3,jp)
-clin-4/2012:
-c           write(94,203) YP(1,JP)+0.5*BB*cos(phiRP), 
-c     1 YP(2,JP)+0.5*BB*sin(phiRP), JP, NFP(JP,5),yp(3,jp)
+clin-6/2018:           write(94,203) YP(1,JP)+0.5*BB, YP(2,JP), JP, NFP(JP,5)
            IF(NFP(JP,5).GT.2) THEN
               NINP=NINP+1
            ELSE IF(NFP(JP,5).EQ.2.OR.NFP(JP,5).EQ.1) THEN
@@ -765,20 +817,14 @@ c     1 YP(2,JP)+0.5*BB*sin(phiRP), JP, NFP(JP,5),yp(3,jp)
  201    continue
         DO 202 JT=1,IHNT2(3)
 clin-6/2009 target nucleon # has a minus sign for distinction from projectile:
-c           write(94,203) YT(1,JT)-0.5*BB, YT(2,JT), -JT, NFT(JT,5)
-clin-2/2012:
-c       write(94,203) YT(1,JT)-0.5*BB, YT(2,JT), -JT, NFT(JT,5),yt(3,jt)
-clin-4/2012:
-c           write(94,203) YT(1,JT)-0.5*BB*cos(phiRP), 
-c     1 YT(2,JT)-0.5*BB*sin(phiRP), -JT, NFT(JT,5),yt(3,jt)
+clin-6/2018:           write(94,203) YT(1,JT)-0.5*BB, YT(2,JT), -JT, NFT(JT,5)
            IF(NFT(JT,5).GT.2) THEN
               NINTHJ=NINTHJ+1
            ELSE IF(NFT(JT,5).EQ.2.OR.NFT(JT,5).EQ.1) THEN
               NELT=NELT+1
            ENDIF
  202    continue
-c 203    format(f10.3,1x,f10.3,2(1x,I5))
-c 203    format(f10.3,1x,f10.3,2(1x,I5),1x,f10.3)
+ 203    format(f10.3,1x,f10.3,2(1x,I5))
 c     
 c*******************************
 
@@ -825,12 +871,9 @@ cbz1/27/99end
 cbz6/28/99 flow1
 clin-7/20/01 add dble or sngl to make precisions consistent
 c              GX0(NPAR) = YP(1, I)
-clin-2/2012:
-c              GX0(NPAR) = dble(YP(1, I) + 0.5 * BB)
-              GX0(NPAR) = dble(YP(1, I)+0.5*BB*cos(phiRP))
+              GX0(NPAR) = dble(YP(1, I) + 0.5 * BB)
 cbz6/28/99 flow1 end
-c              GY0(NPAR) = dble(YP(2, I))
-              GY0(NPAR) = dble(YP(2, I)+0.5*BB*sin(phiRP))
+              GY0(NPAR) = dble(YP(2, I))
               GZ0(NPAR) = 0d0
               FT0(NPAR) = 0d0
               PX0(NPAR) = dble(PJPX(I, J))
@@ -862,12 +905,9 @@ cbz1/27/99end
 cbz6/28/99 flow1
 clin-7/20/01 add dble or sngl to make precisions consistent
 c              GX0(NPAR) = YT(1, I)
-clin-2/2012:
-c              GX0(NPAR) = dble(YT(1, I) - 0.5 * BB)
-              GX0(NPAR) = dble(YT(1, I)-0.5*BB*cos(phiRP))
+              GX0(NPAR) = dble(YT(1, I) - 0.5 * BB)
 cbz6/28/99 flow1 end
-c              GY0(NPAR) = dble(YT(2, I))
-              GY0(NPAR) = dble(YT(2, I)-0.5*BB*sin(phiRP))
+              GY0(NPAR) = dble(YT(2, I))
               GZ0(NPAR) = 0d0
               FT0(NPAR) = 0d0
               PX0(NPAR) = dble(PJTX(I, J))
@@ -1046,12 +1086,8 @@ c                 E0(NPAR) = dble(P(II,4))
      1                +PZ0(NPAR)**2+XMASS0(NPAR)**2)
                  IF (NTP .EQ. 1) THEN
 clin-7/20/01 add dble or sngl to make precisions consistent
-clin-2/2012:
-c                    GX0(NPAR) = dble(YP(1, jjtp)+0.5 * BB)
-c                    GY0(NPAR) = dble(YP(2, jjtp))
-                    GX0(NPAR) = dble(YP(1, jjtp)+0.5*BB*cos(phiRP))
-                    GY0(NPAR) = dble(YP(2, jjtp)+0.5*BB*sin(phiRP))
-
+                    GX0(NPAR) = dble(YP(1, jjtp)+0.5 * BB)
+                    GY0(NPAR) = dble(YP(2, jjtp))
                     IITYP=ITYP0(NPAR)
                     nstrg=LSTRG0(NPAR)
                     if(IITYP.eq.2112.or.IITYP.eq.2212) then
@@ -1078,11 +1114,8 @@ c                    GY0(NPAR) = dble(YP(2, jjtp))
                        PJPM(NSTRG, NPART) = sngl(XMASS0(NPAR))
                     endif
                  ELSE
-clin-2/2012:
-c                    GX0(NPAR) = dble(YT(1, jjtp)-0.5 * BB)
-c                    GY0(NPAR) = dble(YT(2, jjtp)) 
-                    GX0(NPAR) = dble(YT(1, jjtp)-0.5*BB*cos(phiRP))
-                    GY0(NPAR) = dble(YT(2, jjtp)-0.5*BB*sin(phiRP))
+                    GX0(NPAR) = dble(YT(1, jjtp)-0.5 * BB)
+                    GY0(NPAR) = dble(YT(2, jjtp))
                     IITYP=ITYP0(NPAR)
                     nstrg=LSTRG0(NPAR)-NSP
                     if(IITYP.eq.2112.or.IITYP.eq.2212) then
@@ -1158,21 +1191,11 @@ c        WRITE (14, 395) ITEST, MUL, bimp, NELP,NINP,NELT,NINTHJ
         DO 1015 I = 1, MUL
 c           WRITE (14, 311) PX5(I), PY5(I), PZ5(I), ITYP5(I),
 c     &        XMASS5(I), E5(I)
-clin-4/2012 write parton freeze-out position in zpc.dat for this test scenario:
-c           WRITE (14, 312) PX5(I), PY5(I), PZ5(I), ITYP5(I),
-c     &        XMASS5(I), E5(I),LSTRG1(I), LPART1(I)
-           if(dmax1(abs(GX5(I)),abs(GY5(I)),abs(GZ5(I)),abs(FT5(I)))
-     1          .lt.9999) then
-              write(14,210) ITYP5(I), PX5(I), PY5(I), PZ5(I), XMASS5(I),
-     1             GX5(I), GY5(I), GZ5(I), FT5(I)
-           else
-              write(14,211) ITYP5(I), PX5(I), PY5(I), PZ5(I), XMASS5(I),
-     1             GX5(I), GY5(I), GZ5(I), FT5(I)
-           endif
-c
+           WRITE (14, 312) PX5(I), PY5(I), PZ5(I), ITYP5(I),
+     &        XMASS5(I), E5(I),LSTRG1(I), LPART1(I)
  1015   CONTINUE
 c 311    FORMAT(1X, 3F10.4, I6, 2F10.4)
-c 312    FORMAT(1X, 3F10.3, I6, 2F10.3,1X,I6,1X,I3)
+ 312    FORMAT(1X, 3F10.3, I6, 2F10.3,1X,I6,1X,I3)
 cbz3/19/99 end
 
 clin-5/2009 ctest off:
@@ -1311,12 +1334,17 @@ c     and input to ZPC:
 clin-4/24/01 normal fragmentation first:
         isflag=0
 
-ctest off
-c        write(99,*) 'IAEVT,NSG,NDR=',IAEVT,NSG,NDR
-
         IF(IHPR2(20).NE.0) THEN
            DO 560 ISG=1,NSG
                 CALL HIJFRG(ISG,3,IERROR)
+cma-05/16clin-5/2016:
+                IF(IERROR.GT.0) THEN
+                   MSTU(24)=0
+                   MSTU(28)=0
+                   IF(IHPR2(10).NE.0)
+     1             WRITE(6,*) 'error in HIJFRG 1, repeat event',NTP,jjtp
+                   GO TO 50
+                ENDIF
 C
                 nsbst=1
                 IDSTR=92
@@ -1376,23 +1404,18 @@ C       ****** identify the mother particle
                    PXAR(NATT) = P(I, 1)
                    PYAR(NATT) = P(I, 2)
                    PZAR(NATT) = P(I, 3)
-clin-12/2016 Found negative energy particle here that leads to no hadron record
-c   for that event in ampt.dat (pPb at LHC), make correction in this rare case:
-                   if(P(I,4).lt.0) then
-                      write(6,*) 'E<0 in HIJING, recalculated1:',I,
-     1                     P(I,5),P(I,1),P(I,2),P(I,3),P(I,4)
-                      P(I,4)=sqrt(P(I,5)**2+P(I,1)**2+P(I,2)**2
-     1                     +P(I,3)**2)
-                   endif
-c
                    PEAR(NATT) = P(I, 4)
                    XMAR(NATT) = P(I, 5)
-clin-parentString:
-                   xstrg0(NATT)=dble(GXAR(NATT))
-                   ystrg0(NATT)=dble(GYAR(NATT))
-                   istrg0(NATT)=ISG
-c                   write(99,*) xstrg0(NATT),ystrg0(NATT),istrg0(NATT),
-c     1                  K(I,2),P(I, 1),P(I, 2),P(I, 3)
+
+cma-05/16clin-5/2016-ctest on to fix negative energy and formation time
+                   IF(PEAR(NATT).lt.0.) THEN
+                      MSTU(24)=0
+                      MSTU(28)=0
+                      IF(IHPR2(10).NE.0)
+     1             WRITE(6,*) 'error in HIJFRG 2, repeat event',P(I,4)
+                      GO TO 50
+                   ENDIF
+cma-05/16-end
 cbz11/11/98end
 
  560            CONTINUE
@@ -1404,6 +1427,15 @@ C
            DO 600 jjtp=1,JTP(NTP)
                 CALL HIJFRG(jjtp,NTP,IERROR)
 C
+cma-testclin-5/2016:to fix baryon nuber conservation problem
+                IF(IERROR.GT.0) THEN
+                   MSTU(24)=0
+                   MSTU(28)=0
+                   IF(IHPR2(10).NE.0) 
+     1             WRITE(6,*) 'error in HIJFRG 3, repeat event',NTP,jjtp
+                   GO TO 50
+                ENDIF
+
                 nsbst=1
                 IDSTR=92
                 IF(IHPR2(21).EQ.0) THEN
@@ -1453,18 +1485,11 @@ C       ****** identify the mother particle
                    PATT(NATT,4)=P(I,4)
                    EATT=EATT+P(I,4)
                    IF (NTP .EQ. 1) THEN
-clin-2/2012:
-c                      GXAR(NATT) = YP(1, jjtp)+0.5 * BB
-c                      GYAR(NATT) = YP(2, jjtp)
-                      GXAR(NATT) = YP(1, jjtp)+0.5*BB*cos(phiRP)
-                      GYAR(NATT) = YP(2, jjtp)+0.5*BB*sin(phiRP)
-
+                      GXAR(NATT) = YP(1, jjtp)+0.5 * BB
+                      GYAR(NATT) = YP(2, jjtp)
                    ELSE
-clin-2/2012:
-c                      GXAR(NATT) = YT(1, jjtp)-0.5 * BB
-c                      GYAR(NATT) = YT(2, jjtp)
-                      GXAR(NATT) = YT(1, jjtp)-0.5*BB*cos(phiRP)
-                      GYAR(NATT) = YT(2, jjtp)-0.5*BB*sin(phiRP)
+                      GXAR(NATT) = YT(1, jjtp)-0.5 * BB
+                      GYAR(NATT) = YT(2, jjtp)
                    END IF
                    GZAR(NATT) = 0.
                    FTAR(NATT) = 0.
@@ -1472,29 +1497,8 @@ c                      GYAR(NATT) = YT(2, jjtp)
                    PXAR(NATT) = P(I, 1)
                    PYAR(NATT) = P(I, 2)
                    PZAR(NATT) = P(I, 3)
-clin-12/2016 Found negative energy particle here that leads to no hadron record
-c   for that event in ampt.dat (pPb at LHC), make correction in this rare case:
-                   if(P(I,4).lt.0) then
-                      write(6,*) 'E<0 in HIJING, recalculated2:',I,
-     1                     P(I,5),P(I,1),P(I,2),P(I,3),P(I,4)
-                      P(I,4)=sqrt(P(I,5)**2+P(I,1)**2+P(I,2)**2
-     1                     +P(I,3)**2)
-                   endif
-c
                    PEAR(NATT) = P(I, 4)
                    XMAR(NATT) = P(I, 5)
-clin-parentString:
-                   xstrg0(NATT)=dble(GXAR(NATT))
-                   ystrg0(NATT)=dble(GYAR(NATT))
-c     String ID is separated for projectile/target strings:
-                   istrg0(NATT)=NTP*10000+jjtp
-c              if(N.eq.nsbst.and.(K(I,2).eq.2112.or.K(I,2).eq.2212)) then
-c                      write(99,*) xstrg0(NATT),ystrg0(NATT),istrg0(NATT)
-c     1                  ,K(I,2),P(I, 1),P(I, 2),P(I, 3),'spectator'
-c                   else
-c                      write(99,*) xstrg0(NATT),ystrg0(NATT),istrg0(NATT)
-c     1                  ,K(I,2),P(I, 1),P(I, 2),P(I, 3)
-c                   endif
 cbz11/11/98end
 
  590                CONTINUE 
@@ -1523,15 +1527,6 @@ clin-11/11/03     set direct photons positions and time at formation:
                 PXAR(NATT) = PATT(NATT,1)
                 PYAR(NATT) = PATT(NATT,2)
                 PZAR(NATT) = PATT(NATT,3)
-clin-12/2016:
-                if(PATT(NATT,4).lt.0) then
-                   write(6,*) 'E<0 in HIJING, recalculated3:',NATT,
-     1                  PDR(I,5),PATT(NATT,1),PATT(NATT,2),
-     2                  PATT(NATT,3),PATT(NATT,4)
-                   PATT(NATT,4)=sqrt(PDR(I,5)**2+PATT(NATT,1)**2
-     1                  +PATT(NATT,2)**2+PATT(NATT,3)**2)
-                endif
-c
                 PEAR(NATT) = PATT(NATT,4)
                 XMAR(NATT) = PDR(I,5)
  650        CONTINUE
@@ -1554,7 +1549,6 @@ clin-7/03/01-end
 
 clin-6/2009:
         if(ioscar.eq.3) WRITE (95, *) IAEVT, mul
-
 c.....call ZPC for parton cascade
         CALL ZPCMN
 clin-6/2009:
@@ -1565,22 +1559,12 @@ c        WRITE (14, 395) ITEST, MUL, bimp, NELP,NINP,NELT,NINTHJ
         DO 1016 I = 1, MUL
 c           WRITE (14, 511) PX5(I), PY5(I), PZ5(I), ITYP5(I),
 c     &        XMASS5(I), E5(I)
-clin-4/2012 write parton freeze-out position in zpc.dat 
-c     for string melting version:
-c           WRITE (14, 512) ITYP5(I), PX5(I), PY5(I), PZ5(I), 
-c     &        XMASS5(I), LSTRG1(I), LPART1(I), FT5(I)
-           if(dmax1(abs(GX5(I)),abs(GY5(I)),abs(GZ5(I)),abs(FT5(I)))
-     1          .lt.9999) then
-              write(14,210) ITYP5(I), PX5(I), PY5(I), PZ5(I), XMASS5(I),
-     1             GX5(I), GY5(I), GZ5(I), FT5(I)
-           else
-              write(14,211) ITYP5(I), PX5(I), PY5(I), PZ5(I), XMASS5(I),
-     1             GX5(I), GY5(I), GZ5(I), FT5(I)
-           endif
-c
+           WRITE (14, 512) ITYP5(I), PX5(I), PY5(I), PZ5(I), 
+     &        XMASS5(I), LSTRG1(I), LPART1(I), FT5(I)
+
  1016   CONTINUE
 c 511    FORMAT(1X, 3F10.4, I6, 2F10.4)
-c 512    FORMAT(I6,4(1X,F10.3),1X,I6,1X,I3,1X,F10.3)
+ 512    FORMAT(I6,4(1X,F10.3),1X,I6,1X,I3,1X,F10.3)
 c 513    FORMAT(1X, 4F10.4)
 
 clin-5/2009 ctest off:
@@ -1663,13 +1647,6 @@ clin-4/30/01 convert partons to hadrons after ZPC:
               PXAR(NATT)=PXN(I)
               PYAR(NATT)=PYN(I)
               PZAR(NATT)=PZN(I)
-clin-12/2016:
-              if(EEN(I).lt.0) then
-                 write(6,*) 'E<0 in HIJING, recalculated4:',I,
-     1                XMN(I),PXN(I),PYN(I),PZN(I),EEN(I)
-                 EEN(I)=sqrt(XMN(I)**2+PXN(I)**2+PYN(I)**2+PZN(I)**2)
-              endif
-c
               PEAR(NATT)=EEN(I)
               XMAR(NATT)=XMN(I)
  1006      continue
@@ -1756,14 +1733,6 @@ cbz1/25/99end
                    PXAR(NATT) = P(I, 1)
                    PYAR(NATT) = P(I, 2)
                    PZAR(NATT) = P(I, 3)
-clin-12/2016:
-                   if(P(I,4).lt.0) then
-                      write(6,*) 'E<0 in HIJING, recalculated5:',I,
-     1                     P(I,5),P(I,1),P(I,2),P(I,3),P(I,4)
-                      P(I,4)=sqrt(P(I,5)**2+P(I,1)**2+P(I,2)**2
-     1                     +P(I,3)**2)
-                   endif
-c
                    PEAR(NATT) = P(I, 4)
                    XMAR(NATT) = P(I, 5)
 cbz11/11/98end
@@ -1866,14 +1835,6 @@ cbz1/25/99end
                    PXAR(NATT) = P(I, 1)
                    PYAR(NATT) = P(I, 2)
                    PZAR(NATT) = P(I, 3)
-clin-12/2016:
-                   if(P(I,4).lt.0) then
-                      write(6,*) 'E<0 in HIJING, recalculated6:',I,
-     1                     P(I,5),P(I,1),P(I,2),P(I,3),P(I,4)
-                      P(I,4)=sqrt(P(I,5)**2+P(I,1)**2+P(I,2)**2
-     1                     +P(I,3)**2)
-                   endif
-c
                    PEAR(NATT) = P(I, 4)
                    XMAR(NATT) = P(I, 5)
 cbz11/11/98end
@@ -1902,15 +1863,6 @@ clin-11/11/03     set direct photons positions and time at formation:
            PXAR(NATT) = PATT(NATT,1)
            PYAR(NATT) = PATT(NATT,2)
            PZAR(NATT) = PATT(NATT,3)
-clin-12/2016:
-           if(PATT(NATT,4).lt.0) then
-              write(6,*) 'E<0 in HIJING, recalculated7:',NATT,
-     1             PDR(I,5),PATT(NATT,1),PATT(NATT,2),
-     2             PATT(NATT,3),PATT(NATT,4)
-              PATT(NATT,4)=sqrt(PDR(I,5)**2+PATT(NATT,1)**2
-     1             +PATT(NATT,2)**2+PATT(NATT,3)**2)
-           endif
-c
            PEAR(NATT) = PATT(NATT,4)
            XMAR(NATT) = PDR(I,5)
  450    CONTINUE
@@ -1927,35 +1879,71 @@ clin-4/19/01 soft3:
          IF(IHPR2(10).NE.0) 
      &        WRITE(6,*) 'Energy not conserved, repeat the event'
 c                call lulist(1)
-         write(6,*) 'violated:EATT(GeV),NATT,B(fm)=',EATT,NATT,bimp
+         write(6,*) 'violated:EATT,NATT,B=',EATT,NATT,bimp
          GO TO 50
         ENDIF
-        write(6,*) 'satisfied:EATT(GeV),NATT,B(fm)=',EATT,NATT,bimp
+        write(6,*) 'satisfied:EATT,NATT,B=',EATT,NATT,bimp
         write(6,*) ' '
 c
-clin-4/2012 write out initial transverse positions of initial nucleons:
-        write(94,*) IAEVT,MISS,IHNT2(1),IHNT2(3),bimp
-        DO JP=1,IHNT2(1)
-clin-12/2012 write out present and original flavor code of nucleons:
-c           write(94,243) YP(1,JP)+0.5*BB*cos(phiRP), 
-c     1 YP(2,JP)+0.5*BB*sin(phiRP), JP, NFP(JP,5),yp(3,jp)
-           write(94,243) YP(1,JP)+0.5*BB*cos(phiRP), 
-     1 YP(2,JP)+0.5*BB*sin(phiRP),JP, NFP(JP,5),yp(3,jp),
-     2 NFP(JP,3),NFP(JP,4)
-        ENDDO
-        DO JT=1,IHNT2(3)
-c target nucleon # has a minus sign for distinction from projectile:
-clin-12/2012 write out present and original flavor code of nucleons:
-c           write(94,243) YT(1,JT)-0.5*BB*cos(phiRP), 
-c     1 YT(2,JT)-0.5*BB*sin(phiRP), -JT, NFT(JT,5),yt(3,jt)
-           write(94,243) YT(1,JT)-0.5*BB*cos(phiRP), 
-     1 YT(2,JT)-0.5*BB*sin(phiRP), -JT, NFT(JT,5),yt(3,jt),
-     2 NFT(JT,3),NFT(JT,4)
-        ENDDO
-clin-12/2012 write out present and original flavor code of nucleons:
-c 243    format(f10.3,1x,f10.3,2(1x,I5),1x,f10.3)
- 243    format(f10.3,1x,f10.3,2(1x,I5),1x,f10.3,2(1x,I5))
-clin-4/2012-end
+clin-6/2009-8/2011 write out initial transverse positions of initial nucleons:
+clin-8/2011 For U238: write out rotation angles (theta,phi) of major axis:
+           if((IHNT2(1).eq.238.and.IHNT2(2).eq.92).and.
+     1          (IHNT2(3).eq.238.and.IHNT2(4).eq.92)) then
+              write(94,238) IAEVT,MISS,IHNT2(1),theup,phiup,
+     1             IHNT2(3),theut,phiut,bimp
+           elseif(IHNT2(1).eq.238.and.IHNT2(2).eq.92) then
+           write(94,239) IAEVT,MISS,IHNT2(1),theup,phiup,IHNT2(3),bimp
+           elseif(IHNT2(3).eq.238.and.IHNT2(4).eq.92) then
+           write(94,240) IAEVT,MISS,IHNT2(1),IHNT2(3),theut,phiut,bimp
+           else
+              write(94,*) IAEVT,MISS,IHNT2(1),IHNT2(3),bimp
+           endif
+ 238       format(I8,2(1x,I4),2(1x,f8.4),1x,I4,3(1x,f8.4))
+ 239       format(I8,2(1x,I4),2(1x,f8.4),1x,I4,1x,f8.4)
+ 240       format(I8,3(1x,I4),3(1x,f8.4))
+clin-8/2011-end
+        DO 241 JP=1,IHNT2(1)
+        write(94,243) YP(1,JP)+0.5*BB, YP(2,JP), JP, NFP(JP,5),yp(3,jp)
+ 241    continue
+        DO 242 JT=1,IHNT2(3)
+clin-6/2009 target nucleon # has a minus sign for distinction from projectile:
+        write(94,243) YT(1,JT)-0.5*BB, YT(2,JT), -JT, NFT(JT,5),yt(3,jt)
+ 242    continue
+ 243    format(f10.3,1x,f10.3,2(1x,I5),1x,f10.3)
+clin-6/2009-8/2011-end
+
+clin-6/2013 also check strangeness conservation:
+clin-8/02/10 ctest on fix charge conservation:
+        npos=0
+        nneg=0
+        nneutral=0
+        netsini=0
+        do iatt=1,natt
+ctest off2
+c           write(11,*) iatt,KATT(IATT,1),
+c     1 LUCHGE(invflv(IARFLV(KATT(IATT,1))))/3
+           if(LUCHGE(KATT(IATT,1)).gt.0) then
+              npos=npos+LUCHGE(KATT(IATT,1))/3
+           elseif(LUCHGE(KATT(IATT,1)).lt.0) then
+              nneg=nneg-LUCHGE(KATT(IATT,1))/3
+c           if(invflv(IARFLV(KATT(IATT,1))).gt.0) then
+c              npos=npos+LUCHGE(invflv(IARFLV(KATT(IATT,1))))/3
+c           elseif(invflv(IARFLV(KATT(IATT,1))).lt.0) then
+c              nneg=nneg-LUCHGE(invflv(IARFLV(KATT(IATT,1))))/3
+           else
+              nneutral=nneutral+1
+           endif
+           netsini=netsini+nstrange(IARFLV(KATT(IATT,1)))
+ctest off
+c           write(98,*) iatt,KATT(IATT,1),LUCHGE(KATT(IATT,1))/3
+        enddo
+        write(6,*) 'Before ART: N+,-,0,total=',npos,nneg,nneutral,natt
+        if((npos-nneg).ne.(IHNT2(2)+IHNT2(4))) 
+     1 write(6,*) 'Before ART: charge consvn violated: netch=',
+     2 npos-nneg,', should be ',IHNT2(2)+IHNT2(4)
+        if(netsini.ne.0) write(6,*) 
+     1       'Before ART: strangeness consvn violated: nets=',netsini
+clin-8/02/10-end
 
         RETURN
         END
@@ -1965,7 +1953,6 @@ C
         SUBROUTINE HIJSET(EFRM,FRAME,PROJ,TARG,IAP,IZP,IAT,IZT)
         CHARACTER FRAME*4,PROJ*4,TARG*4,EFRAME*4
         DOUBLE PRECISION  DD1,DD2,DD3,DD4
-        DOUBLE PRECISION  dpcoal,drcoal,ecritl,xmbcut,drbmRatio
         COMMON/HSTRNG/NFP(300,15),PP(300,15),NFT(300,15),PT(300,15)
 cc      SAVE /HSTRNG/
         COMMON/hjcrdn/YP(3,300),YT(3,300)
@@ -1976,8 +1963,8 @@ cc      SAVE /HPARNT/
 cc      SAVE /HIJDAT/
         COMMON/LUDAT1/MSTU(200),PARU(200),MSTJ(200),PARJ(200)
 cc      SAVE /LUDAT1/
-clin-5/2016:
-        common/coal/dpcoal,drcoal,ecritl,xmbcut,pslimit,imbcut,drbmRatio
+clin-6/2013: modified resonance decay right after HJ but before ART:
+        common/anim/nevent,isoft,isflag,izpc
         EXTERNAL FNKICK,FNKC2,FNSTRU,FNSTRM,FNSTRS
         SAVE   
 
@@ -2041,6 +2028,44 @@ C
 
 C...Switch off decay of pi0, K0S, Lambda, Sigma+-, Xi0-, Omega-.
         IF(IHPR2(12).GT.0) THEN
+clin-6/2013 fix strangeness conservation:
+        CALL LUGIVE('MDCY(C211,1)=0')
+        CALL LUGIVE('MDCY(C130,1)=0')
+        CALL LUGIVE('MDCY(C321,1)=0;MDCY(C-321,1)=0')
+        if(isoft.eq.4) then
+           CALL LUGIVE('MDCY(C413,1)=0;MDCY(C-413,1)=0')
+           CALL LUGIVE('MDCY(C423,1)=0;MDCY(C-423,1)=0')
+           CALL LUGIVE('MDCY(C433,1)=0;MDCY(C-433,1)=0')
+           CALL LUGIVE('MDCY(C513,1)=0;MDCY(C-513,1)=0')
+           CALL LUGIVE('MDCY(C523,1)=0;MDCY(C-523,1)=0')
+           CALL LUGIVE('MDCY(C533,1)=0;MDCY(C-533,1)=0')
+c     since eta' is not formed by coalescence currently:
+c           CALL LUGIVE('MDCY(C331,1)=0')
+           CALL LUGIVE('MDCY(C441,1)=0')
+           CALL LUGIVE('MDCY(C551,1)=0')
+           CALL LUGIVE('MDCY(C661,1)=0')
+           CALL LUGIVE('MDCY(C443,1)=0')
+           CALL LUGIVE('MDCY(C553,1)=0')
+           CALL LUGIVE('MDCY(C663,1)=0')
+c     since these baryons are not formed by coalescence currently:
+c           CALL LUGIVE('MDCY(C3114,1)=0;MDCY(C-3114,1)=0')
+c           CALL LUGIVE('MDCY(C3214,1)=0;MDCY(C-3214,1)=0')
+c           CALL LUGIVE('MDCY(C3224,1)=0;MDCY(C-3224,1)=0')
+c           CALL LUGIVE('MDCY(C3314,1)=0;MDCY(C-3314,1)=0')
+c           CALL LUGIVE('MDCY(C3324,1)=0;MDCY(C-3324,1)=0')
+c           CALL LUGIVE('MDCY(C4114,1)=0;MDCY(C-4114,1)=0')
+c           CALL LUGIVE('MDCY(C4214,1)=0;MDCY(C-4214,1)=0')
+c           CALL LUGIVE('MDCY(C4224,1)=0;MDCY(C-4224,1)=0')
+c           CALL LUGIVE('MDCY(C4314,1)=0;MDCY(C-4314,1)=0')
+           CALL LUGIVE('MDCY(C4112,1)=0;MDCY(C-4112,1)=0')
+           CALL LUGIVE('MDCY(C4122,1)=0;MDCY(C-4122,1)=0')
+           CALL LUGIVE('MDCY(C4212,1)=0;MDCY(C-4212,1)=0')
+           CALL LUGIVE('MDCY(C4222,1)=0;MDCY(C-4222,1)=0')
+           CALL LUGIVE('MDCY(C4132,1)=0;MDCY(C-4132,1)=0')
+           CALL LUGIVE('MDCY(C4312,1)=0;MDCY(C-4312,1)=0')
+           CALL LUGIVE('MDCY(C4232,1)=0;MDCY(C-4232,1)=0')
+        endif
+c
         CALL LUGIVE('MDCY(C221,1)=0')
 clin-11/07/00 no K* decays:
         CALL LUGIVE('MDCY(C313,1)=0')
@@ -2083,40 +2108,6 @@ cbz12/4/98end
         CALL LUGIVE('MDCY(C3312,1)=0;MDCY(C-3312,1)=0')
         CALL LUGIVE('MDCY(C3322,1)=0;MDCY(C-3322,1)=0')
         CALL LUGIVE('MDCY(C3334,1)=0;MDCY(C-3334,1)=0')
-clin-7/2011-no HQ(charm or bottom) decays in order to get net-HQ conservation:
-        CALL LUGIVE('MDCY(C441,1)=0')
-        CALL LUGIVE('MDCY(C443,1)=0')
-        CALL LUGIVE('MDCY(C413,1)=0;MDCY(C-413,1)=0')
-        CALL LUGIVE('MDCY(C423,1)=0;MDCY(C-423,1)=0')
-        CALL LUGIVE('MDCY(C433,1)=0;MDCY(C-433,1)=0')
-        CALL LUGIVE('MDCY(C4112,1)=0;MDCY(C-4112,1)=0')
-        CALL LUGIVE('MDCY(C4114,1)=0;MDCY(C-4114,1)=0')
-        CALL LUGIVE('MDCY(C4122,1)=0;MDCY(C-4122,1)=0')
-        CALL LUGIVE('MDCY(C4212,1)=0;MDCY(C-4212,1)=0')
-        CALL LUGIVE('MDCY(C4214,1)=0;MDCY(C-4214,1)=0')
-        CALL LUGIVE('MDCY(C4222,1)=0;MDCY(C-4222,1)=0')
-        CALL LUGIVE('MDCY(C4224,1)=0;MDCY(C-4224,1)=0')
-        CALL LUGIVE('MDCY(C4132,1)=0;MDCY(C-4132,1)=0')
-        CALL LUGIVE('MDCY(C4312,1)=0;MDCY(C-4312,1)=0')
-        CALL LUGIVE('MDCY(C4314,1)=0;MDCY(C-4314,1)=0')
-        CALL LUGIVE('MDCY(C4232,1)=0;MDCY(C-4232,1)=0')
-        CALL LUGIVE('MDCY(C4322,1)=0;MDCY(C-4322,1)=0')
-        CALL LUGIVE('MDCY(C4324,1)=0;MDCY(C-4324,1)=0')
-        CALL LUGIVE('MDCY(C4332,1)=0;MDCY(C-4332,1)=0')
-        CALL LUGIVE('MDCY(C4334,1)=0;MDCY(C-4334,1)=0')
-        CALL LUGIVE('MDCY(C551,1)=0')
-        CALL LUGIVE('MDCY(C553,1)=0')
-        CALL LUGIVE('MDCY(C513,1)=0;MDCY(C-513,1)=0')
-        CALL LUGIVE('MDCY(C523,1)=0;MDCY(C-523,1)=0')
-        CALL LUGIVE('MDCY(C533,1)=0;MDCY(C-533,1)=0')
-        CALL LUGIVE('MDCY(C5112,1)=0;MDCY(C-5112,1)=0')
-        CALL LUGIVE('MDCY(C5114,1)=0;MDCY(C-5114,1)=0')
-        CALL LUGIVE('MDCY(C5122,1)=0;MDCY(C-5122,1)=0')
-        CALL LUGIVE('MDCY(C5212,1)=0;MDCY(C-5212,1)=0')
-        CALL LUGIVE('MDCY(C5214,1)=0;MDCY(C-5214,1)=0')
-        CALL LUGIVE('MDCY(C5222,1)=0;MDCY(C-5222,1)=0')
-        CALL LUGIVE('MDCY(C5224,1)=0;MDCY(C-5224,1)=0')
-clin-7/2011-end
         ENDIF
         MSTU(12)=0
         MSTU(21)=1
@@ -2140,21 +2131,18 @@ c        PARJ(5) = 0.5
 clin  parj(21) gives the mean gaussian width for hadron Pt:
         PARJ(21)=HIPR1(2)
 clin  parj(2) is gamma_s=P(s)/P(u), kappa propto 1/b/(2+a) assumed.
-ctest off-8/2013:
-c        write(99,*) 'a', rkp,PARJ(2),PARJ(21),HIPR1(2)
         rkp=HIPR1(4)*(2+HIPR1(3))/PARJ(42)/(2+PARJ(41))
         PARJ(2)=PARJ(2)**(1./rkp)
         PARJ(21)=PARJ(21)*sqrt(rkp)
 clin-10/31/00 update when string tension is changed:
         HIPR1(2)=PARJ(21)
 
-clin-4/2015: set upper limit for gamma_s=P(s)/P(u) to a given pslimit
+clin-4/2018 added following limit:
+clin-4/2015: set upper limit for gamma_s=P(s)/P(u) to 0.4
 c     (to limit strangeness enhancement when string tension is strongly 
 c     increased due to using a very low value of parameter b in Lund 
 c     symmetric splitting function as done in arXiv:1403.6321):
-        PARJ(2)=min(PARJ(2),pslimit)
-ctest off-8/2013:
-c        write(99,*) 'b', rkp,PARJ(2),PARJ(21),HIPR1(2)
+        PARJ(2)=min(PARJ(2),0.4)
 
 C                        ******** set up for jetset
         IF(FRAME.EQ.'LAB') THEN
@@ -3588,9 +3576,9 @@ cc      SAVE /PYINT2/
         COMMON/PYINT5/NGEN(0:200,3),XSEC(0:200,3)
 cc      SAVE /PYINT5/
         COMMON/HPINT/MINT4,MINT5,ATCO(200,20),ATXS(0:200)
+clin-6/2013:
+        common/phidcy/iphidcy,pttrig,ntrig,maxmiss
 cc      SAVE /HPINT/
-clin-2/2012 correction:
-        common/phidcy/iphidcy,pttrig,ntrig,maxmiss,ipi0dcy
         SAVE   
 C*********************************** LU common block
         MXJT=500
@@ -4290,10 +4278,6 @@ C
               itype=4
            ENDIF
         ENDIF
-
-clin-12/2012 correct NN differential cross section in HIJING:
-c        write(94,*) 'In JETINI: ',jp,jt,NFP(JP,4),NFT(JT,4),itype
-
 c
         IF(itrig.NE.0) GO TO 160
         IF(itrig.EQ.ilast) GO TO 150
@@ -4553,10 +4537,6 @@ cbzdbg2/22/99end
         NFP(I,11)=0
         NPJ(I)=0
         IF(I.GT.ABS(IHNT2(2))) NFP(I,3)=2112
-
-clin-12/2012 correct NN differential cross section in HIJING:
-        IF(I.GT.ABS(IHNT2(2))) NFP(I,4)=2112
-
         CALL ATTFLV(NFP(I,3),IDQ,IDQQ)
         NFP(I,1)=IDQ
         NFP(I,2)=IDQQ
@@ -4594,10 +4574,6 @@ cbzdbg2/22/99end
         NFT(I,11)=0
         NTJ(I)=0
         IF(I.GT.ABS(IHNT2(4))) NFT(I,3)=2112
-
-clin-12/2012 correct NN differential cross section in HIJING:
-        IF(I.GT.ABS(IHNT2(4))) NFT(I,4)=2112
-
         CALL ATTFLV(NFT(I,3),IDQ,IDQQ)
         NFT(I,1)=IDQ
         NFT(I,2)=IDQQ
@@ -5711,18 +5687,32 @@ C**************************************************
         WRITE(6,*) '     THIS COLLISON NFP5=',NFP5, ' NFT5=',NFT5
         WRITE(6,*) '     # OF JET IN PROJ',NPJ(JP),' IN TARG',NTJ(JT)
         RETURN
+
+clin-7/2022 This change leads to distorted b-distribution at low energies, 
+c     so it is reverted (and I do not see violation of NetQ or netB conservations).
+cma-05/16clin-5/2016: found to violate charge and baryon number conservation,abort:
+cma-05/164000        IERROR=0
+c4000        IERROR=1
 4000        IERROR=0
+
         IF(IHPR2(10).EQ.0) RETURN
         WRITE(6,*) '     (4)unable to choose process, but not harmful'
-        WRITE(6,*) '     HIJSFT not performed, but continue'
+cma-05/16        WRITE(6,*) '     HIJSFT not performed, but continue'
         WRITE(6,*) '     PTP=',SQRT(PTP2),' PTT=',SQRT(PTT2),' SW=',SW
         WRITE(6,*) '     AMCUT=',AMX,' JP=',JP,' JT=',JT
         WRITE(6,*) '     HISTORY NFP5=',NFP(JP,5),' NFT5=',NFT(JT,5)
         RETURN
+
+clin-7/2022 This change leads to distorted b-distribution at low energies, 
+c     so it is reverted (and I do not see violation of NetQ or netB conservations).
+cma-05/16clin-5/2016: found to violate charge and baryon number conservation,abort:
+cma-05/165000        IERROR=0
+c5000        IERROR=1
 5000        IERROR=0
+
         IF(IHPR2(10).EQ.0) RETURN
         WRITE(6,*) '     energy partition failed(5),for limited try'
-        WRITE(6,*) '     HIJSFT not performed, but continue'
+cma-05/16        WRITE(6,*) '     HIJSFT not performed, but continue'
         WRITE(6,*) '     NFP5=',NFP5,' NFT5=',NFT5
         WRITE(6,*) '     D1',D1,' X1(1-X2)',X1*(1.0-X2)
         WRITE(6,*) '     D2',D2,' X2(1-X1)',X2*(1.0-X1)
@@ -5784,6 +5774,15 @@ C                      ********CHECK TABLE FOR SPECIAL CASES
 clin RS not used                              RS=RMS(I)
                       END IF
 10            CONTINUE
+clin-8/2011 add U238:
+           if((IDH.eq.1.and.IHNT2(1).eq.238.and.IHNT2(2).eq.92).or.
+     1        (IDH.eq.2.and.IHNT2(3).eq.238.and.IHNT2(4).eq.92)) then
+c     R below is the maximum radius parameter of U238 (at theta0=0degree):
+              R=6.81*(1+0.28*sqrt(5./HIPR1(40))/2
+     1             +0.093*3/2/sqrt(HIPR1(40)))
+              D=0.55
+           endif
+clin-8/2011-end
 C                             ********FNORM is the normalize factor
               FNORM=1.0
               XLOW=0.
@@ -6019,7 +6018,6 @@ cc      SAVE /HPARNT/
 cc      SAVE /NJET/
         SAVE   
         OMG1=OMG0(X)*HINT1(11)/HIPR1(31)
-clin-8/2015 could cause IEEE_UNDERFLOW, does not seem to affect results:
         C0=EXP(N*ALOG(OMG1)-SGMIN(N+1))
         IF(N.EQ.0) C0=1.0-EXP(-2.0*OMG0(X)*HIPR1(30)/HIPR1(31)/2.0)
         FNJET=C0*EXP(-OMG1)
@@ -6515,8 +6513,6 @@ C
      &               +dble(1.079*(FLOAT(IHNT2(1))**0.33333333-1.0))
      &          /dble(ALOG(float(IHNT2(1))+1.0))*DSQRT(X1)
      &          *DEXP(-X1**2/0.01d0)
-clin-8/2015 DEXP() above may cause IEEE_UNDERFLOW, 
-c     does not seem to affect results.
 c     &          /DLOG(IHNT2(1)+1.0D0)*(DSQRT(X1)*DEXP(-X1**2/0.01)
 clin-7/2009 enable users to modify nuclear shadowing:
            if(ishadow.eq.1) RRX=1.d0+dshadow*(RRX-1.d0)

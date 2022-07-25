@@ -1,8 +1,8 @@
 c.....driver program for A Multi-Phase Transport model
       PROGRAM AMPT
-c
       double precision xmp, xmu, alpha, rscut2, cutof2, dshadow
-      double precision smearp,smearh,dpcoal,drcoal,ecritl
+      double precision smearp,smearh,dpcoal,drcoal,ecritl,xmbcut,
+     1     drbmRatio
       CHARACTER FRAME*8, PROJ*8, TARG*8
       character*25 amptvn
       COMMON/HMAIN1/EATT,JATT,NATT,NT,NP,N0,N01,N10,N11
@@ -15,11 +15,11 @@ c
       COMMON/RNDF77/NSEED
       common/anim/nevent,isoft,isflag,izpc
 c     parton coalescence radii in case of string melting:
-      common /coal/dpcoal,drcoal,ecritl
-      common/snn/efrm,npart1,npart2
+      common/coal/dpcoal,drcoal,ecritl,xmbcut,pslimit,imbcut,drbmRatio
+      common/snn/efrm,npart1,npart2,epsiPz,epsiPt,PZPROJ,PZTARG
 c     initialization value for parton cascade:
       common /para2/ xmp, xmu, alpha, rscut2, cutof2
-      common /para7/ ioscar,nsmbbbar,nsmmeson
+      common /para7/ ioscar,nsmm0,nsmb0,nsmab0,nsmm1,nsmb1,nsmab1
       common /para8/ idpert,npertd,idxsec
       common /rndm3/ iseedp
 c     initialization value for hadron cascade:
@@ -30,15 +30,15 @@ c     initialization value for hadron cascade:
       common/oscar1/iap,izp,iat,izt
       common/oscar2/FRAME,amptvn
       common/resdcy/NSAV,iksdcy
-clin-6/2009:
+clin-4/2012-6/2009:
 c      common/phidcy/iphidcy
-      common/phidcy/iphidcy,pttrig,ntrig,maxmiss
+      common/phidcy/iphidcy,pttrig,ntrig,maxmiss,ipi0dcy
       common/embed/iembed,nsembd,pxqembd,pyqembd,xembd,yembd,
      1     psembd,tmaxembd,phidecomp
 clin-7/2009:
       common/cmsflag/dshadow,ishadow
-clin-8/2011 add U238:
-      common/u238/cxu,sxu,phiu,theup,phiup,theut,phiut,urshad
+clin-2/2012 allow random orientation of reaction plane:
+      common /phiHJ/iphirp,phiRP
 
       EXTERNAL HIDATA, PYDATA, LUDATA, ARDATA, PPBDAT, zpcbdt
       SAVE   
@@ -93,6 +93,7 @@ c     2 seeds for random number generators in HIJING/hadron cascade and ZPC:
       READ (24, *) iseedp
       READ (24, *) iksdcy
       READ (24, *) iphidcy
+      READ (24, *) ipi0dcy
 c     flag for OSCAR output for final partons and hadrons:
       READ (24, *) ioscar
 clin-5/2008     flag for perturbative treatment of deuterons:
@@ -112,8 +113,18 @@ clin-6/2009 To embed a back-to-back q/qbar pair into each event:
 clin-7/2009 Allow modification of nuclear shadowing:
       READ (24, *) ishadow
       READ (24, *) dshadow
-clin-8/2011 Test r_perp-dependence of nuclear shadowing of U238:
-      READ (24, *) urshad
+      READ (24, *) iphirp
+clin-5/2017 turn off these user options:
+clin-5/2016 test a preferred mininum invariant mass for baryon:
+c      READ (24, *) pslimit
+c      READ (24, *) imbcut
+c      READ (24, *) xmbcut
+clin-9/2016 test difference distance preference for baryon vs meson:
+c      READ (24, *) drbmRatio
+      pslimit=0.4
+      imbcut=0
+      xmbcut=0d0
+      drbmRatio=0.61d0
 c
       CLOSE (24)
  111  format(a8)
@@ -123,9 +134,9 @@ c     Trigger Pt of high-pt jets in HIJING:
 c      HIPR1(10)=7.
 c
       if(isoft.eq.1) then
-         amptvn = '1.25t7cu (Default)'
+         amptvn = '1.31t1 (Default)'
       elseif(isoft.eq.4) then
-         amptvn = '2.25t7cu (StringMelting)'
+         amptvn = '2.31t1 (StringMelting)'
       else
          amptvn = 'Test-Only'
       endif
@@ -135,7 +146,7 @@ c
      &11X,'##################################################'/1X,
      &10X,'#      AMPT (A Multi-Phase Transport) model      #'/1X,
      &10X,'#          Version ',a25,                  '     #'/1X,
-     &10X,'#                07/21/2022                      #'/1X,
+     &10X,'#               12/06/2016                       #'/1X,
      &10X,'##################################################'/1X,
      &10X,' ')
 c     when ihjsed=11: use environment variable at run time for HIJING nseed:
@@ -147,20 +158,22 @@ c     when ihjsed=11: use environment variable at run time for HIJING nseed:
       if(ihjsed.eq.11) then
          nseed=nseedr
       endif
-c     an odd number is needed for the random number generator:
-      if(mod(NSEED,2).eq.0) NSEED=NSEED+1
       if(ihjsed.eq.11) then      
          PRINT *, '#   read in: ', nseed
          WRITE(12,*) '# Read in NSEED in HIJING at run time:',nseed
       endif
       CLOSE(12)
+clin-5/2015 an odd number is needed for the random number generator:
+c      if(mod(NSEED,2).eq.0) NSEED=NSEED+1
+      NSEED=2*NSEED+1
 c     9/26/03 random number generator for f77 compiler:
       CALL SRAND(NSEED)
 c
 c.....turn on warning messages in nohup.out when an event is repeated:
       IHPR2(10) = 1
 c     string formation time:
-      ARPAR1(1) = 0.7
+      ARPAR1(1) = 1e-6
+c     ARPAR1(1) = 0.7
 c     smearp is the smearing halfwidth on parton z0, 
 c     set to 0 for now to avoid overflow in eta.
 c     smearh is the smearing halfwidth on string production point z0.
@@ -178,6 +191,8 @@ c      OPEN (18, FILE = 'ana/res-loss.dat', STATUS = 'UNKNOWN')
       CALL HIJSET(EFRM, FRAME, PROJ, TARG, IAP, IZP, IAT, IZT)
       CALL ARTSET
       CALL INIZPC
+clin-2/2013 write out parton info at these time values
+c     in order to calculate temperature and flow profiles for isoft=4:
 clin-5/2009 ctest off:
 c      call flowp(0)
 c      call flowh0(NEVNT,0)
@@ -238,9 +253,11 @@ c.....ART initialization and run
  1000     CONTINUE
 c
           CALL ARTAN1
-          CALL HJANA3
+clin-9/2012 Analysis is not used:
+c          CALL HJANA3
           CALL ARTMN
-          CALL HJANA4
+clin-9/2012 Analysis is not used:
+c          CALL HJANA4
           CALL ARTAN2
  2000  CONTINUE
 c
@@ -254,4 +271,4 @@ c
        STOP
        END
 c     FYI: taken file unit numbers are 12-14, 16-88, 91-93; 
-c     so free file unit numbers are 11,15,89,98-99.
+c     so free file unit numbers are 11,15,89,97-99.
