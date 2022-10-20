@@ -1,6 +1,32 @@
 AMPT Users' Guide
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+7/21/2022 test version v1.25t7cu/v2.25t7cu (sent to Gang Wang):
+     * UCLA group reported distorted b-distribution at low energies (7.7AGeV);
+       this is caused by changes in HIJSFT for the charge conservation version;
+       so those changes are reverted for correct impact parameter distribution
+       (and I do not see violation of netB or netQ conservations).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+7/19/2022 test version v1.25t4cu/v2.25t6cu (sent to Gang Wang):
+     * Added the following change that was made to public AMPT on 
+       5/13/2011 for test version v1.25t4/v2.25t5:
+       resonances (rho,omega,eta,K*,phi,Delta) produced from quark coalescence
+       in the String Melting version now have a random mass within a range 
+       (~ +- twice the full Breit-Wigner width); 
+       added for the purpose of resonance reconstruction using invariant mass.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+1/18/2022 test version v1.25t4cu/v2.25t5cu (sent to Gang Wang):
+     * Moved (anti)baryon coalescence in front of meson coalescence;
+       this helps to minimize the dN/deta asymmetry of antibaryons in 
+       low-energy AMPT-SM events for symmetric collisions. 
+       Note: this temporary fix will be eventually replaced with 
+       the new quark coalescence of nucl-th/1703.02673; 
+       the source of this asymmetry problem is found to be a small asymmetry
+       in dN/dy of initial hadrons from HIJING (the AMPT initial condition).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 6/26/2018 test version v1.25t4cu/v2.25t4cu (sent to Gang Wang & P. Tribedy):
      * Added deformed Uranium U238 (Z=92,A=238) as projectile and/or target; 
        density distribution taken from Masui et al. PLB 679, 440 (2009).

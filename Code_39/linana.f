@@ -729,6 +729,8 @@ clin 4/19/2006
       COMMON/HJGLBR/NELT,NINTHJ,NELP,NINP
       COMMON /AREVT/ IAEVT, IARUN, MISS
       common /para7/ ioscar,nsmbbbar,nsmmeson
+clin-7/2022:
+      common/input1/ MASSPR,MASSTA,ISEED,IAVOID,DT
 c
       dimension xmdiag(MAXSTR),indx(MAXSTR),ndiag(MAXSTR)
       SAVE   
@@ -999,6 +1001,16 @@ c
                etot=e1+e2+e3
               endif
               XMAR(inatt)=ULMASS(ITYPAR(inatt))
+clin-7/2022-add finite width to resonances (rho,omega,eta,K*,phi,Delta) 
+c     after formation:
+              kf=KATT(inatt,1)
+              if(kf.eq.113.or.abs(kf).eq.213.or.kf.eq.221.or.kf.eq.223
+     1             .or.abs(kf).eq.313.or.abs(kf).eq.323.or.kf.eq.333
+     2             .or.abs(kf).eq.1114.or.abs(kf).eq.2114
+     3             .or.abs(kf).eq.2214.or.abs(kf).eq.2224) then
+                 XMAR(inatt)=resmass(kf)
+              endif
+c
               PEAR(inatt)=sqrt(PXAR(inatt)**2+PYAR(inatt)**2
      1           +PZAR(inatt)**2+XMAR(inatt)**2)
               PATT(inatt,4)=PEAR(inatt)
@@ -1062,6 +1074,57 @@ c
       END
 
 c=======================================================================
+clin-7/2022-add finite width to resonances (rho,omega,eta,K*,phi,Delta) 
+c     after formation:
+      FUNCTION resmass(kf)
+
+      PARAMETER  (arho=0.775,aomega=0.783,aeta=0.548,aks=0.894,
+     1     aphi=1.019,adelta=1.232)
+      PARAMETER  (wrho=0.149,womega=0.00849,weta=1.30E-6,wks=0.0498,
+     1     wphi=0.00426,wdelta=0.118)
+      common/input1/ MASSPR,MASSTA,ISEED,IAVOID,DT
+      COMMON/RNDF77/NSEED
+      SAVE   
+
+      if(kf.eq.113.or.abs(kf).eq.213) then
+         amass=arho
+         wid=wrho
+      elseif(kf.eq.221) then
+         amass=aeta
+         wid=weta
+      elseif(kf.eq.223) then
+         amass=aomega
+         wid=womega
+      elseif(abs(kf).eq.313.or.abs(kf).eq.323) then
+         amass=aks
+         wid=wks
+      elseif(kf.eq.333) then
+         amass=aphi
+         wid=wphi
+      elseif(abs(kf).eq.1114.or.abs(kf).eq.2114
+     1        .or.abs(kf).eq.2214.or.abs(kf).eq.2224) then
+         amass=adelta
+         wid=wdelta
+      endif
+      dmin=amass-2*wid
+      dmax=amass+2*wid
+c     Delta mass needs to be big enough to decay to N+pi:
+      if(amass.eq.adelta) dmin=1.078
+c      
+      FM=1.
+      NTRY1=0
+ 10   DM = RANART(NSEED) * (DMAX-DMIN) + DMIN
+      NTRY1=NTRY1+1
+      fmass=(amass*wid)**2/((DM**2-amass**2)**2+(amass*wid)**2)
+check      write (99,*) ntry1,kf,amass,wid,fmass,DM
+      IF((RANART(NSEED) .GT. FMASS/FM).AND. (NTRY1.LE.10)) GOTO 10
+c     
+      resmass=DM
+      
+      RETURN
+      END
+
+c=======================================================================
       SUBROUTINE coales
 
       PARAMETER (MAXSTR=150001)
@@ -1090,6 +1153,107 @@ c
       do 1001 ISG=1, NSG
          IOVER(ISG)=0
  1001 continue
+
+clin-1/2022: this improves (anti)baryon descriptions including minimizing 
+c     the dN/deta asymmetry of antibaryons in low-energy AMPT-SM runs:
+clin-7/2015 moved baryon coalescence in front of meson coalescence:  
+C3     baryon q (antibaryon qbar) coalesce with all available q (qbar):
+      do 350 ISG=1,NSG
+         if(NJSGS(ISG).ne.3.or.IOVER(ISG).eq.1) goto 350
+         ibaryn=K2SGS(ISG,1)
+C     DETERMINE CURRENT RELATIVE DISTANCE AND MOMENTUM:
+         do 1004 j=1,2
+            ftp(j)=ftsgs(isg,j)
+            gxp(j)=gxsgs(isg,j)
+            gyp(j)=gysgs(isg,j)
+            gzp(j)=gzsgs(isg,j)
+            pxp(j)=pxsgs(isg,j)
+            pyp(j)=pysgs(isg,j)
+            pzp(j)=pzsgs(isg,j)
+            pmp(j)=pmsgs(isg,j)
+            pep(j)=pesgs(isg,j)
+ 1004    continue
+         call locldr(2,drlocl)
+         dr1(2)=drlocl
+         dp1(2)=dsqrt(2*(pep(1)*pep(2)-pxp(1)*pxp(2)
+     &        -pyp(1)*pyp(2)-pzp(1)*pzp(2)-pmp(1)*pmp(2)))
+c
+         ftp(2)=ftsgs(isg,3)
+         gxp(2)=gxsgs(isg,3)
+         gyp(2)=gysgs(isg,3)
+         gzp(2)=gzsgs(isg,3)
+         pxp(2)=pxsgs(isg,3)
+         pyp(2)=pysgs(isg,3)
+         pzp(2)=pzsgs(isg,3)
+         pmp(2)=pmsgs(isg,3)
+         pep(2)=pesgs(isg,3)
+         call locldr(2,drlocl)
+         dr1(3)=drlocl
+         dp1(3)=dsqrt(2*(pep(1)*pep(2)-pxp(1)*pxp(2)
+     &        -pyp(1)*pyp(2)-pzp(1)*pzp(2)-pmp(1)*pmp(2)))
+c
+         do 320 JSG=1,NSG
+            if(JSG.eq.ISG.or.IOVER(JSG).eq.1) goto 320
+            if(NJSGS(JSG).eq.2) then
+               if(ibaryn.gt.0) then
+                  ipmin=1
+               else
+                  ipmin=2
+               endif
+               ipmax=ipmin
+            elseif(NJSGS(JSG).eq.3.and.
+     1              (ibaryn*K2SGS(JSG,1)).gt.0) then
+               ipmin=1
+               ipmax=3
+            else
+               goto 320
+            endif
+            do 300 ip=ipmin,ipmax
+               dplocl=dsqrt(2*(pep(1)*pesgs(jsg,ip)
+     1              -pxp(1)*pxsgs(jsg,ip)
+     2              -pyp(1)*pysgs(jsg,ip)
+     3              -pzp(1)*pzsgs(jsg,ip)
+     4              -pmp(1)*pmsgs(jsg,ip)))
+c     skip if outside of momentum radius:
+               if(dplocl.gt.dpcoal) goto 320
+               ftp(2)=ftsgs(jsg,ip)
+               gxp(2)=gxsgs(jsg,ip)
+               gyp(2)=gysgs(jsg,ip)
+               gzp(2)=gzsgs(jsg,ip)
+               pxp(2)=pxsgs(jsg,ip)
+               pyp(2)=pysgs(jsg,ip)
+               pzp(2)=pzsgs(jsg,ip)
+               pmp(2)=pmsgs(jsg,ip)
+               pep(2)=pesgs(jsg,ip)
+               call locldr(2,drlocl)
+c     skip if outside of spatial radius:
+               if(drlocl.gt.drcoal) goto 320
+c     q_isg may coalesce with q_jsg for a baryon:
+               ipi=0
+               if(dp1(2).gt.dpcoal.or.dr1(2).gt.drcoal) then
+                  ipi=2
+                  if((dp1(3).gt.dpcoal.or.dr1(3).gt.drcoal)
+     1                 .and.dr1(3).gt.dr1(2)) ipi=3
+               elseif(dp1(3).gt.dpcoal.or.dr1(3).gt.drcoal) then
+                  ipi=3
+               elseif(dr1(2).lt.dr1(3)) then
+                  if(drlocl.lt.dr1(3)) ipi=3
+               elseif(dr1(3).le.dr1(2)) then
+                  if(drlocl.lt.dr1(2)) ipi=2
+               endif
+               if(ipi.ne.0) then
+                  dp1(ipi)=dplocl
+                  dr1(ipi)=drlocl
+                  call exchge(isg,ipi,jsg,ip)
+               endif
+ 300        continue
+ 320     continue
+         if(dp1(2).le.dpcoal.and.dr1(2).le.drcoal
+     1        .and.dp1(3).le.dpcoal.and.dr1(3).le.drcoal)
+     2        IOVER(ISG)=1
+ 350  continue
+clin-1/2022-end
+
 C1     meson q coalesce with all available qbar:
       do 150 ISG=1,NSG
          if(NJSGS(ISG).ne.2.or.IOVER(ISG).eq.1) goto 150
@@ -1223,102 +1387,6 @@ c     qbar_isg coalesces with q_jsg:
          if(dp0.le.dpcoal.and.dr0.le.drcoal) IOVER(ISG)=1
  250  continue
 c
-C3     baryon q (antibaryon qbar) coalesce with all available q (qbar):
-      do 350 ISG=1,NSG
-         if(NJSGS(ISG).ne.3.or.IOVER(ISG).eq.1) goto 350
-         ibaryn=K2SGS(ISG,1)
-C     DETERMINE CURRENT RELATIVE DISTANCE AND MOMENTUM:
-         do 1004 j=1,2
-            ftp(j)=ftsgs(isg,j)
-            gxp(j)=gxsgs(isg,j)
-            gyp(j)=gysgs(isg,j)
-            gzp(j)=gzsgs(isg,j)
-            pxp(j)=pxsgs(isg,j)
-            pyp(j)=pysgs(isg,j)
-            pzp(j)=pzsgs(isg,j)
-            pmp(j)=pmsgs(isg,j)
-            pep(j)=pesgs(isg,j)
- 1004    continue
-         call locldr(2,drlocl)
-         dr1(2)=drlocl
-         dp1(2)=dsqrt(2*(pep(1)*pep(2)-pxp(1)*pxp(2)
-     &        -pyp(1)*pyp(2)-pzp(1)*pzp(2)-pmp(1)*pmp(2)))
-c
-         ftp(2)=ftsgs(isg,3)
-         gxp(2)=gxsgs(isg,3)
-         gyp(2)=gysgs(isg,3)
-         gzp(2)=gzsgs(isg,3)
-         pxp(2)=pxsgs(isg,3)
-         pyp(2)=pysgs(isg,3)
-         pzp(2)=pzsgs(isg,3)
-         pmp(2)=pmsgs(isg,3)
-         pep(2)=pesgs(isg,3)
-         call locldr(2,drlocl)
-         dr1(3)=drlocl
-         dp1(3)=dsqrt(2*(pep(1)*pep(2)-pxp(1)*pxp(2)
-     &        -pyp(1)*pyp(2)-pzp(1)*pzp(2)-pmp(1)*pmp(2)))
-c
-         do 320 JSG=1,NSG
-            if(JSG.eq.ISG.or.IOVER(JSG).eq.1) goto 320
-            if(NJSGS(JSG).eq.2) then
-               if(ibaryn.gt.0) then
-                  ipmin=1
-               else
-                  ipmin=2
-               endif
-               ipmax=ipmin
-            elseif(NJSGS(JSG).eq.3.and.
-     1              (ibaryn*K2SGS(JSG,1)).gt.0) then
-               ipmin=1
-               ipmax=3
-            else
-               goto 320
-            endif
-            do 300 ip=ipmin,ipmax
-               dplocl=dsqrt(2*(pep(1)*pesgs(jsg,ip)
-     1              -pxp(1)*pxsgs(jsg,ip)
-     2              -pyp(1)*pysgs(jsg,ip)
-     3              -pzp(1)*pzsgs(jsg,ip)
-     4              -pmp(1)*pmsgs(jsg,ip)))
-c     skip if outside of momentum radius:
-               if(dplocl.gt.dpcoal) goto 320
-               ftp(2)=ftsgs(jsg,ip)
-               gxp(2)=gxsgs(jsg,ip)
-               gyp(2)=gysgs(jsg,ip)
-               gzp(2)=gzsgs(jsg,ip)
-               pxp(2)=pxsgs(jsg,ip)
-               pyp(2)=pysgs(jsg,ip)
-               pzp(2)=pzsgs(jsg,ip)
-               pmp(2)=pmsgs(jsg,ip)
-               pep(2)=pesgs(jsg,ip)
-               call locldr(2,drlocl)
-c     skip if outside of spatial radius:
-               if(drlocl.gt.drcoal) goto 320
-c     q_isg may coalesce with q_jsg for a baryon:
-               ipi=0
-               if(dp1(2).gt.dpcoal.or.dr1(2).gt.drcoal) then
-                  ipi=2
-                  if((dp1(3).gt.dpcoal.or.dr1(3).gt.drcoal)
-     1                 .and.dr1(3).gt.dr1(2)) ipi=3
-               elseif(dp1(3).gt.dpcoal.or.dr1(3).gt.drcoal) then
-                  ipi=3
-               elseif(dr1(2).lt.dr1(3)) then
-                  if(drlocl.lt.dr1(3)) ipi=3
-               elseif(dr1(3).le.dr1(2)) then
-                  if(drlocl.lt.dr1(2)) ipi=2
-               endif
-               if(ipi.ne.0) then
-                  dp1(ipi)=dplocl
-                  dr1(ipi)=drlocl
-                  call exchge(isg,ipi,jsg,ip)
-               endif
- 300        continue
- 320     continue
-         if(dp1(2).le.dpcoal.and.dr1(2).le.drcoal
-     1        .and.dp1(3).le.dpcoal.and.dr1(3).le.drcoal)
-     2        IOVER(ISG)=1
- 350  continue
-c      
       RETURN
       END
 

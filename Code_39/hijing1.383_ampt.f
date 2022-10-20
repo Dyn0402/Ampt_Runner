@@ -5687,9 +5687,14 @@ C**************************************************
         WRITE(6,*) '     THIS COLLISON NFP5=',NFP5, ' NFT5=',NFT5
         WRITE(6,*) '     # OF JET IN PROJ',NPJ(JP),' IN TARG',NTJ(JT)
         RETURN
+
+clin-7/2022 This change leads to distorted b-distribution at low energies, 
+c     so it is reverted (and I do not see violation of NetQ or netB conservations).
 cma-05/16clin-5/2016: found to violate charge and baryon number conservation,abort:
 cma-05/164000        IERROR=0
-4000        IERROR=1
+c4000        IERROR=1
+4000        IERROR=0
+
         IF(IHPR2(10).EQ.0) RETURN
         WRITE(6,*) '     (4)unable to choose process, but not harmful'
 cma-05/16        WRITE(6,*) '     HIJSFT not performed, but continue'
@@ -5697,9 +5702,14 @@ cma-05/16        WRITE(6,*) '     HIJSFT not performed, but continue'
         WRITE(6,*) '     AMCUT=',AMX,' JP=',JP,' JT=',JT
         WRITE(6,*) '     HISTORY NFP5=',NFP(JP,5),' NFT5=',NFT(JT,5)
         RETURN
+
+clin-7/2022 This change leads to distorted b-distribution at low energies, 
+c     so it is reverted (and I do not see violation of NetQ or netB conservations).
 cma-05/16clin-5/2016: found to violate charge and baryon number conservation,abort:
 cma-05/165000        IERROR=0
-5000        IERROR=1
+c5000        IERROR=1
+5000        IERROR=0
+
         IF(IHPR2(10).EQ.0) RETURN
         WRITE(6,*) '     energy partition failed(5),for limited try'
 cma-05/16        WRITE(6,*) '     HIJSFT not performed, but continue'
