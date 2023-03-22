@@ -30,6 +30,8 @@ int makeAmptroot(string run_id)
 	float pt_min = 0.01;  // Issues arise in eta if pt is zero
 	float qvec_pt_min = 0.2;
 	float qvec_pt_max = 2.0;
+	float qvec_eta_max = 1.0;
+
 	float ref_eta_max = 0.5;
 	float ref2_eta_min = 0.5;
 	float ref2_eta_max = 1.0;
@@ -46,7 +48,7 @@ int makeAmptroot(string run_id)
 
 	// Output tree variables
 	int event=0, refmult, refmult2, refmult3;  // event variables
-	float imp, qx, qy;  // event variables
+	float imp, psi_east, psi_west, qx_east, qx_west, qy_east, qy_west;  // event variables
 	vector<int> pid_vec;  // track variables
 	vector<float> px_vec;  // Apparently need to be declared on separate lines
 	vector<float> py_vec;
@@ -68,8 +70,8 @@ int makeAmptroot(string run_id)
 	tr->Branch("refmult",  &refmult,   "refmult/I");
 	tr->Branch("refmult2", &refmult2,  "refmult2/I");
 	tr->Branch("refmult3", &refmult3,  "refmult3/I");
-	tr->Branch("qx",       &qx,        "qx/F");
-	tr->Branch("qy",       &qy,        "qy/F");
+	tr->Branch("psi_east", &psi_east, "psi_east/F");
+	tr->Branch("psi_west", &psi_west, "psi_west/F");
 	tr->Branch("imp",      &imp,       "imp/F");
 
 	tr->Branch("npp",      &npp,       "npp/I");
@@ -103,7 +105,7 @@ int makeAmptroot(string run_id)
 		event += 1;
 
 		//****************************ampt.dat particle loop**************
-		qx = 0.; qy = 0.;
+		qx_east = 0.; qx_west = 0.; qy_east = 0.; qy_west = 0.;
 		refmult = 0; refmult2 = 0; refmult3 = 0;
 		pid_vec.clear(); px_vec.clear(); py_vec.clear(); pz_vec.clear();
 
@@ -142,13 +144,32 @@ int makeAmptroot(string run_id)
 			if(fabs(eta) > ref2_eta_min && fabs(eta) < ref2_eta_max && fabs((int)p_info->Charge()) == 3) refmult2++;
 
 			// ref3
-			if(fabs(eta) < ref3_eta_max && fabs(pid) != proton_pid && fabs((int)p_info->Charge()) == 3) refmult3++;
+			if(fabs(eta) < ref3_eta_max && abs(pid) != proton_pid && fabs((int)p_info->Charge()) == 3) refmult3++;
 
-			// event plane q-vector
+			// event plane calculations
 			if(pt > qvec_pt_min && pt < qvec_pt_max && fabs(eta) < ref3_eta_max) {
 				qx += cos(2*phi); qy += sin(2*phi);
 			}
+
+			if (pt > qvec_pt_min && pt < qvec_pt_max && fabs(eta) < qvec_eta_max) {
+				if (fabs(eta) > 0.5 || abs(pid) != proton_pid) {  // Just placeholder. Need to calculate rapidity I think?
+					if (eta < -0.2) {
+						qx_west += pt * cos(2 * phi);
+						qy_west += pt * sin(2 * phi);
+					}
+					else if (eta > 0.2) {
+						qx_east += pt * cos(2 * phi);
+						qy_east += pt * sin(2 * phi);
+					}
+				}
+			}
 		}
+
+		// Calculate event planes
+		TVector2 q_east(qx_east, qy_east);
+		TVector2 q_west(qx_west, qy_west);
+		psi_east = 0.5 * q_east.Phi(); if (psi_east < 0) { psi_east += M_PI; }
+		psi_west = 0.5 * q_west.Phi(); if (psi_west < 0) { psi_west += M_PI; }
 
 		//***************************ampt.dat particle loops end**************
 
